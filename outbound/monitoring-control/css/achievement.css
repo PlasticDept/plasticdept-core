@@ -103,24 +103,45 @@ body {
   align-items: center;
   text-align: center;
 }
+
+/* --- Garis pada summary-title: posisi dan style seragam --- */
 .summary-title {
-  border-bottom: 2px solid #c5c5c5;
-  padding-bottom: 4px;
+  position: relative;
+  padding-bottom: 18px; /* cukup ruang untuk dua garis di bawah text */
   margin-bottom: 6px;
   font-weight: 700;
   color: #2176c1;
   font-size: 1.1em;
-  position: relative;
+  text-align: center;
+  line-height: 1.2;
 }
+
+/* Garis abu-abu (bawah, panjang) */
+.summary-title::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 6px; /* semua card sama */
+  width: 48px;
+  height: 3px;
+  border-radius: 2px;
+  background: #c5c5c5;
+  z-index: 1;
+}
+
+/* Garis warna (atas, pendek, overlay di tengah garis abu) */
 .summary-title::after {
   content: "";
-  display: block;
-  margin: 0 auto;
-  margin-top: 7px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 10px; /* semua card sama, lebih ke atas dari garis abu */
+  width: 28px;
   height: 3px;
-  width: 48px;
   border-radius: 2px;
-  background: #a2c7e7;
+  z-index: 2;
+  background: #a2c7e7; /* default, override di bawah */
 }
 .summary-card:nth-child(1) .summary-title::after { background: linear-gradient(90deg, #5ea3f8, #3fc1c9);}
 .summary-card:nth-child(2) .summary-title::after { background: linear-gradient(90deg, #38b2ac, #5ea3f8);}
@@ -128,6 +149,7 @@ body {
 .summary-card:nth-child(4) .summary-title::after { background: linear-gradient(90deg, #fc5185, #f6c343);}
 .summary-card:nth-child(5) .summary-title::after { background: linear-gradient(90deg, #a259f7, #3fc1c9);}
 .summary-card:nth-child(6) .summary-title::after { background: linear-gradient(90deg, #2176c1, #fc5185);}
+
 .summary-value {
   color: #14b99a;
   font-size: 2em;
