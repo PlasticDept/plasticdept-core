@@ -1,8 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
   const table = $("#containerTable").DataTable({
-    order: [[12, 'asc']] // kolom ke-12 (index ke-11) = "Time In"
+    order: [[8, 'asc']] // "Time In" sekarang di index ke-8
   });
-  
 
   // Konfigurasi Firebase
   const firebaseConfig = {
@@ -36,32 +35,33 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!dateStr) return "";
     const parts = dateStr.split("/");
     if (parts.length !== 3) return dateStr;
-  
+
     const day = parseInt(parts[0], 10);
     const month = parseInt(parts[1], 10) - 1;
     const year = parseInt(parts[2], 10);
-  
+
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  
+
     const shortYear = year.toString().slice(-2);
     return `${day}-${monthNames[month]}-${shortYear}`;
   }
-  
-  
+
+  // Tentukan Container Type berdasarkan PACKAGE atau logic lain sesuai kebutuhan
+  function getContainerType(row) {
+    // Contoh rule: PALLETIZE jika PACKAGE mengandung PALLET, selain itu NON PALLETIZE
+    const pkg = (row["PACKAGE"] || "").toUpperCase();
+    if (pkg.includes("PALLET")) return "PALLETIZE";
+    if (pkg.includes("BAG")) return "NON PALLETIZE";
+    // atau rule lain sesuai kebutuhan data kamu
+    return "";
+  }
 
   function renderRow(row, index, id) {
     if (!row || !row["FEET"] || !row["PACKAGE"]) return "";
 
     const feet = row["FEET"].trim().toUpperCase();
-    const packageVal = row["PACKAGE"].trim().toUpperCase();
-    let np20 = "", np40 = "", p20 = "", p40 = "";
-    const isBag = packageVal.includes("BAG");
-
-    if (feet === '1X20' && isBag) np20 = '✔';
-    else if (feet === '1X40' && isBag) np40 = '✔';
-    else if (feet === '1X20' && !isBag) p20 = '✔';
-    else if (feet === '1X40' && !isBag) p40 = '✔';
+    const containerType = getContainerType(row);
 
     const timeIn = row["TIME IN"] === "-" ? "" : (row["TIME IN"] || "");
     const unloadingTime = row["UNLOADING TIME"] === "-" ? "" : (row["UNLOADING TIME"] || "");
@@ -73,10 +73,7 @@ document.addEventListener("DOMContentLoaded", function () {
         <td>${index + 1}</td>
         <td>${row["NO CONTAINER"] || ""}</td>
         <td>${feet}</td>
-        <td>${np20}</td>
-        <td>${np40}</td>
-        <td>${p20}</td>
-        <td>${p40}</td>
+        <td>${containerType}</td>
         <td>${row["INVOICE NO"] || ""}</td>
         <td>${row["PACKAGE"] || ""}</td>
         <td>${formatDate(row["INCOMING PLAN"])}</td>
@@ -91,29 +88,27 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function loadFirebaseData() {
-  database.ref("incoming_schedule").on("value", snapshot => {
-    const data = snapshot.val() || {};
-    table.clear();
+    database.ref("incoming_schedule").on("value", snapshot => {
+      const data = snapshot.val() || {};
+      table.clear();
 
-    let index = 0;
-    for (const id in data) {
-      const row = data[id];
-      const html = renderRow(row, index++, id);
-      if (html) table.row.add($(html));
-    }
+      let index = 0;
+      for (const id in data) {
+        const row = data[id];
+        const html = renderRow(row, index++, id);
+        if (html) table.row.add($(html));
+      }
 
-    table.draw();
-    table.on('order.dt search.dt', function () {
-      table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
-        cell.innerHTML = i + 1;
-      });
-    }).draw();
-  }, error => {
-    console.error("❌ Gagal ambil data realtime dari Firebase:", error);
-  });
-}
-
-
+      table.draw();
+      table.on('order.dt search.dt', function () {
+        table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+          cell.innerHTML = i + 1;
+        });
+      }).draw();
+    }, error => {
+      console.error("❌ Gagal ambil data realtime dari Firebase:", error);
+    });
+  }
 
   // Load data dari Firebase saat halaman siap
   loadFirebaseData();
