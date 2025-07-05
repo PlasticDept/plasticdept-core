@@ -12,10 +12,10 @@ let firebaseRecords = {};
 $(document).ready(function () {
   table = $("#containerTable").DataTable({
     destroy: true,
-    ordering: false,
-    searching: false,
-    paging: false,
-    info: false,
+    ordering: true,
+    searching: true,
+    paging: true,
+    info: true,
     scrollX: true,
     columns: [
       { title: "No" },
