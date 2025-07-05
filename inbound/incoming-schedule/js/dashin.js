@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", function () {
   const table = $("#containerTable").DataTable({
-    order: [[8, 'asc']] // "Time In" sekarang di index ke-8
+    order: [[8, 'asc']]
   });
 
   // Konfigurasi Firebase
@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
     authDomain: "inbound-d8267.firebaseapp.com",
     databaseURL: "https://inbound-d8267-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "inbound-d8267",
-    storageBucket: "inbound-d8267.firebasestorage.app",
+    storageBucket: "inbound-d8267",
     messagingSenderId: "852665126418",
     appId: "1:852665126418:web:e4f029b83995e29f3052cb"
   };
@@ -49,11 +49,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Tentukan Container Type berdasarkan PACKAGE atau logic lain sesuai kebutuhan
   function getContainerType(row) {
-    // Contoh rule: PALLETIZE jika PACKAGE mengandung PALLET, selain itu NON PALLETIZE
     const pkg = (row["PACKAGE"] || "").toUpperCase();
     if (pkg.includes("PALLET")) return "PALLETIZE";
     if (pkg.includes("BAG")) return "NON PALLETIZE";
-    // atau rule lain sesuai kebutuhan data kamu
     return "";
   }
 
@@ -87,6 +85,39 @@ document.addEventListener("DOMContentLoaded", function () {
     `;
   }
 
+  function updateSummaryCards(data) {
+    let total = 0;
+    let sudahDatang = 0;
+    let belumDatang = 0;
+    let sudahDiproses = 0;
+    let belumDiproses = 0;
+
+    for (const id in data) {
+      const row = data[id];
+      if (!row || !row["FEET"] || !row["PACKAGE"]) continue;
+      total += 1;
+
+      // Sudah datang: ada TIME IN yang valid
+      const timeIn = row["TIME IN"] === "-" ? "" : (row["TIME IN"] || "");
+      const unloadingTime = row["UNLOADING TIME"] === "-" ? "" : (row["UNLOADING TIME"] || "");
+      const finish = row["FINISH"] === "-" ? "" : (row["FINISH"] || "");
+
+      if (timeIn) sudahDatang += 1;
+      else belumDatang += 1;
+
+      // Sudah diproses bongkar: status Finish
+      const status = getStatusProgress(timeIn, unloadingTime, finish);
+      if (status === "Finish") sudahDiproses += 1;
+      else belumDiproses += 1;
+    }
+
+    $("#totalKedatangan").text(total);
+    $("#totalSudahDatang").text(sudahDatang);
+    $("#totalBelumDatang").text(belumDatang);
+    $("#totalSudahDiproses").text(sudahDiproses);
+    $("#totalBelumDiproses").text(belumDiproses);
+  }
+
   function loadFirebaseData() {
     database.ref("incoming_schedule").on("value", snapshot => {
       const data = snapshot.val() || {};
@@ -105,6 +136,8 @@ document.addEventListener("DOMContentLoaded", function () {
           cell.innerHTML = i + 1;
         });
       }).draw();
+
+      updateSummaryCards(data);
     }, error => {
       console.error("❌ Gagal ambil data realtime dari Firebase:", error);
     });
@@ -112,7 +145,4 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Load data dari Firebase saat halaman siap
   loadFirebaseData();
-
-  // Optional: auto-refresh data setiap 30 detik
-  // setInterval(loadFirebaseData, 30000);
 });

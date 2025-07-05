@@ -9,8 +9,34 @@
 </head>
 <body>
   <h1 class="dashboard-title">📦Schedule Incoming Container Monitoring</h1>
-  <div class="digital-clock" id="digitalClock"></div>
-  <div class="date-display" id="dateDisplay"></div>
+
+  <!-- Card Summary Container -->
+  <div class="summary-cards-container">
+    <div class="summary-card total">
+      <div class="summary-card-title">Total Containers</div>
+      <div class="summary-card-value" id="totalKedatangan">0</div>
+    </div>
+    <div class="summary-card arrived">
+      <div class="summary-card-title">Arrived</div>
+      <div class="summary-card-value" id="totalSudahDatang">0</div>
+    </div>
+    <div class="summary-card belum-arrived">
+      <div class="summary-card-title">Not Yet Arrived</div>
+      <div class="summary-card-value" id="totalBelumDatang">0</div>
+    </div>
+    <div class="summary-card processed">
+      <div class="summary-card-title">Unloading Completed</div>
+      <div class="summary-card-value" id="totalSudahDiproses">0</div>
+    </div>
+    <div class="summary-card belum-processed">
+      <div class="summary-card-title">Unloading Not Yet</div>
+      <div class="summary-card-value" id="totalBelumDiproses">0</div>
+    </div>
+  </div>
+
+  <!-- Jam digital & tanggal dihilangkan sesuai permintaan -->
+  <!--<div class="digital-clock" id="digitalClock"></div>
+  <div class="date-display" id="dateDisplay"></div>-->
 
   <!-- Upload section disembunyikan -->
   <div class="upload-section" style="display: none;">
@@ -52,22 +78,5 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <script defer src="js/dashin.js"></script>
-  <script>
-    function updateClock() {
-      const now = new Date();
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const seconds = String(now.getSeconds()).padStart(2, '0');
-      const timeString = `${hours}:${minutes}:${seconds}`;
-      document.getElementById('digitalClock').textContent = timeString;
-
-      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      const dateString = now.toLocaleDateString('en-US', options);
-      document.getElementById('dateDisplay').textContent = dateString;
-    }
-
-    setInterval(updateClock, 1000);
-    updateClock(); // initial call
-  </script>
 </body>
 </html>
