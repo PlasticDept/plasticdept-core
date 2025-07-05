@@ -126,6 +126,9 @@ function loadFirebaseData() {
       this.data()[0] = rowIdx + 1;
       this.invalidate();
     });
+
+    // After draw, sync header widths to body
+    syncHeaderWidths();
   }, error => {
     console.error("❌ Gagal ambil data realtime dari Firebase:", error);
   });
@@ -279,3 +282,16 @@ $('#containerTable tbody').on('keydown', '.editable', function (e) {
     $(this).blur();     // trigger blur = keluar mode edit & update firebase
   }
 });
+
+// --- Header-body width sync function untuk tabel split ---
+function syncHeaderWidths() {
+  const $headerCols = document.querySelectorAll('.data-header-table thead th');
+  const $bodyCols = document.querySelectorAll('#containerTable tbody tr:first-child td');
+  if ($bodyCols.length === $headerCols.length) {
+    $bodyCols.forEach(function(td, i) {
+      $headerCols[i].style.width = td.offsetWidth + 'px';
+    });
+  }
+}
+// Sync setelah window resize juga
+window.addEventListener('resize', syncHeaderWidths);

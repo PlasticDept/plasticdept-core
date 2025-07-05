@@ -105,7 +105,8 @@ h1 {
   margin-bottom: -1px;
 }
 
-.data-header-table {
+.data-header-table,
+#containerTable {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
@@ -135,6 +136,7 @@ h1 {
 table.dataTable {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 table.dataTable tbody td {
