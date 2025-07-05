@@ -75,9 +75,9 @@ function renderRowArray(row, index, id) {
   const invoiceNo = row["INVOICE NO"] || row["Invoice No"] || "";
   const packageVal = row["PACKAGE"] || row["Package"] || "";
   const incomingPlan = row["INCOMING PLAN"] || row["Incoming Plan"] || row["Incoming Date"] || "";
-  const timeIn = row["TIME IN"] || row["Time In"] || "";
-  const unloadingTime = row["UNLOADING TIME"] || row["Unloading Time"] || "";
-  const finish = row["FINISH"] || row["Finish"] || "";
+  const timeIn = (row["TIME IN"] && row["TIME IN"].trim() === "-") ? "" : (row["TIME IN"] || "");
+  const unloadingTime = (row["UNLOADING TIME"] && row["UNLOADING TIME"].trim() === "-") ? "" : (row["UNLOADING TIME"] || "");
+  const finish = (row["FINISH"] && row["FINISH"].trim() === "-") ? "" : (row["FINISH"] || "");
 
   const containerType = getContainerType(row);
   const status = getStatusProgress(timeIn, unloadingTime, finish);
