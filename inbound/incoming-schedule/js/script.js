@@ -37,7 +37,7 @@ function getStatusProgress(timeIn, unloadingTime, finish) {
   timeIn = (timeIn || "").trim();
   unloadingTime = (unloadingTime || "").trim();
   finish = (finish || "").trim();
-  if ([timeIn, unloadingTime, finish].some(val => val === "0")) return "Reschedule";
+  if ([timeIn, unloadingTime, finish].every(val => val === "0")) return "Reschedule";
   if ([timeIn, unloadingTime, finish].every(val => val === "")) return "Waiting";
   if ([timeIn, unloadingTime, finish].every(val => val === "-")) return "Reschedule";
   if (timeIn && (!unloadingTime || unloadingTime === "-")) return "Outstanding";
