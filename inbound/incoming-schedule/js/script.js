@@ -1,12 +1,32 @@
 import { db } from './config.js';
+import {ref, onValue, remove,update, set} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-
-const table = $("#containerTable").DataTable();
+let table;
 const csvInput = document.getElementById("csvFile");
 const uploadBtn = document.getElementById("uploadBtn");
 const uploadStatus = document.getElementById("uploadStatus");
 let selectedFile = null;
-let firebaseRecords = {}; // mirip airtableRecords sebelumnya
+let firebaseRecords = {};
+
+$(document).ready(function () {
+  table = $("#containerTable").DataTable({
+    destroy: true,
+    columns: [
+      { title: "No" },
+      { title: "Container No" },
+      { title: "Feet" },
+      { title: "Container Type" },
+      { title: "Invoice No" },
+      { title: "Package" },
+      { title: "Incoming Date" },
+      { title: "Status" },
+      { title: "Time In" },
+      { title: "Unloading Time" },
+      { title: "Finish" },
+    ]
+  });
+  loadFirebaseData();
+});
 
 function showStatus(message, type = "info") {
   uploadStatus.textContent = message;
@@ -42,120 +62,134 @@ function formatDate(dateStr) {
   return `${day}-${monthNames[month]}-${shortYear}`;
 }
 
-function renderRow(row, index, id) {
-  const feet = row["FEET"]?.trim().toUpperCase();
-  const packageVal = row["PACKAGE"]?.trim().toUpperCase();
-  let np20 = "", np40 = "", p20 = "", p40 = "";
-  const isBag = packageVal.includes("BAG");
+function getContainerType(row) {
+  const pkg = (row["PACKAGE"] || row["Package"] || "").toUpperCase();
+  if (pkg.includes("BAG")) return "NON PALLETIZE";
+  if (pkg) return "PALLETIZE";
+  return "";
+}
 
-  if (feet === '1X20' && isBag) np20 = '✔';
-  else if (feet === '1X40' && isBag) np40 = '✔';
-  else if (feet === '1X20' && !isBag) p20 = '✔';
-  else if (feet === '1X40' && !isBag) p40 = '✔';
+function renderRowArray(row, index, id) {
+  const feet = row["FEET"] || row["Feet"] || "";
+  const containerNo = row["NO CONTAINER"] || row["No Container"] || row["Container No"] || "";
+  const invoiceNo = row["INVOICE NO"] || row["Invoice No"] || "";
+  const packageVal = row["PACKAGE"] || row["Package"] || "";
+  const incomingPlan = row["INCOMING PLAN"] || row["Incoming Plan"] || row["Incoming Date"] || "";
+  const timeIn = row["TIME IN"] || row["Time In"] || "";
+  const unloadingTime = row["UNLOADING TIME"] || row["Unloading Time"] || "";
+  const finish = row["FINISH"] || row["Finish"] || "";
 
-  const timeIn = row["TIME IN"] || "";
-  const unloadingTime = row["UNLOADING TIME"] || "";
-  const finish = row["FINISH"] || "";
+  const containerType = getContainerType(row);
   const status = getStatusProgress(timeIn, unloadingTime, finish);
 
-  return `
-    <tr data-id="${id}">
-      <td></td>
-      <td>${row["NO CONTAINER"] || ""}</td>
-      <td>${feet}</td>
-      <td>${np20}</td>
-      <td>${np40}</td>
-      <td>${p20}</td>
-      <td>${p40}</td>
-      <td>${row["INVOICE NO"] || ""}</td>
-      <td>${row["PACKAGE"] || ""}</td>
-      <td>${formatDate(row["INCOMING PLAN"])}</td>
-      <td class="status-progress"><span class="label label-${status.toLowerCase()}">${status}</span></td>
-      <td contenteditable class="editable time-in">${timeIn}</td>
-      <td contenteditable class="editable unloading-time">${unloadingTime}</td>
-      <td contenteditable class="editable finish">${finish}</td>
-    </tr>`;
+  return [
+    "", // No (autonumber)
+    containerNo,
+    feet,
+    containerType,
+    invoiceNo,
+    packageVal,
+    formatDate(incomingPlan),
+    `<span class="label label-${status.toLowerCase()}">${status}</span>`,
+    `<span contenteditable class="editable time-in">${timeIn}</span>`,
+    `<span contenteditable class="editable unloading-time">${unloadingTime}</span>`,
+    `<span contenteditable class="editable finish">${finish}</span>`
+  ];
 }
 
 function loadFirebaseData() {
-  db.ref("incoming_schedule").on("value", snapshot => {
+  const dbRef = ref(db, "incoming_schedule");
+  onValue(dbRef, (snapshot) => {
     const data = snapshot.val() || {};
-    table.clear();
+    table.clear().draw();
 
     let index = 0;
+    firebaseRecords = {};
     for (const id in data) {
       const row = data[id];
-      const html = renderRow(row, index++, id);
-      if (html) table.row.add($(html));
+      firebaseRecords[id] = row;
+      const arr = renderRowArray(row, index++, id);
+      arr._firebaseid = id;
+      table.row.add(arr);
     }
-
     table.draw();
-    table.on('order.dt search.dt', function () {
-      table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
-        cell.innerHTML = i + 1;
-      });
-    }).draw();
+
+    table.rows().every(function (rowIdx) {
+      this.data()[0] = rowIdx + 1;
+      this.invalidate();
+    });
   }, error => {
     console.error("❌ Gagal ambil data realtime dari Firebase:", error);
   });
 }
 
-
 function updateFirebaseField(recordId, timeInRaw, unloadingTimeRaw, finishRaw) {
   const timeIn = (timeInRaw || "-").trim();
   const unloadingTime = (unloadingTimeRaw || "-").trim();
   const finish = (finishRaw || "-").trim();
-  const status = getStatusProgress(timeIn, unloadingTime, finish);
-
-  db.ref(`incoming_schedule/${recordId}`).update({
+  const dbRef = ref(db, `incoming_schedule/${recordId}`);
+  update(dbRef, {
     "TIME IN": timeIn,
     "UNLOADING TIME": unloadingTime,
     "FINISH": finish
-  }).then(() => {
-    const row = document.querySelector(`tr[data-id='${recordId}']`);
-    if (row) {
-      row.querySelector(".status-progress").innerHTML = `<span class="label label-${status.toLowerCase()}">${status}</span>`;
-    }
   });
 }
 
 function deleteAllFirebaseRecords() {
-  return db.ref("incoming_schedule").remove();
+  const dbRef = ref(db, "incoming_schedule");
+  return remove(dbRef);
 }
 
 function uploadToFirebase(records) {
   const updates = {};
   records.forEach((row, index) => {
-    const id = row["NO CONTAINER"]?.trim() || `id_${Date.now()}_${index}`;
+    const id = (row["NO CONTAINER"] || row["No Container"] || row["Container No"] || `id_${Date.now()}_${index}`).toString().replace(/\./g, "_");
     updates[id] = row;
   });
-  return db.ref("incoming_schedule").update(updates);
+  const dbRef = ref(db, "incoming_schedule");
+  return update(dbRef, updates);
 }
 
-function parseAndUploadCSV(file) {
-  showStatus("⏳ Sedang memproses file CSV...", "info");
-  Papa.parse(file, {
-    header: true,
-    skipEmptyLines: true,
-    complete: async function (results) {
-      const rows = results.data;
-      try {
-        showStatus("🗑 Menghapus data lama dari Database...", "info");
-        await deleteAllFirebaseRecords();
+function parseAndUploadFile(file) {
+  const fileName = file.name.toLowerCase();
+  showStatus("⏳ Memproses file...", "info");
 
-        showStatus("📤 Mengupload data baru ke Database...", "info");
-        await uploadToFirebase(rows);
-
-        showStatus("✅ Upload selesai!", "success");
-        document.getElementById("csvFile").value = "";
-        setTimeout(() => showStatus("", ""), 3000);
-        loadFirebaseData();
-      } catch (err) {
-        console.error(err);
-        showStatus("❌ Gagal upload data!", "error");
+  if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+    const reader = new FileReader();
+    reader.onload = async function (e) {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+      await afterFileParsed(rows);
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async function (results) {
+        await afterFileParsed(results.data);
       }
-    }
-  });
+    });
+  }
+}
+
+async function afterFileParsed(rows) {
+  try {
+    showStatus("🗑 Menghapus data lama dari Database...", "info");
+    await deleteAllFirebaseRecords();
+    showStatus("📤 Mengupload data baru ke Database...", "info");
+    await uploadToFirebase(rows);
+    showStatus("✅ Upload selesai!", "success");
+    document.getElementById("csvFile").value = "";
+    setTimeout(() => showStatus("", ""), 3000);
+    loadFirebaseData();
+  } catch (err) {
+    console.error(err);
+    showStatus("❌ Gagal upload data!", "error");
+  }
 }
 
 csvInput.addEventListener("change", function (e) {
@@ -165,33 +199,33 @@ csvInput.addEventListener("change", function (e) {
 
 uploadBtn.addEventListener("click", function () {
   if (!selectedFile) {
-    showStatus("⚠️ Silakan pilih file CSV terlebih dahulu!", "error");
+    showStatus("⚠️ Silakan pilih file CSV atau Excel terlebih dahulu!", "error");
     return;
   }
-  parseAndUploadCSV(selectedFile);
+  parseAndUploadFile(selectedFile);
 });
 
-document.addEventListener("blur", function (e) {
-  if (e.target.classList.contains("editable")) {
-    const row = e.target.closest("tr");
-    const recordId = row?.dataset?.id;
-    if (!recordId) return;
-
-    const timeIn = row.querySelector(".time-in").textContent.trim() || "-";
-    const unloading = row.querySelector(".unloading-time").textContent.trim() || "-";
-    const finish = row.querySelector(".finish").textContent.trim() || "-";
-
-    const prevData = firebaseRecords[recordId] || {};
-    const isChanged = (
-      (prevData["TIME IN"] || "-") !== timeIn ||
-      (prevData["UNLOADING TIME"] || "-") !== unloading ||
-      (prevData["FINISH"] || "-") !== finish
-    );
-
-    if (isChanged) {
-      updateFirebaseField(recordId, timeIn, unloading, finish);
+$('#containerTable tbody').on('blur', '.editable', function () {
+  const cell = $(this);
+  const td = cell.closest('td');
+  const rowNode = td.closest('tr');
+  const rowIdx = table.row(rowNode).index();
+  const data = table.row(rowNode).data();
+  const containerNo = data[1];
+  let recordId = null;
+  for (const id in firebaseRecords) {
+    if (
+      firebaseRecords[id]["NO CONTAINER"] === containerNo ||
+      firebaseRecords[id]["No Container"] === containerNo ||
+      firebaseRecords[id]["Container No"] === containerNo
+    ) {
+      recordId = id;
+      break;
     }
   }
-}, true);
-
-loadFirebaseData();
+  if (!recordId) return;
+  const timeIn = $(rowNode).find('.time-in').text();
+  const unloading = $(rowNode).find('.unloading-time').text();
+  const finish = $(rowNode).find('.finish').text();
+  updateFirebaseField(recordId, timeIn, unloading, finish);
+});

@@ -13,7 +13,7 @@
 
     <div class="upload-section">
       <label class="upload-label" for="csvFile">Upload data schedule incoming</label>
-      <input type="file" id="csvFile" accept=".csv" />
+      <input type="file" id="csvFile" accept=".csv, .xlsx, .xls" />
       <button id="uploadBtn">Upload</button>
       <div id="uploadStatus"></div>
     </div>
@@ -22,24 +22,17 @@
       <table id="containerTable" class="display nowrap" style="width:100%">
         <thead>
           <tr>
-            <th rowspan="2">No</th>
-            <th rowspan="2">Container No</th>
-            <th rowspan="2">Feet</th>
-            <th colspan="2">NON PALLETIZE</th>
-            <th colspan="2">PALLETIZE</th>
-            <th rowspan="2">Invoice No</th>
-            <th rowspan="2">Package</th>
-            <th rowspan="2">Incoming Date</th>
-            <th rowspan="2">Status</th>
-            <th rowspan="2">Time In</th>
-            <th rowspan="2">Unloading Time</th>
-            <th rowspan="2">Finish</th>
-          </tr>
-          <tr>
-            <th>20"</th>
-            <th>40"</th>
-            <th>20"</th>
-            <th>40"</th>
+            <th>No</th>
+            <th>Container No</th>
+            <th>Feet</th>
+            <th>Container Type</th>
+            <th>Invoice No</th>
+            <th>Package</th>
+            <th>Incoming Date</th>
+            <th>Status</th>
+            <th>Time In</th>
+            <th>Unloading Time</th>
+            <th>Finish</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -51,11 +44,11 @@
   <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  
   <!-- Firebase App (wajib) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
   <script type="module" src="js/script.js"></script>
 </body>
 </html>
