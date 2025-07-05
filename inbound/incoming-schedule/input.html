@@ -29,8 +29,8 @@
     </div>
     <div id="uploadStatus"></div>
 
-    <div class="table-header-wrapper">
-      <table class="data-header-table" style="width:100%; table-layout:fixed;">
+    <div class="table-wrapper">
+      <table id="containerTable" class="display nowrap" style="width:100%">
         <thead>
           <tr>
             <th>No</th>
@@ -46,10 +46,6 @@
             <th>Finish</th>
           </tr>
         </thead>
-      </table>
-    </div>
-    <div class="table-wrapper">
-      <table id="containerTable" class="display nowrap" style="width:100%; table-layout:fixed;">
         <tbody></tbody>
       </table>
     </div>
@@ -65,24 +61,5 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script type="module" src="js/script.js"></script>
-  <script>
-    // Sync header and body column widths (agar header dan body tabel selalu sejajar)
-    function syncHeaderWidths() {
-      const $headerCols = document.querySelectorAll('.data-header-table thead th');
-      const $bodyCols = document.querySelectorAll('#containerTable tbody tr:first-child td');
-      if ($bodyCols.length === $headerCols.length) {
-        $bodyCols.forEach(function(td, i) {
-          // gunakan offsetWidth agar padding+border dihitung
-          $headerCols[i].style.width = td.offsetWidth + 'px';
-        });
-      }
-    }
-
-    // Sync widths after table draw and window resize
-    $(document).on('draw.dt', function() {
-      syncHeaderWidths();
-    });
-    window.addEventListener('resize', syncHeaderWidths);
-  </script>
 </body>
 </html>

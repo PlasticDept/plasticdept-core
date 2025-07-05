@@ -99,20 +99,18 @@ h1 {
 .status.success { color: green; }
 .status.error { color: red; }
 
-/* Table Header Styling for Split Header */
-.table-header-wrapper {
+.table-wrapper {
   overflow-x: auto;
-  margin-bottom: -1px;
 }
 
-.data-header-table,
-#containerTable {
+/* DataTable Styling */
+table.dataTable {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
-.data-header-table thead th {
+table.dataTable thead th {
   background-color: #1976d2;
   color: white;
   text-align: center;
@@ -121,22 +119,6 @@ h1 {
   padding: 8px;
   font-weight: bold;
   font-size: 15px;
-}
-
-/* Hide thead in DataTables table if only tbody is used */
-#containerTable thead {
-  display: none;
-}
-
-.table-wrapper {
-  overflow-x: auto;
-}
-
-/* Main DataTable Body Styling */
-table.dataTable {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
 }
 
 table.dataTable tbody td {
@@ -207,7 +189,7 @@ table.dataTable tbody tr:hover {
   .container {
     padding: 5px;
   }
-  .data-header-table, .table-wrapper, table.dataTable {
+  table.dataTable {
     font-size: 12px;
   }
 }
