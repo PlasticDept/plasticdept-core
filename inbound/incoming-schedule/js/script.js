@@ -151,20 +151,26 @@ function uploadToFirebase(records) {
 }
 
 function excelDateToString(serial, format="DD/MM/YYYY") {
-  if (!serial || isNaN(serial)) return serial;
-  // Excel's epoch starts at 1900-01-01, but there's an off-by-one bug, so subtract 1
+  if (!serial || isNaN(serial)) return "";
   const utc_days = Math.floor(serial - 25569);
-  const utc_value = utc_days * 86400; // seconds
+  const utc_value = utc_days * 86400;
   const date_info = new Date(utc_value * 1000);
-
-  // Optionally, format to your desired style
   const day = String(date_info.getDate()).padStart(2, "0");
   const month = String(date_info.getMonth() + 1).padStart(2, "0");
   const year = date_info.getFullYear();
-
   if (format === "DD/MM/YYYY") return `${day}/${month}/${year}`;
   if (format === "YYYY-MM-DD") return `${year}-${month}-${day}`;
-  return `${day}/${month}/${year}`; // default
+  return `${day}/${month}/${year}`;
+}
+
+function normalizeDateField(dateVal) {
+  if (!dateVal) return "";
+  // Jika angka (serial excel), konversi
+  if (typeof dateVal === "number") {
+    return excelDateToString(dateVal); // Sudah ada fungsi ini
+  }
+  // Jika string, tetap kembalikan stringnya
+  return dateVal;
 }
 
 function parseAndUploadFile(file) {
@@ -179,7 +185,15 @@ function parseAndUploadFile(file) {
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
       const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-      await afterFileParsed(rows);
+      // --- FIX: Normalisasi semua field tanggal ---
+      const fixedRows = rows.map(row => {
+        if (row["INCOMING PLAN"]) {
+          row["INCOMING PLAN"] = normalizeDateField(row["INCOMING PLAN"]);
+        }
+        // Tambahkan field lain jika ada kolom tanggal lain
+        return row;
+      });
+      await afterFileParsed(fixedRows);
     };
     reader.readAsArrayBuffer(file);
   } else {
