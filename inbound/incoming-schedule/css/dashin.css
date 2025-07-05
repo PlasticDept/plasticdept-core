@@ -170,7 +170,7 @@ table.dataTable tbody td {
   display: none !important;
 }
 
-/* === CARD SUMMARY STYLE (NEW, SLIMMER, SINGLE ROW) === */
+/* === CARD SUMMARY STYLE (SLIM, SINGLE ROW, TOP BAR COLOR) === */
 .summary-cards-container {
   display: flex;
   flex-wrap: nowrap;
@@ -183,24 +183,36 @@ table.dataTable tbody td {
 
 .summary-card {
   background: #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-  border-radius: 8px;
-  padding: 10px 16px;
-  min-width: 120px;
+  box-shadow: 0 1.5px 6px rgba(0,0,0,0.10);
+  border-radius: 14px;
+  padding: 10px 16px 12px 16px;
+  min-width: 130px;
   max-width: 170px;
   display: flex;
   flex-direction: column;
   align-items: center;
   transition: box-shadow 0.2s;
-  border-left: 4px solid #1976d2;
+  position: relative;
   box-sizing: border-box;
+  margin-bottom: 0;
+  margin-top: 0;
 }
 
-.summary-card.total        { border-color: #1976d2; }
-.summary-card.arrived      { border-color: #4caf50; }
-.summary-card.belum-arrived{ border-color: #f44336; }
-.summary-card.processed    { border-color: #03a9f4; }
-.summary-card.belum-processed { border-color: #ff9800; }
+.summary-card::before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 0; left: 8px; right: 8px;
+  height: 7px;
+  border-radius: 14px 14px 0 0;
+  background: #1976d2; /* default, overridden below */
+}
+
+.summary-card.total::before        { background: #1976d2; }
+.summary-card.arrived::before      { background: #4caf50; }
+.summary-card.belum-arrived::before{ background: #f44336; }
+.summary-card.processed::before    { background: #03a9f4; }
+.summary-card.belum-processed::before { background: #ff9800; }
 
 .summary-card-title {
   font-size: 13px;
@@ -209,8 +221,8 @@ table.dataTable tbody td {
   margin-bottom: 2px;
   text-align: center;
   line-height: 1.1;
+  margin-top: 10px;
 }
-
 .summary-card-value {
   font-size: 26px;
   font-weight: 800;
@@ -229,11 +241,15 @@ table.dataTable tbody td {
   .summary-card {
     min-width: 95px;
     max-width: 120px;
-    padding: 8px 5px;
-    border-radius: 6px;
+    padding: 8px 5px 10px 5px;
+    border-radius: 10px;
+  }
+  .summary-card::before {
+    left: 4px; right: 4px; height: 5px; border-radius: 8px 8px 0 0;
   }
   .summary-card-title {
     font-size: 11px;
+    margin-top: 8px;
   }
   .summary-card-value {
     font-size: 18px;
@@ -247,11 +263,15 @@ table.dataTable tbody td {
   .summary-card {
     min-width: 75px;
     max-width: 100px;
-    padding: 6px 3px;
-    border-radius: 5px;
+    padding: 6px 3px 8px 3px;
+    border-radius: 7px;
+  }
+  .summary-card::before {
+    left: 2px; right: 2px; height: 4px; border-radius: 6px 6px 0 0;
   }
   .summary-card-title {
     font-size: 9px;
+    margin-top: 6px;
   }
   .summary-card-value {
     font-size: 14px;
