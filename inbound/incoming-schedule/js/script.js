@@ -150,6 +150,23 @@ function uploadToFirebase(records) {
   return update(dbRef, updates);
 }
 
+function excelDateToString(serial, format="DD/MM/YYYY") {
+  if (!serial || isNaN(serial)) return serial;
+  // Excel's epoch starts at 1900-01-01, but there's an off-by-one bug, so subtract 1
+  const utc_days = Math.floor(serial - 25569);
+  const utc_value = utc_days * 86400; // seconds
+  const date_info = new Date(utc_value * 1000);
+
+  // Optionally, format to your desired style
+  const day = String(date_info.getDate()).padStart(2, "0");
+  const month = String(date_info.getMonth() + 1).padStart(2, "0");
+  const year = date_info.getFullYear();
+
+  if (format === "DD/MM/YYYY") return `${day}/${month}/${year}`;
+  if (format === "YYYY-MM-DD") return `${year}-${month}-${day}`;
+  return `${day}/${month}/${year}`; // default
+}
+
 function parseAndUploadFile(file) {
   const fileName = file.name.toLowerCase();
   showStatus("⏳ Memproses file...", "info");
