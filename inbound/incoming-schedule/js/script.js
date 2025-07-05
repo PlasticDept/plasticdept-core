@@ -260,3 +260,10 @@ $('#containerTable tbody').on('blur', '.editable', function () {
   const finish = $(rowNode).find('.finish').text();
   updateFirebaseField(recordId, timeIn, unloading, finish);
 });
+
+$('#containerTable tbody').on('keydown', '.editable', function (e) {
+  if (e.key === 'Enter') {
+    e.preventDefault(); // cegah baris baru
+    $(this).blur();     // trigger blur = keluar mode edit & update firebase
+  }
+});
