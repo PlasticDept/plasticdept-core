@@ -12,14 +12,21 @@
     <h1>Incoming Container Monitoring</h1>
 
     <div class="upload-section">
+      <label class="upload-label" for="dataType">Select Data Type</label>
+      <select id="dataType" style="margin-bottom:12px;">
+        <option value="daily">Daily Data Incoming</option>
+        <option value="monthly">Monthly Data Incoming</option>
+      </select>
+      <br>
       <label class="upload-label" for="csvFile">Upload data schedule incoming</label>
       <input type="file" id="csvFile" accept=".csv, .xlsx, .xls" />
       <button id="uploadBtn">Upload</button>
       <div id="uploadStatus"></div>
     </div>
 
-    <div class="table-wrapper">
-      <table id="containerTable" class="display nowrap" style="width:100%">
+    <!-- Pisahkan header & tabel, style bisa diatur di css/style.css -->
+    <div class="table-header-wrapper">
+      <table class="data-header-table" style="width:100%">
         <thead>
           <tr>
             <th>No</th>
@@ -35,6 +42,10 @@
             <th>Finish</th>
           </tr>
         </thead>
+      </table>
+    </div>
+    <div class="table-wrapper">
+      <table id="containerTable" class="display nowrap" style="width:100%">
         <tbody></tbody>
       </table>
     </div>

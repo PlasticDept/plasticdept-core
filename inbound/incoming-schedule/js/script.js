@@ -1,16 +1,24 @@
 import { db } from './config.js';
-import {ref, onValue, remove,update, set} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+import {ref, onValue, remove, update, set} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
 let table;
 const csvInput = document.getElementById("csvFile");
 const uploadBtn = document.getElementById("uploadBtn");
 const uploadStatus = document.getElementById("uploadStatus");
+const dataType = document.getElementById("dataType");
 let selectedFile = null;
 let firebaseRecords = {};
 
+// Table header & body split: only tbody in main table, header in header table (see above)
 $(document).ready(function () {
+  // Hide table header in main table
+  $("#containerTable thead").remove();
   table = $("#containerTable").DataTable({
     destroy: true,
+    ordering: false,
+    searching: false,
+    paging: false,
+    info: false,
     columns: [
       { title: "No" },
       { title: "Container No" },
@@ -233,7 +241,11 @@ uploadBtn.addEventListener("click", function () {
     showStatus("⚠️ Silakan pilih file CSV atau Excel terlebih dahulu!", "error");
     return;
   }
-  parseAndUploadFile(selectedFile);
+  if (dataType.value === "daily") {
+    parseAndUploadFile(selectedFile);
+  } else if (dataType.value === "monthly") {
+    showStatus("🚧 Fitur upload monthly data incoming belum tersedia.", "error");
+  }
 });
 
 $('#containerTable tbody').on('blur', '.editable', function () {

@@ -16,7 +16,6 @@ body {
   box-sizing: border-box;
 }
 
-
 h1 {
   text-align: center;
   color: #333;
@@ -32,6 +31,14 @@ h1 {
   display: block;
   font-weight: bold;
   margin-bottom: 10px;
+}
+
+#dataType {
+  padding: 8px 12px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+  font-size: 15px;
 }
 
 #csvFile {
@@ -63,31 +70,49 @@ h1 {
 .status.info {
   color: #333;
 }
-
 .status.success {
   color: green;
 }
-
 .status.error {
   color: red;
 }
 
-.table-wrapper {
-  overflow-x: unset;
+/* Table Header Styling for Split Header */
+.table-header-wrapper {
+  overflow-x: auto;
+  margin-bottom: -1px;
 }
 
-
-table.dataTable {
+.data-header-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
-table.dataTable thead th {
+.data-header-table thead th {
   background-color: #1976d2;
   color: white;
   text-align: center;
   white-space: nowrap;
   border: 1px solid #e0e0e0;
+  padding: 8px;
+  font-weight: bold;
+  font-size: 15px;
+}
+
+/* Hide thead in DataTables table if only tbody is used */
+#containerTable thead {
+  display: none;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+/* Main DataTable Body Styling */
+table.dataTable {
+  width: 100%;
+  border-collapse: collapse;
 }
 
 table.dataTable tbody td {
@@ -95,6 +120,7 @@ table.dataTable tbody td {
   white-space: nowrap;
   background-color: #ffffff;
   border: 1px solid #e0e0e0;
+  padding: 8px;
 }
 
 table.dataTable tbody tr:nth-child(even) {
@@ -133,4 +159,20 @@ table.dataTable tbody tr:hover {
 
 .label-reschedule {
   background-color: #000000;
+}
+
+/* Editable cell highlight */
+.editable:focus {
+  outline: 2px solid #1976d2;
+  background: #e3f2fd;
+}
+
+/* Responsive fix for split headers and table */
+@media (max-width: 900px) {
+  .container {
+    padding: 5px;
+  }
+  .data-header-table, .table-wrapper, table.dataTable {
+    font-size: 12px;
+  }
 }
