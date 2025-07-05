@@ -213,6 +213,7 @@ table.dataTable tbody td {
 .summary-card.belum-arrived::before{ background: #f44336; }
 .summary-card.processed::before    { background: #03a9f4; }
 .summary-card.belum-processed::before { background: #ff9800; }
+.summary-card.reschedule::before   { background: #222; }
 
 .summary-card-title {
   font-size: 13px;
@@ -235,6 +236,7 @@ table.dataTable tbody td {
 .summary-card.belum-arrived .summary-card-value { color: #f44336; }
 .summary-card.processed .summary-card-value { color: #03a9f4; }
 .summary-card.belum-processed .summary-card-value { color: #ff9800; }
+.summary-card.reschedule .summary-card-value { color: #222; }
 
 /* Responsive: cards stay 1 row, shrink more on narrow screens */
 @media (max-width: 900px) {

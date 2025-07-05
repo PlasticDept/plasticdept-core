@@ -91,6 +91,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let belumDatang = 0;
     let sudahDiproses = 0;
     let belumDiproses = 0;
+    let reschedule = 0;
 
     for (const id in data) {
       const row = data[id];
@@ -105,10 +106,12 @@ document.addEventListener("DOMContentLoaded", function () {
       if (timeIn) sudahDatang += 1;
       else belumDatang += 1;
 
-      // Sudah diproses bongkar: status Finish
+      // Status
       const status = getStatusProgress(timeIn, unloadingTime, finish);
       if (status === "Finish") sudahDiproses += 1;
       else belumDiproses += 1;
+
+      if (status === "Reschedule") reschedule += 1;
     }
 
     $("#totalKedatangan").text(total);
@@ -116,6 +119,7 @@ document.addEventListener("DOMContentLoaded", function () {
     $("#totalBelumDatang").text(belumDatang);
     $("#totalSudahDiproses").text(sudahDiproses);
     $("#totalBelumDiproses").text(belumDiproses);
+    $("#totalReschedule").text(reschedule);
   }
 
   function loadFirebaseData() {
