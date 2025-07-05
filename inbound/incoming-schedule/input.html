@@ -11,7 +11,6 @@
   <div class="container">
     <h1>Incoming Container Monitoring</h1>
 
-    <!-- Flex container for dropdown + upload -->
     <div class="input-bar">
       <div class="input-left">
         <label class="upload-label" for="dataType">Select Data Type</label>
@@ -20,9 +19,11 @@
           <option value="monthly">Monthly Data Incoming</option>
         </select>
       </div>
-      <div class="input-right">
+      <div class="input-center">
         <label class="upload-label" for="csvFile">Upload data schedule incoming</label>
         <input type="file" id="csvFile" accept=".csv, .xlsx, .xls" />
+      </div>
+      <div class="input-right">
         <button id="uploadBtn">Upload</button>
       </div>
     </div>
