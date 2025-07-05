@@ -1,5 +1,5 @@
 import { db } from './config.js';
-import {ref, onValue, remove, update, set} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+import {ref, onValue, remove, update} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
 let table;
 const csvInput = document.getElementById("csvFile");

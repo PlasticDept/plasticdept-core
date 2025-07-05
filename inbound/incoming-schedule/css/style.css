@@ -22,30 +22,47 @@ h1 {
   margin-bottom: 30px;
 }
 
-.upload-section {
-  text-align: center;
+/* Flex horizontal for dropdown and upload */
+.input-bar {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 40px;
   margin-bottom: 20px;
 }
-
-.upload-label {
-  display: block;
-  font-weight: bold;
-  margin-bottom: 10px;
+.input-left,
+.input-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.input-left {
+  min-width: 210px;
+}
+.input-right input[type="file"] {
+  margin-bottom: 5px;
+}
+.input-right {
+  gap: 4px;
 }
 
 #dataType {
   padding: 8px 12px;
   border-radius: 5px;
   border: 1px solid #ccc;
-  margin-bottom: 10px;
   font-size: 15px;
+  margin-top: 2px;
+}
+.upload-label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 6px;
 }
 
 #csvFile {
   padding: 10px;
   border-radius: 5px;
   border: 1px solid #ccc;
-  margin-bottom: 10px;
 }
 
 #uploadBtn {
@@ -55,27 +72,24 @@ h1 {
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  margin-top: 5px;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 #uploadBtn:hover {
   background-color: #125aaa;
 }
 
+/* Pastikan status muncul di tengah */
 #uploadStatus {
-  margin-top: 10px;
+  margin: 0 auto 15px auto;
+  text-align: center;
   font-weight: bold;
 }
 
-.status.info {
-  color: #333;
-}
-.status.success {
-  color: green;
-}
-.status.error {
-  color: red;
-}
+.status.info { color: #333; }
+.status.success { color: green; }
+.status.error { color: red; }
 
 /* Table Header Styling for Split Header */
 .table-header-wrapper {
@@ -167,8 +181,17 @@ table.dataTable tbody tr:hover {
   background: #e3f2fd;
 }
 
-/* Responsive fix for split headers and table */
-@media (max-width: 900px) {
+/* Responsive mobile */
+@media (max-width: 700px) {
+  .input-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .input-left,
+  .input-right {
+    align-items: stretch;
+  }
   .container {
     padding: 5px;
   }
