@@ -50,8 +50,8 @@ document.addEventListener("DOMContentLoaded", function () {
   // Tentukan Container Type berdasarkan PACKAGE atau logic lain sesuai kebutuhan
   function getContainerType(row) {
     const pkg = (row["PACKAGE"] || "").toUpperCase();
-    if (pkg.includes("PALLET")) return "PALLETIZE";
     if (pkg.includes("BAG")) return "NON PALLETIZE";
+    if (pkg) return "PALLETIZE";
     return "";
   }
 
