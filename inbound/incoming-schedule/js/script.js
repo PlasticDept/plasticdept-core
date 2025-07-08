@@ -207,6 +207,7 @@ function uploadMonthlyToFirebase(records) {
     // Flexible field name
     let dateStr = row["Date"] || row["DATE"] || row["Tanggal"] || row["tanggal"] || "";
     let containerNo = row["Container Number"] || row["CONTAINER NUMBER"] || row["Container No"] || row["No Container"] || row["NO CONTAINER"] || `id_${Date.now()}_${index}`;
+    containerNo = String(containerNo).trim().replace(/[.#$/\[\]\s]/g, "_"); // <-- PATCH HERE
     let processType = row["Process Type"] || row["PROCESS TYPE"] || row["Process"] || "";
     let feet = row["Feet"] || row["FEET"] || "";
 
