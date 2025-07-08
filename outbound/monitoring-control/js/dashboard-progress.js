@@ -590,12 +590,45 @@ function showLineChartMessage(msg) {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Style
   ctx.save();
-  ctx.font = "bold 16px Arial, sans-serif";
-  ctx.fillStyle = "#666";
+  const fontSize = 16;
+  const fontFamily = "Arial, sans-serif";
+  ctx.font = `bold ${fontSize}px ${fontFamily}`;
+  ctx.fillStyle = "#888";
   ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(msg, canvas.width / 2, canvas.height / 2);
+  ctx.textBaseline = "top"; // untuk stacking baris
+  const maxWidth = canvas.width * 0.9; // padding 5% kiri/kanan
+
+  // Word wrap utility
+  function wrapText(text, x, y, maxWidth, lineHeight) {
+    const words = text.split(' ');
+    let line = '';
+    let lines = [];
+    for (let n = 0; n < words.length; n++) {
+      let testLine = line + words[n] + ' ';
+      let metrics = ctx.measureText(testLine);
+      let testWidth = metrics.width;
+      if (testWidth > maxWidth && n > 0) {
+        lines.push(line);
+        line = words[n] + ' ';
+      } else {
+        line = testLine;
+      }
+    }
+    lines.push(line);
+    // Center vertically
+    const totalHeight = lines.length * lineHeight;
+    let startY = y - totalHeight / 2;
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i].trim(), x, startY + i * lineHeight);
+    }
+  }
+
+  const lineHeight = fontSize * 1.4;
+  wrapText(msg, canvas.width / 2, canvas.height / 2, maxWidth, lineHeight);
+
   ctx.restore();
 }
 
