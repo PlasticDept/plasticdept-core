@@ -584,16 +584,39 @@ function getHourRange(shiftType) {
   }
 }
 
+// Tambahan: fungsi untuk menampilkan pesan ramah di chart area
+function showLineChartMessage(msg) {
+  const canvas = document.getElementById("lineChartOutbound");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.font = "bold 16px Arial, sans-serif";
+  ctx.fillStyle = "#666";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(msg, canvas.width / 2, canvas.height / 2);
+  ctx.restore();
+}
+
 // --- Fungsi utama render Line Chart Outbound ---
 function renderLineChartOutbound(jobs, shiftType, manPowerTotal) {
+  // --- Validasi manpower
+  if (!manPowerTotal || isNaN(manPowerTotal) || manPowerTotal <= 0) {
+    showLineChartMessage("Data Man Power belum lengkap. Silakan input Man Power terlebih dahulu.");
+    return;
+  }
+
+
   // --- Plan Target Array ---
   let planTargetArr = [];
   const mpKey = String(manPowerTotal);
   if (PLAN_TARGET_TABLE[shiftType] && PLAN_TARGET_TABLE[shiftType][mpKey]) {
     planTargetArr = PLAN_TARGET_TABLE[shiftType][mpKey];
   } else {
-    planTargetArr = (shiftType === "Day") ? [] : [];
-  }
+    showLineChartMessage(`Belum ada Plan Target untuk Man Power ${mpKey} pada shift ${shiftType}. Hubungi Admin untuk update data.`);
+    return;
+  } 
 
   // --- Visible Plan Chart Array ---
   let visiblePlanChartArr = planTargetArr.map((row, idx) => {
