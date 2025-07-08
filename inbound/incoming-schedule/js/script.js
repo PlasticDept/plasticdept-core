@@ -303,16 +303,11 @@ function parseAndUploadMonthlyFile(file) {
 
 async function afterMonthlyFileParsed(rows) {
   try {
-    showStatus("🗑 Menghapus data lama monthly dari Database...", "info");
-    // Jika ingin APPEND, hapus baris di bawah
-    const dbRef = ref(db, "incomingSchedule");
-    await remove(dbRef);
     showStatus("📤 Mengupload data baru ke Database...", "info");
     await uploadMonthlyToFirebase(rows);
     showStatus("✅ Upload monthly selesai!", "success");
     document.getElementById("csvFile").value = "";
     setTimeout(() => showStatus("", ""), 3000);
-    // Tidak perlu reload table, karena table hanya untuk daily
   } catch (err) {
     console.error(err);
     showStatus("❌ Gagal upload data monthly!", "error");
