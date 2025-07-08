@@ -1,15 +1,28 @@
-import { db } from './config.js';
-import {ref, onValue, remove, update} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+import { authPromise } from './config.js';
+import { ref, onValue, remove, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
+let db;
 let table;
+let firebaseRecords = {};
 const csvInput = document.getElementById("csvFile");
 const uploadBtn = document.getElementById("uploadBtn");
 const uploadStatus = document.getElementById("uploadStatus");
 const dataType = document.getElementById("dataType");
 let selectedFile = null;
-let firebaseRecords = {};
 
-$(document).ready(function () {
+// Tunggu sampai login anonymous berhasil
+authPromise.then(({ db: database }) => {
+  db = database;
+  console.log("📦 Firebase ready, lanjut load data");
+
+  initTable();         // inisialisasi DataTable
+  loadFirebaseData();  // mulai ambil data dari database
+}).catch(err => {
+  console.error("❌ Gagal login anonymous:", err);
+});
+
+// Fungsi untuk inisialisasi DataTable
+function initTable() {
   table = $("#containerTable").DataTable({
     destroy: true,
     ordering: true,
@@ -31,8 +44,8 @@ $(document).ready(function () {
       { title: "Finish" },
     ]
   });
-  loadFirebaseData();
-});
+}
+
 
 function showStatus(message, type = "info") {
   uploadStatus.textContent = message;
