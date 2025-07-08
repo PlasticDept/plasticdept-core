@@ -156,107 +156,82 @@ function uploadToFirebase(records) {
   return update(dbRef, updates);
 }
 
-function excelDateToString(serial, format="DD/MM/YYYY") {
+function excelDateToString(serial, format="D-MMM-YY") {
+  // Convert Excel serial date to JS Date
   if (!serial || isNaN(serial)) return "";
   const utc_days = Math.floor(serial - 25569);
   const utc_value = utc_days * 86400;
   const date_info = new Date(utc_value * 1000);
-  const day = String(date_info.getDate()).padStart(2, "0");
-  const month = String(date_info.getMonth() + 1).padStart(2, "0");
+
+  const day = String(date_info.getDate());
+  const monthIdx = date_info.getMonth();
   const year = date_info.getFullYear();
-  if (format === "DD/MM/YYYY") return `${day}/${month}/${year}`;
-  if (format === "YYYY-MM-DD") return `${year}-${month}-${day}`;
-  return `${day}/${month}/${year}`;
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  if (format === "D-MMM-YY") {
+    return `${day}-${monthNames[monthIdx]}-${String(year).slice(-2)}`;
+  }
+  // fallback DD/MM/YYYY
+  return `${day}/${monthIdx + 1}/${year}`;
 }
 
-function normalizeDateField(dateVal) {
+function normalizeMonthlyDateField(dateVal) {
+  // Untuk monthly: bisa string, bisa Excel serial
   if (!dateVal) return "";
-  // Jika angka (serial excel), konversi
-  if (typeof dateVal === "number") {
-    return excelDateToString(dateVal); // Sudah ada fungsi ini
+  if (typeof dateVal === "number" && !isNaN(dateVal)) {
+    return excelDateToString(dateVal, "D-MMM-YY");
   }
-  // Jika string, tetap kembalikan stringnya
-  return dateVal;
+  if (typeof dateVal === "string") {
+    // jika sudah dalam bentuk D-MMM-YY, kembalikan saja
+    return dateVal;
+  }
+  return "";
 }
 
-function parseAndUploadFile(file) {
-  const fileName = file.name.toLowerCase();
-  showStatus("⏳ Memproses file...", "info");
-
-  if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-    const reader = new FileReader();
-    reader.onload = async function (e) {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-      const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-      // --- FIX: Normalisasi semua field tanggal ---
-      const fixedRows = rows.map(row => {
-        if (row["INCOMING PLAN"]) {
-          row["INCOMING PLAN"] = normalizeDateField(row["INCOMING PLAN"]);
-        }
-        // Tambahkan field lain jika ada kolom tanggal lain
-        return row;
-      });
-      await afterFileParsed(fixedRows);
-    };
-    reader.readAsArrayBuffer(file);
-  } else {
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async function (results) {
-        await afterFileParsed(results.data);
-      }
-    });
-  }
-}
-
-async function afterFileParsed(rows) {
-  try {
-    showStatus("🗑 Menghapus data lama dari Database...", "info");
-    await deleteAllFirebaseRecords();
-    showStatus("📤 Mengupload data baru ke Database...", "info");
-    await uploadToFirebase(rows);
-    showStatus("✅ Upload selesai!", "success");
-    document.getElementById("csvFile").value = "";
-    setTimeout(() => showStatus("", ""), 3000);
-    loadFirebaseData();
-  } catch (err) {
-    console.error(err);
-    showStatus("❌ Gagal upload data!", "error");
-  }
-}
-
-// ================== PATCHED MONTHLY UPLOAD ==================
-
-// Fungsi khusus upload monthly ke incomingSchedule (nested, field terbatas)
+// ================= PATCH: Monthly Upload ===================
 function uploadMonthlyToFirebase(records) {
   const monthNames = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
   ];
   const updates = {};
-  records.forEach((row, index) => {
-    const dateStr = row["Date"];
-    const containerNo = (row["Container Number"] || row["Container No"] || row["No Container"] || `id_${Date.now()}_${index}`).toString().replace(/[\s.\/]/g, "_");
-    const processType = row["Process Type"] || "";
-    const feet = row["Feet"] || "";
 
-    // Parsing date "8-Jul-25"
+  records.forEach((row, index) => {
+    // Lewatkan baris yang semua field-nya kosong
+    if (
+      (!row["Date"] && !row["Container Number"] && !row["Process Type"] && !row["Feet"]) ||
+      Object.values(row).every(val => (val ?? "").toString().trim() === "")
+    ) return;
+
+    // Flexible field name
+    let dateStr = row["Date"] || row["DATE"] || row["Tanggal"] || row["tanggal"] || "";
+    let containerNo = row["Container Number"] || row["CONTAINER NUMBER"] || row["Container No"] || row["No Container"] || row["NO CONTAINER"] || `id_${Date.now()}_${index}`;
+    let processType = row["Process Type"] || row["PROCESS TYPE"] || row["Process"] || "";
+    let feet = row["Feet"] || row["FEET"] || "";
+
+    // Handle Excel serial date
+    dateStr = normalizeMonthlyDateField(dateStr);
+
+    // Parsing tanggal D-MMM-YY
     let year = "", monthKey = "", day = "";
-    if (dateStr) {
+    if (dateStr && typeof dateStr === "string" && dateStr.includes("-")) {
       const [d, m, y] = dateStr.split("-");
-      day = parseInt(d, 10).toString();
-      const monthIdx = monthNames.findIndex(mon => mon.toLowerCase() === m.trim().toLowerCase());
-      const paddedMonth = (monthIdx + 1).toString().padStart(2, "0");
-      monthKey = `${paddedMonth}_${monthNames[monthIdx]}`;
-      year = y.length === 2 ? "20" + y : y;
+      if (d && m && y) {
+        day = parseInt(d, 10).toString();
+        const monthIdx = monthNames.findIndex(mon => mon.toLowerCase() === m.trim().toLowerCase());
+        if (monthIdx !== -1) {
+          const paddedMonth = (monthIdx + 1).toString().padStart(2, "0");
+          monthKey = `${paddedMonth}_${monthNames[monthIdx]}`;
+        } else {
+          monthKey = "unknown";
+        }
+        year = y.length === 2 ? "20" + y : y;
+      } else {
+        year = "unknown"; monthKey = "unknown"; day = "unknown";
+      }
     } else {
-      year = "unknown";
-      monthKey = "unknown";
-      day = "unknown";
+      year = "unknown"; monthKey = "unknown"; day = "unknown";
     }
 
     const dataObj = {
@@ -266,7 +241,6 @@ function uploadMonthlyToFirebase(records) {
       "Feet": feet
     };
 
-    // Path: incomingSchedule/{tahun}/{bulan}/{tanggal}/{containerNo}
     updates[`${year}/${monthKey}/${day}/${containerNo}`] = dataObj;
   });
 
@@ -274,7 +248,6 @@ function uploadMonthlyToFirebase(records) {
   return update(dbRef, updates);
 }
 
-// Fungsi parsing & upload monthly
 function parseAndUploadMonthlyFile(file) {
   const fileName = file.name.toLowerCase();
   showStatus("⏳ Memproses file monthly...", "info");
@@ -313,7 +286,7 @@ async function afterMonthlyFileParsed(rows) {
     showStatus("❌ Gagal upload data monthly!", "error");
   }
 }
-// ================== END PATCH MONTHLY UPLOAD ==================
+// =============== END PATCH MONTHLY UPLOAD ==================
 
 csvInput.addEventListener("change", function (e) {
   selectedFile = e.target.files[0];
