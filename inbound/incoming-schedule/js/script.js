@@ -233,6 +233,10 @@ async function afterFileParsed(rows) {
 
 // Fungsi khusus upload monthly ke incomingSchedule (nested, field terbatas)
 function uploadMonthlyToFirebase(records) {
+  const monthNames = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  ];
   const updates = {};
   records.forEach((row, index) => {
     const dateStr = row["Date"];
@@ -240,16 +244,18 @@ function uploadMonthlyToFirebase(records) {
     const processType = row["Process Type"] || "";
     const feet = row["Feet"] || "";
 
-    // Penentuan path nested: "2-Jan-25" => 2025, 01-Jan, 2
-    let year = "", monthDay = "", day = "";
+    // Parsing date "8-Jul-25"
+    let year = "", monthKey = "", day = "";
     if (dateStr) {
       const [d, m, y] = dateStr.split("-");
       day = parseInt(d, 10).toString();
-      monthDay = d.padStart(2, "0") + "-" + m;
+      const monthIdx = monthNames.findIndex(mon => mon.toLowerCase() === m.trim().toLowerCase());
+      const paddedMonth = (monthIdx + 1).toString().padStart(2, "0");
+      monthKey = `${paddedMonth}_${monthNames[monthIdx]}`;
       year = y.length === 2 ? "20" + y : y;
     } else {
       year = "unknown";
-      monthDay = "unknown";
+      monthKey = "unknown";
       day = "unknown";
     }
 
@@ -260,8 +266,8 @@ function uploadMonthlyToFirebase(records) {
       "Feet": feet
     };
 
-    // Path: incomingSchedule/{tahun}/{bulan-tanggal}/{hari}/{containerNo}
-    updates[`${year}/${monthDay}/${day}/${containerNo}`] = dataObj;
+    // Path: incomingSchedule/{tahun}/{bulan}/{tanggal}/{containerNo}
+    updates[`${year}/${monthKey}/${day}/${containerNo}`] = dataObj;
   });
 
   const dbRef = ref(db, "incomingSchedule");
