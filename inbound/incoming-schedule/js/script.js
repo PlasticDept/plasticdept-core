@@ -229,6 +229,91 @@ async function afterFileParsed(rows) {
   }
 }
 
+// ================== PATCHED MONTHLY UPLOAD ==================
+
+// Fungsi khusus upload monthly ke incomingSchedule (nested, field terbatas)
+function uploadMonthlyToFirebase(records) {
+  const updates = {};
+  records.forEach((row, index) => {
+    const dateStr = row["Date"];
+    const containerNo = (row["Container Number"] || row["Container No"] || row["No Container"] || `id_${Date.now()}_${index}`).toString().replace(/[\s.\/]/g, "_");
+    const processType = row["Process Type"] || "";
+    const feet = row["Feet"] || "";
+
+    // Penentuan path nested: "2-Jan-25" => 2025, 01-Jan, 2
+    let year = "", monthDay = "", day = "";
+    if (dateStr) {
+      const [d, m, y] = dateStr.split("-");
+      day = parseInt(d, 10).toString();
+      monthDay = d.padStart(2, "0") + "-" + m;
+      year = y.length === 2 ? "20" + y : y;
+    } else {
+      year = "unknown";
+      monthDay = "unknown";
+      day = "unknown";
+    }
+
+    const dataObj = {
+      "Date": dateStr,
+      "Container Number": containerNo,
+      "Process Type": processType,
+      "Feet": feet
+    };
+
+    // Path: incomingSchedule/{tahun}/{bulan-tanggal}/{hari}/{containerNo}
+    updates[`${year}/${monthDay}/${day}/${containerNo}`] = dataObj;
+  });
+
+  const dbRef = ref(db, "incomingSchedule");
+  return update(dbRef, updates);
+}
+
+// Fungsi parsing & upload monthly
+function parseAndUploadMonthlyFile(file) {
+  const fileName = file.name.toLowerCase();
+  showStatus("⏳ Memproses file monthly...", "info");
+
+  if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+    const reader = new FileReader();
+    reader.onload = async function (e) {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+      await afterMonthlyFileParsed(rows);
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async function (results) {
+        await afterMonthlyFileParsed(results.data);
+      }
+    });
+  }
+}
+
+async function afterMonthlyFileParsed(rows) {
+  try {
+    showStatus("🗑 Menghapus data lama monthly dari Database...", "info");
+    // Jika ingin APPEND, hapus baris di bawah
+    const dbRef = ref(db, "incomingSchedule");
+    await remove(dbRef);
+    showStatus("📤 Mengupload data baru ke Database...", "info");
+    await uploadMonthlyToFirebase(rows);
+    showStatus("✅ Upload monthly selesai!", "success");
+    document.getElementById("csvFile").value = "";
+    setTimeout(() => showStatus("", ""), 3000);
+    // Tidak perlu reload table, karena table hanya untuk daily
+  } catch (err) {
+    console.error(err);
+    showStatus("❌ Gagal upload data monthly!", "error");
+  }
+}
+// ================== END PATCH MONTHLY UPLOAD ==================
+
 csvInput.addEventListener("change", function (e) {
   selectedFile = e.target.files[0];
   showStatus("📁 File siap diupload. Klik tombol Upload.", "info");
@@ -242,7 +327,7 @@ uploadBtn.addEventListener("click", function () {
   if (dataType.value === "daily") {
     parseAndUploadFile(selectedFile);
   } else if (dataType.value === "monthly") {
-    showStatus("🚧 Fitur upload monthly data incoming belum tersedia.", "error");
+    parseAndUploadMonthlyFile(selectedFile); // PATCH: aktifkan upload monthly
   }
 });
 
