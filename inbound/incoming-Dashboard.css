@@ -6,7 +6,7 @@ body {
 }
 
 .dashboard-container {
-    width: 1100px;
+    width: 900px;
     margin: 20px auto;
     box-sizing: border-box;
 }
@@ -20,21 +20,25 @@ body {
 
 .dashboard-date {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     font-size: 1rem;
     color: #222;
     margin: 10px 0 0 0;
-    letter-spacing: 0.02em;
+    gap: 20px;
 }
 
-.dashboard-date > div {
-    margin-bottom: 8px;
+.dashboard-date label {
+    display: flex;
+    flex-direction: column;
+    font-weight: 600;
+    font-size: 1em;
 }
-
-.dashboard-date span {
-    font-size: 1.1em;
-    font-weight: 500;
-    display: inline-block;
+.dashboard-date select {
+    font-size: 1.13em;
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid #bcbcbc;
+    margin-top: 2px;
 }
 
 .dashboard-cards {
@@ -61,6 +65,37 @@ body {
     transition: box-shadow 0.2s;
 }
 
+.card-total {
+    background: #7cc86d;
+    color: #fff;
+}
+.card-blue {
+    background: #5395d6;
+    color: #fff;
+}
+.card-yellow {
+    background: #ffcc5a;
+    color: #222;
+}
+.card-grey {
+    background: #bcbcbc;
+    color: #222;
+}
+.card-orange {
+    background: #f38a4e;
+    color: #fff;
+}
+.card-nonpalletize {
+    min-width: 165px;
+    max-width: 210px;
+    font-size: 0.96rem;
+}
+
+.card-nonpalletize span {
+    font-size: 0.93em;
+    white-space: nowrap;
+}
+
 .dashboard-card .card-value {
     margin-top: 18px;
     font-size: 2.1rem;
@@ -68,29 +103,22 @@ body {
     letter-spacing: 0.05em;
 }
 
-.card-total {
-    background: #7cc86d;
-    color: #fff;
+.dashboard-chart-titles {
+    width: 100%;
+    display: flex;
+    gap: 22px;
+    margin-bottom: 2px;
+    margin-top: 18px;
+    justify-content: flex-start;
 }
-
-.card-blue {
-    background: #5395d6;
-    color: #fff;
-}
-
-.card-yellow {
-    background: #ffcc5a;
-    color: #222;
-}
-
-.card-grey {
-    background: #bcbcbc;
-    color: #222;
-}
-
-.card-orange {
-    background: #f38a4e;
-    color: #fff;
+.dashboard-chart-titles .chart-title {
+    flex: 1 1 0;
+    font-weight: 700;
+    font-size: 1.06rem;
+    letter-spacing: 0.01em;
+    color: #23507b;
+    margin-bottom: 2px;
+    margin-right: 10px;
 }
 
 .dashboard-grid {
@@ -110,13 +138,6 @@ body {
     align-items: stretch;
 }
 
-.box-title {
-    font-weight: 600;
-    font-size: 1rem;
-    margin-bottom: 10px;
-    letter-spacing: 0.01em;
-}
-
 .box-double {
     flex: 1 1 0;
     min-width: 0;
@@ -129,11 +150,30 @@ body {
     justify-content: space-between;
 }
 
+.box-charts.small-charts .box-chart {
+    max-width: 180px;
+    min-width: 140px;
+    padding: 0 0 0 0;
+}
+
+.dashboard-box .box-charts.small-charts {
+    justify-content: space-around;
+    gap: 18px;
+}
+
 .box-chart {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+.box-chart canvas {
+    width: 120px !important;
+    height: 120px !important;
+    max-width: 140px !important;
+    max-height: 140px !important;
+    margin-top: 0;
 }
 
 .chart-label {
@@ -154,11 +194,13 @@ body {
     min-width: 0;
     padding-bottom: 0;
     justify-content: flex-start;
+    align-items: flex-start;
 }
 
 .compare-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0 4px;
     margin-top: 10px;
 }
 
@@ -173,16 +215,35 @@ body {
     font-weight: 600;
 }
 
-.compare-table td:last-child {
-    white-space: nowrap;
+.compare-table td {
+    vertical-align: middle;
 }
+
+.compare-percent {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    width: 60px;
+    font-size: 0.98em;
+    color: #23507b;
+    padding-right: 5px;
+}
+.compare-status {
+    text-align: left;
+    padding-left: 4px;
+    font-size: 0.97em;
+    font-weight: 600;
+    width: 60px;
+}
+.compare-status.increase { color: #27ae60; }
+.compare-status.decrease { color: #c0392b; }
 
 .box-barcompare {
     flex: 1.2 1 0;
     background: #fff;
     border-radius: 18px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.10);
-    padding: 18px 14px 14px 14px;
+    padding: 18px 10px 14px 10px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -194,6 +255,11 @@ body {
     padding: 18px 20px 10px 20px;
     border-radius: 18px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+}
+
+.dashboard-box.box-trend canvas {
+    min-height: 220px;
+    max-height: 260px;
 }
 
 @media (max-width: 1020px) {
@@ -210,5 +276,9 @@ body {
     .dashboard-card, .dashboard-box, .box-barcompare, .box-compare {
         min-width: 0;
         max-width: 100vw;
+    }
+    .dashboard-chart-titles {
+        flex-direction: column;
+        gap: 2px;
     }
 }

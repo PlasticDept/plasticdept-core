@@ -29,9 +29,32 @@ const compareData = [
 
 const trendLineData = [86, 75, 65, 61, 81, 69, 71, 79, 72, 78, 69, 71];
 
-// Set header year and month
-document.getElementById("dashboard-year").textContent = "2025";
-document.getElementById("dashboard-month").textContent = "March";
+const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+];
+
+const years = [];
+for(let y = 2022; y <= 2026; y++) years.push(y);
+
+// Populate year and month dropdowns
+const yearSelect = document.getElementById("dashboard-year");
+const monthSelect = document.getElementById("dashboard-month");
+years.forEach(y => {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y;
+    yearSelect.appendChild(opt);
+});
+months.forEach((m, i) => {
+    const opt = document.createElement("option");
+    opt.value = i+1;
+    opt.textContent = m;
+    monthSelect.appendChild(opt);
+});
+// Set default value
+yearSelect.value = "2025";
+monthSelect.value = "3";
 
 // Set summary card values
 document.getElementById("total-container").textContent = summaryData.totalContainer;
@@ -50,16 +73,29 @@ const chartPalletizeBar = new Chart(document.getElementById('chart-palletize-bar
             backgroundColor: ['#5395d6', '#ffcc5a'],
             borderRadius: 8,
             borderSkipped: false,
-            barPercentage: 0.6
+            barPercentage: 0.65,
+            categoryPercentage: 0.65
         }]
     },
     options: {
-        plugins: { legend: { display: false } },
+        responsive: false,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            datalabels: {
+                anchor: 'end',
+                align: 'top',
+                font: { weight: 'bold', size: 13 },
+                color: '#23507b',
+                formatter: v => v
+            }
+        },
         scales: {
-            x: { grid: { display: false }, ticks: { font: { size: 13, weight: 'bold' } } },
-            y: { beginAtZero: true, grid: { color: "#e4e4e4" }, ticks: { stepSize: 10, font: { size: 12 } } }
+            x: { grid: { display: false }, ticks: { font: { size: 11, weight: 'bold' } } },
+            y: { beginAtZero: true, grid: { color: "#e4e4e4" }, ticks: { stepSize: 10, font: { size: 11 } } }
         }
-    }
+    },
+    plugins: [ChartDataLabels]
 });
 
 // Chart: Palletize vs Non Palletize (Pie)
@@ -75,11 +111,11 @@ const chartPalletizePie = new Chart(document.getElementById('chart-palletize-pie
         }]
     },
     options: {
+        responsive: false,
+        maintainAspectRatio: false,
         cutout: "68%",
         plugins: {
-            legend: {
-                display: false
-            },
+            legend: { display: false },
             tooltip: {
                 callbacks: {
                     label: function(ctx) {
@@ -87,9 +123,21 @@ const chartPalletizePie = new Chart(document.getElementById('chart-palletize-pie
                         return `${ctx.label}: ${ctx.parsed} (${pct}%)`;
                     }
                 }
+            },
+            datalabels: {
+                color: '#23507b',
+                font: { weight: 'bold', size: 13 },
+                formatter: (value, ctx) => {
+                    const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                    const pct = ((value / total) * 100).toFixed(0) + '%';
+                    return `${value}\n${pct}`;
+                },
+                anchor: 'center',
+                align: 'center'
             }
         }
-    }
+    },
+    plugins: [ChartDataLabels]
 });
 
 // Chart: 20" vs 40" (Bar)
@@ -102,16 +150,29 @@ const chartFeetBar = new Chart(document.getElementById('chart-feet-bar'), {
             backgroundColor: ['#bcbcbc', '#f38a4e'],
             borderRadius: 8,
             borderSkipped: false,
-            barPercentage: 0.6
+            barPercentage: 0.65,
+            categoryPercentage: 0.65
         }]
     },
     options: {
-        plugins: { legend: { display: false } },
+        responsive: false,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            datalabels: {
+                anchor: 'end',
+                align: 'top',
+                font: { weight: 'bold', size: 13 },
+                color: '#23507b',
+                formatter: v => v
+            }
+        },
         scales: {
-            x: { grid: { display: false }, ticks: { font: { size: 13, weight: 'bold' } } },
-            y: { beginAtZero: true, grid: { color: "#e4e4e4" }, ticks: { stepSize: 10, font: { size: 12 } } }
+            x: { grid: { display: false }, ticks: { font: { size: 11, weight: 'bold' } } },
+            y: { beginAtZero: true, grid: { color: "#e4e4e4" }, ticks: { stepSize: 10, font: { size: 11 } } }
         }
-    }
+    },
+    plugins: [ChartDataLabels]
 });
 
 // Chart: 20" vs 40" (Pie)
@@ -127,6 +188,8 @@ const chartFeetPie = new Chart(document.getElementById('chart-feet-pie'), {
         }]
     },
     options: {
+        responsive: false,
+        maintainAspectRatio: false,
         cutout: "68%",
         plugins: {
             legend: { display: false },
@@ -137,9 +200,21 @@ const chartFeetPie = new Chart(document.getElementById('chart-feet-pie'), {
                         return `${ctx.label}: ${ctx.parsed} (${pct}%)`;
                     }
                 }
+            },
+            datalabels: {
+                color: '#23507b',
+                font: { weight: 'bold', size: 13 },
+                formatter: (value, ctx) => {
+                    const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                    const pct = ((value / total) * 100).toFixed(0) + '%';
+                    return `${value}\n${pct}`;
+                },
+                anchor: 'center',
+                align: 'center'
             }
         }
-    }
+    },
+    plugins: [ChartDataLabels]
 });
 
 // Chart: Compare (Bar multi)
@@ -154,7 +229,8 @@ const chartCompareBar = new Chart(document.getElementById('chart-compare-bar'), 
                 data: compareData.map(d => d.jan),
                 borderRadius: 7,
                 borderSkipped: false,
-                barPercentage: 0.6
+                barPercentage: 0.55,
+                categoryPercentage: 0.60
             },
             {
                 label: 'Feb-25',
@@ -162,28 +238,38 @@ const chartCompareBar = new Chart(document.getElementById('chart-compare-bar'), 
                 data: compareData.map(d => d.feb),
                 borderRadius: 7,
                 borderSkipped: false,
-                barPercentage: 0.6
+                barPercentage: 0.55,
+                categoryPercentage: 0.60
             }
         ]
     },
     options: {
-        plugins: { legend: { display: true, position: 'bottom' } },
         responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: true, position: 'bottom' },
+            datalabels: {
+                display: true,
+                anchor: 'end',
+                align: 'top',
+                font: { weight: 'bold', size: 12 },
+                color: context => context.dataset.label === "Jan-25" ? "#5395d6" : "#f38a4e",
+                formatter: v => v
+            }
+        },
         scales: {
-            x: { grid: { display: false }, ticks: { font: { size: 13 } } },
+            x: { grid: { display: false }, ticks: { font: { size: 12 } } },
             y: { beginAtZero: true, grid: { color: "#e4e4e4" }, ticks: { stepSize: 10, font: { size: 12 } } }
         }
-    }
+    },
+    plugins: [ChartDataLabels]
 });
 
 // Chart: Trend Line (Line)
 const chartTrendLine = new Chart(document.getElementById('chart-trend-line'), {
     type: 'line',
     data: {
-        labels: [
-            'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'
-        ],
+        labels: months,
         datasets: [{
             label: 'Container',
             data: trendLineData,
@@ -192,15 +278,46 @@ const chartTrendLine = new Chart(document.getElementById('chart-trend-line'), {
             backgroundColor: '#5395d6',
             pointBackgroundColor: '#5395d6',
             pointBorderColor: '#fff',
-            pointRadius: 5,
-            tension: 0.3
+            pointRadius: 4,
+            tension: 0.28
         }]
     },
     options: {
-        plugins: { legend: { display: false } },
+        plugins: {
+            legend: { display: false },
+            datalabels: {
+                align: 'top',
+                anchor: 'end',
+                font: { weight: 'bold', size: 12 },
+                color: '#23507b',
+                formatter: v => v
+            }
+        },
         scales: {
             x: { grid: { display: false }, ticks: { font: { size: 12 } } },
-            y: { beginAtZero: true, grid: { color: "#e4e4e4" }, ticks: { stepSize: 10, font: { size: 12 } } }
+            y: { beginAtZero: true, grid: { color: "#e4e4e4" }, ticks: { stepSize: 10, font: { size: 11 } } }
         }
-    }
+    },
+    plugins: [ChartDataLabels]
 });
+
+// Render compare data table with two-line for percentage and status, colored
+function formatCompareRow({label, jan, feb}) {
+    let percent = ((feb-jan)/jan*100);
+    let stat = percent > 0 ? "Increased" : percent < 0 ? "Decreased" : "Unchanged";
+    let percentStr = percent.toFixed(2).replace("-0.00", "0.00") + "%";
+    let statClass = percent > 0 ? "increase" : percent < 0 ? "decrease" : "";
+    return `<tr>
+        <td>${label}</td>
+        <td>${jan}</td>
+        <td>${feb}</td>
+        <td>
+            <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                <span class="compare-percent">${percentStr}</span>
+                <span class="compare-status ${statClass}">${stat}</span>
+            </div>
+        </td>
+    </tr>`;
+}
+document.getElementById("compare-table-body").innerHTML =
+    compareData.map(formatCompareRow).join("");
