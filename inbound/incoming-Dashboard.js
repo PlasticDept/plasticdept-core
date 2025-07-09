@@ -27,12 +27,15 @@ const containerPalletizeEl = document.getElementById('container-palletize');
 const containerNonPalletizeEl = document.getElementById('container-non-palletize');
 const container20El = document.getElementById('container-20');
 const container40El = document.getElementById('container-40');
+const compareTableBody = document.getElementById('compare-table-body');
 
 // Chart instances
 let palletizeBarChart;
 let palletizePieChart;
 let feetBarChart;
 let feetPieChart;
+let compareBarChart;
+let trendLineChart;
 
 // Month mapping for database path
 const monthNames = {
@@ -49,6 +52,28 @@ const monthNames = {
     11: "11_Nov",
     12: "12_Dec"
 };
+
+// Month names for display
+const shortMonthNames = {
+    1: "Jan",
+    2: "Feb",
+    3: "Mar",
+    4: "Apr",
+    5: "May",
+    6: "Jun",
+    7: "Jul",
+    8: "Aug",
+    9: "Sep",
+    10: "Oct",
+    11: "Nov",
+    12: "Dec"
+};
+
+// Full month names for trend chart
+const fullMonthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+];
 
 // Initialize dashboard when the page loads
 document.addEventListener('DOMContentLoaded', initDashboard);
@@ -141,52 +166,115 @@ function populateMonthSelect() {
 }
 
 /**
+ * Calculate previous month and year
+ */
+function getPreviousMonth(year, month) {
+    if (month === 1) {
+        return { year: year - 1, month: 12 };
+    } else {
+        return { year: year, month: month - 1 };
+    }
+}
+
+/**
  * Load dashboard data based on selected year and month
  */
 async function loadDashboardData() {
     try {
-        const selectedYear = yearSelect.value;
-        const selectedMonthNum = parseInt(monthSelect.value);
-        const selectedMonthPath = monthNames[selectedMonthNum];
+        const selectedYear = parseInt(yearSelect.value);
+        const selectedMonth = parseInt(monthSelect.value);
         
-        console.log(`Loading data for ${selectedYear}/${selectedMonthPath}`);
+        // Get current month data
+        const currentMonthData = await getMonthData(selectedYear, selectedMonth);
         
-        // Get reference to path matching year and month
-        const scheduleRef = ref(db, `incomingSchedule/${selectedYear}/${selectedMonthPath}`);
-        const snapshot = await get(scheduleRef);
+        // Update main dashboard with current month data
+        updateCards(currentMonthData);
+        updateCharts(currentMonthData);
         
-        if (snapshot.exists()) {
-            console.log("Data found for selected period");
-            
-            // Process the data to extract container information
-            const containersData = [];
-            
-            // Structure is typically incomingSchedule/year/month/day/container_id/details
-            const daysData = snapshot.val();
-            
-            // Loop through all days in the month
-            for (const day in daysData) {
-                const containers = daysData[day];
-                
-                // Loop through all containers for the day
-                for (const containerId in containers) {
-                    const containerData = containers[containerId];
-                    containersData.push(containerData);
-                }
-            }
-            
-            console.log(`Found ${containersData.length} containers for ${selectedYear}/${selectedMonthPath}`);
-            
-            // Update UI with container data
-            updateCards(containersData);
-            updateCharts(containersData);
-        } else {
-            console.log(`No data available for ${selectedYear}/${selectedMonthPath}`);
-            resetDashboard();
-        }
+        // Get data for previous two months for comparison
+        const prevMonth = getPreviousMonth(selectedYear, selectedMonth);
+        const prevPrevMonth = getPreviousMonth(prevMonth.year, prevMonth.month);
+        
+        const prevMonthData = await getMonthData(prevMonth.year, prevMonth.month);
+        const prevPrevMonthData = await getMonthData(prevPrevMonth.year, prevPrevMonth.month);
+        
+        // Update comparison table and chart
+        updateComparisonTable(prevMonthData, prevPrevMonthData, prevMonth, prevPrevMonth);
+        updateComparisonChart(prevMonthData, prevPrevMonthData, prevMonth, prevPrevMonth);
+        
+        // Load trend data for the entire year
+        await loadTrendData();
+        
     } catch (error) {
         console.error("Error loading dashboard data:", error);
         resetDashboard();
+    }
+}
+
+/**
+ * Load trend data for one year
+ */
+async function loadTrendData() {
+    try {
+        const selectedYear = parseInt(yearSelect.value);
+        console.log(`Loading trend data for year ${selectedYear}`);
+        
+        // Array untuk menyimpan jumlah container per bulan
+        const monthlyContainers = Array(12).fill(0);
+        
+        // Ambil data untuk setiap bulan dalam tahun
+        for (let month = 1; month <= 12; month++) {
+            const monthData = await getMonthData(selectedYear, month);
+            monthlyContainers[month - 1] = monthData.length; // Jumlah container
+        }
+        
+        console.log("Monthly container counts:", monthlyContainers);
+        
+        // Update trend chart
+        updateTrendChart(monthlyContainers, selectedYear);
+        
+    } catch (error) {
+        console.error("Error loading trend data:", error);
+        resetTrendChart();
+    }
+}
+
+/**
+ * Get data for a specific month
+ */
+async function getMonthData(year, month) {
+    const monthPath = monthNames[month];
+    console.log(`Getting data for ${year}/${monthPath}`);
+    
+    // Get reference to path matching year and month
+    const scheduleRef = ref(db, `incomingSchedule/${year}/${monthPath}`);
+    const snapshot = await get(scheduleRef);
+    
+    if (snapshot.exists()) {
+        console.log(`Data found for ${year}/${monthPath}`);
+        
+        // Process the data to extract container information
+        const containersData = [];
+        
+        // Structure is typically incomingSchedule/year/month/day/container_id/details
+        const daysData = snapshot.val();
+        
+        // Loop through all days in the month
+        for (const day in daysData) {
+            const containers = daysData[day];
+            
+            // Loop through all containers for the day
+            for (const containerId in containers) {
+                const containerData = containers[containerId];
+                containersData.push(containerData);
+            }
+        }
+        
+        console.log(`Found ${containersData.length} containers for ${year}/${monthPath}`);
+        return containersData;
+    } else {
+        console.log(`No data available for ${year}/${monthPath}`);
+        return [];
     }
 }
 
@@ -232,6 +320,375 @@ function updateCards(data) {
     containerNonPalletizeEl.textContent = nonPalletizeCount;
     container20El.textContent = container20Count;
     container40El.textContent = container40Count;
+}
+
+/**
+ * Calculate metrics for comparison
+ */
+function calculateMetrics(data) {
+    const totalContainer = data.length;
+    
+    const palletizeCount = data.filter(item => 
+        item['Process Type']?.toLowerCase().includes('palletize') && 
+        !item['Process Type']?.toLowerCase().includes('non')).length;
+    
+    const nonPalletizeCount = data.filter(item => 
+        item['Process Type']?.toLowerCase().includes('non palletize')).length;
+    
+    const container20Count = data.filter(item => {
+        const feet = item.Feet?.toString() || '';
+        return feet.includes('20') || feet.includes('1X20');
+    }).length;
+    
+    const container40Count = data.filter(item => {
+        const feet = item.Feet?.toString() || '';
+        return feet.includes('40') || feet.includes('1X40');
+    }).length;
+    
+    return {
+        totalContainer,
+        palletizeCount,
+        nonPalletizeCount,
+        container20Count,
+        container40Count
+    };
+}
+
+/**
+ * Update comparison table
+ */
+function updateComparisonTable(currentData, prevData, currentMonthInfo, prevMonthInfo) {
+    // Get metrics for both months
+    const currentMetrics = calculateMetrics(currentData);
+    const prevMetrics = calculateMetrics(prevData);
+    
+    // Get month names with year
+    const currentMonthLabel = `${shortMonthNames[currentMonthInfo.month]}-${currentMonthInfo.year.toString().slice(-2)}`;
+    const prevMonthLabel = `${shortMonthNames[prevMonthInfo.month]}-${prevMonthInfo.year.toString().slice(-2)}`;
+    
+    // Update table header - Mengubah urutan kolom menjadi bulan sebelumnya dulu
+    const tableHeaders = document.querySelectorAll('.compare-table th');
+    if (tableHeaders.length >= 3) {
+        tableHeaders[1].textContent = prevMonthLabel;     // Bulan sebelumnya (Apr)
+        tableHeaders[2].textContent = currentMonthLabel;  // Bulan terkini (May)
+    }
+    
+    // Clear existing rows
+    compareTableBody.innerHTML = '';
+    
+    // Data to display in table
+    const comparisonData = [
+        {
+            name: 'Container',
+            current: currentMetrics.totalContainer,
+            prev: prevMetrics.totalContainer
+        },
+        {
+            name: 'Palletize',
+            current: currentMetrics.palletizeCount,
+            prev: prevMetrics.palletizeCount
+        },
+        {
+            name: 'Non Palletize',
+            current: currentMetrics.nonPalletizeCount,
+            prev: prevMetrics.nonPalletizeCount
+        },
+        {
+            name: '20" (Feet)',
+            current: currentMetrics.container20Count,
+            prev: prevMetrics.container20Count
+        },
+        {
+            name: '40" (Feet)',
+            current: currentMetrics.container40Count,
+            prev: prevMetrics.container40Count
+        }
+    ];
+    
+    // Create rows for each metric
+    comparisonData.forEach(item => {
+        // Calculate percentage change - dari prev ke current, karena urutan kolom diubah
+        // Rumus: (current - prev) / prev * 100
+        let percentageChange = 0;
+        if (item.prev > 0) {
+            percentageChange = ((item.current - item.prev) / item.prev) * 100;
+        } else if (item.current > 0) {
+            percentageChange = 100; // If previous is 0 and current is > 0, then 100% increase
+        }
+        
+        // Round percentage to 1 decimal place
+        percentageChange = Math.round(percentageChange * 10) / 10;
+        
+        // Determine status
+        const isIncrease = percentageChange > 0;
+        const isUnchanged = percentageChange === 0;
+        const status = isUnchanged ? 'Unchanged' : (isIncrease ? 'Increased' : 'Decreased');
+        
+        // Create row
+        const row = document.createElement('tr');
+        
+        // Cell for name
+        const nameCell = document.createElement('td');
+        nameCell.textContent = item.name;
+        row.appendChild(nameCell);
+        
+        // Cell for PREVIOUS month value (now first)
+        const prevCell = document.createElement('td');
+        prevCell.textContent = item.prev;
+        row.appendChild(prevCell);
+        
+        // Cell for CURRENT month value (now second)
+        const currentCell = document.createElement('td');
+        currentCell.textContent = item.current;
+        row.appendChild(currentCell);
+        
+        // Cell for percentage
+        const percentCell = document.createElement('td');
+        percentCell.classList.add('percent-column');
+        if (!isUnchanged) {
+            const sign = isIncrease ? '+' : '-';
+            percentCell.textContent = `${sign}${Math.abs(percentageChange)}%`;
+            percentCell.style.color = isIncrease ? '#27ae60' : '#c0392b';
+        } else {
+            percentCell.textContent = '0.0%';
+            percentCell.style.color = '#888';
+        }
+        row.appendChild(percentCell);
+        
+        // Cell for status
+        const statusCell = document.createElement('td');
+        statusCell.classList.add('status-column');
+        
+        // Add arrow and status
+        if (!isUnchanged) {
+            const arrow = document.createElement('span');
+            arrow.classList.add('arrow');
+            arrow.textContent = isIncrease ? '▲' : '▼';
+            statusCell.appendChild(arrow);
+        }
+        
+        const statusText = document.createElement('span');
+        statusText.textContent = status;
+        statusText.classList.add(isIncrease ? 'increase' : (isUnchanged ? 'unchanged' : 'decrease'));
+        statusCell.appendChild(statusText);
+        
+        row.appendChild(statusCell);
+        
+        // Add row to table
+        compareTableBody.appendChild(row);
+    });
+    
+    return comparisonData;
+}
+
+/**
+ * Update comparison bar chart
+ */
+function updateComparisonChart(currentData, prevData, currentMonthInfo, prevMonthInfo) {
+    // Get metrics for both months
+    const currentMetrics = calculateMetrics(currentData);
+    const prevMetrics = calculateMetrics(prevData);
+    
+    // Get month names with year
+    const currentMonthLabel = `${shortMonthNames[currentMonthInfo.month]}-${currentMonthInfo.year.toString().slice(-2)}`;
+    const prevMonthLabel = `${shortMonthNames[prevMonthInfo.month]}-${prevMonthInfo.year.toString().slice(-2)}`;
+    
+    const ctx = document.getElementById('chart-compare-bar').getContext('2d');
+    
+    // Destroy existing chart if it exists
+    if (compareBarChart) {
+        compareBarChart.destroy();
+    }
+    
+    // Create new chart - Mengubah urutan dataset untuk mencocokkan urutan di tabel
+    compareBarChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Container', 'Palletize', 'Non Palletize', '20" (Feet)', '40" (Feet)'],
+            datasets: [
+                {
+                    label: prevMonthLabel,  // Bulan sebelumnya dulu (Apr)
+                    data: [
+                        prevMetrics.totalContainer,
+                        prevMetrics.palletizeCount,
+                        prevMetrics.nonPalletizeCount,
+                        prevMetrics.container20Count,
+                        prevMetrics.container40Count
+                    ],
+                    backgroundColor: '#f38a4e', // Warna oranye untuk bulan sebelumnya
+                    borderColor: '#e67535',
+                    borderWidth: 1
+                },
+                {
+                    label: currentMonthLabel, // Bulan terkini kedua (May)
+                    data: [
+                        currentMetrics.totalContainer,
+                        currentMetrics.palletizeCount,
+                        currentMetrics.nonPalletizeCount,
+                        currentMetrics.container20Count,
+                        currentMetrics.container40Count
+                    ],
+                    backgroundColor: '#5395d6', // Warna biru untuk bulan terkini
+                    borderColor: '#3780c5',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12
+                    }
+                },
+                datalabels: {
+                    color: '#fff',
+                    font: {
+                        weight: 'bold'
+                    },
+                    formatter: function(value) {
+                        return value > 0 ? value : '';
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+}
+
+/**
+ * Update trend line chart
+ */
+function updateTrendChart(monthlyData, year) {
+    const ctx = document.getElementById('chart-trend-line').getContext('2d');
+    
+    // Destroy existing chart if it exists
+    if (trendLineChart) {
+        trendLineChart.destroy();
+    }
+    
+    // Create gradient fill
+    const gradientFill = ctx.createLinearGradient(0, 0, 0, 400);
+    gradientFill.addColorStop(0, 'rgba(83, 149, 214, 0.6)');
+    gradientFill.addColorStop(0.7, 'rgba(83, 149, 214, 0.1)');
+    gradientFill.addColorStop(1, 'rgba(83, 149, 214, 0)');
+    
+    // Find min and max values for better axis scaling
+    const maxValue = Math.max(...monthlyData) * 1.1; // Add 10% padding
+    const minValue = Math.max(0, Math.min(...monthlyData) * 0.8); // Lower bound but not below 0
+    
+    // Create new chart
+    trendLineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: fullMonthNames,
+            datasets: [{
+                label: `Total Containers ${year}`,
+                data: monthlyData,
+                borderColor: '#5395d6',
+                backgroundColor: gradientFill,
+                borderWidth: 3,
+                pointRadius: 4,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#5395d6',
+                pointBorderWidth: 2,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: '#5395d6',
+                pointHoverBorderWidth: 3,
+                tension: 0.3, // Makes the line smoother
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        boxWidth: 12,
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        font: {
+                            weight: 'bold'
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    titleColor: '#333',
+                    bodyColor: '#5395d6',
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    padding: 12,
+                    cornerRadius: 8,
+                    displayColors: false,
+                    borderColor: '#ddd',
+                    borderWidth: 1,
+                    caretSize: 8,
+                    caretPadding: 8,
+                    callbacks: {
+                        title: function(context) {
+                            return context[0].label + ' ' + year;
+                        },
+                        label: function(context) {
+                            return 'Total Containers: ' + context.parsed.y;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    min: minValue,
+                    max: maxValue,
+                    grid: {
+                        color: 'rgba(200, 200, 200, 0.2)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 12
+                        },
+                        padding: 10,
+                        color: '#666'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false,
+                        drawBorder: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 12
+                        },
+                        padding: 5,
+                        color: '#666'
+                    }
+                }
+            }
+        }
+    });
 }
 
 /**
@@ -463,6 +920,73 @@ function updateFeetPieChart(container20Percentage, container40Percentage) {
 }
 
 /**
+ * Reset trend chart to default state
+ */
+function resetTrendChart() {
+    const ctx = document.getElementById('chart-trend-line').getContext('2d');
+    
+    // Destroy existing chart if it exists
+    if (trendLineChart) {
+        trendLineChart.destroy();
+    }
+    
+    // Create gradient fill
+    const gradientFill = ctx.createLinearGradient(0, 0, 0, 400);
+    gradientFill.addColorStop(0, 'rgba(83, 149, 214, 0.6)');
+    gradientFill.addColorStop(0.7, 'rgba(83, 149, 214, 0.1)');
+    gradientFill.addColorStop(1, 'rgba(83, 149, 214, 0)');
+    
+    // Create empty chart
+    trendLineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: fullMonthNames,
+            datasets: [{
+                label: 'Total Containers',
+                data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                borderColor: '#5395d6',
+                backgroundColor: gradientFill,
+                borderWidth: 3,
+                pointRadius: 4,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#5395d6',
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        boxWidth: 12,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(200, 200, 200, 0.2)',
+                        drawBorder: false
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false,
+                        drawBorder: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+/**
  * Reset dashboard to default state
  */
 function resetDashboard() {
@@ -473,15 +997,58 @@ function resetDashboard() {
     container20El.textContent = '0';
     container40El.textContent = '0';
     
+    // Reset comparison table
+    compareTableBody.innerHTML = '';
+    
     // Destroy existing charts
     if (palletizeBarChart) palletizeBarChart.destroy();
     if (palletizePieChart) palletizePieChart.destroy();
     if (feetBarChart) feetBarChart.destroy();
     if (feetPieChart) feetPieChart.destroy();
+    if (compareBarChart) compareBarChart.destroy();
+    if (trendLineChart) trendLineChart.destroy();
     
     // Create empty charts
     updatePalletizeBarChart(0, 0);
     updatePalletizePieChart(0, 0);
     updateFeetBarChart(0, 0);
     updateFeetPieChart(0, 0);
+    
+    // Create empty comparison chart
+    const ctx = document.getElementById('chart-compare-bar').getContext('2d');
+    compareBarChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Container', 'Palletize', 'Non Palletize', '20" (Feet)', '40" (Feet)'],
+            datasets: [
+                {
+                    label: 'Previous Month',
+                    data: [0, 0, 0, 0, 0],
+                    backgroundColor: '#f38a4e'
+                },
+                {
+                    label: 'Current Month',
+                    data: [0, 0, 0, 0, 0],
+                    backgroundColor: '#5395d6'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Reset trend chart
+    resetTrendChart();
 }
