@@ -78,7 +78,7 @@ const chartPalletizeBar = new Chart(document.getElementById('chart-palletize-bar
         }]
     },
     options: {
-        responsive: false,
+        responsive: true,
         maintainAspectRatio: false,
         plugins: {
             legend: { display: false },
