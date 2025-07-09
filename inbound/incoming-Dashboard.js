@@ -71,10 +71,10 @@ const chartPalletizeBar = new Chart(document.getElementById('chart-palletize-bar
         datasets: [{
             data: [palletizeVsNon.palletize, palletizeVsNon.nonPalletize],
             backgroundColor: ['#5395d6', '#ffcc5a'],
-            borderRadius: 7,
+            borderRadius: 8,
             borderSkipped: false,
-            barPercentage: 0.6,
-            categoryPercentage: 0.7
+            barPercentage: 0.55,
+            categoryPercentage: 0.75
         }]
     },
     options: {
@@ -85,7 +85,7 @@ const chartPalletizeBar = new Chart(document.getElementById('chart-palletize-bar
             datalabels: {
                 anchor: 'end',
                 align: 'top',
-                font: { weight: 'bold', size: 13 },
+                font: { weight: 'bold', size: 15 },
                 color: '#23507b',
                 formatter: v => v
             }
@@ -94,8 +94,8 @@ const chartPalletizeBar = new Chart(document.getElementById('chart-palletize-bar
             padding: { top: 15, bottom: 0, left: 0, right: 0 }
         },
         scales: {
-            x: { grid: { display: false }, ticks: { font: { size: 11, weight: 'bold' } } },
-            y: { beginAtZero: true, grid: { color: "#e4e4e4" }, ticks: { stepSize: 10, font: { size: 11 } }, max: 50 }
+            x: { grid: { display: false }, ticks: { font: { size: 13, weight: 'bold' } } },
+            y: { beginAtZero: true, grid: { color: "#e4e4e4" }, ticks: { stepSize: 10, font: { size: 13 } }, max: 50 }
         }
     },
     plugins: [ChartDataLabels]
@@ -152,10 +152,10 @@ const chartFeetBar = new Chart(document.getElementById('chart-feet-bar'), {
         datasets: [{
             data: [feetVsFeet['20'], feetVsFeet['40']],
             backgroundColor: ['#bcbcbc', '#f38a4e'],
-            borderRadius: 7,
+            borderRadius: 8,
             borderSkipped: false,
-            barPercentage: 0.6,
-            categoryPercentage: 0.7
+            barPercentage: 0.55,
+            categoryPercentage: 0.75
         }]
     },
     options: {
@@ -166,7 +166,7 @@ const chartFeetBar = new Chart(document.getElementById('chart-feet-bar'), {
             datalabels: {
                 anchor: 'end',
                 align: 'top',
-                font: { weight: 'bold', size: 13 },
+                font: { weight: 'bold', size: 15 },
                 color: '#23507b',
                 formatter: v => v
             }
@@ -175,8 +175,8 @@ const chartFeetBar = new Chart(document.getElementById('chart-feet-bar'), {
             padding: { top: 15, bottom: 0, left: 0, right: 0 }
         },
         scales: {
-            x: { grid: { display: false }, ticks: { font: { size: 11, weight: 'bold' } } },
-            y: { beginAtZero: true, grid: { color: "#e4e4e4" }, ticks: { stepSize: 10, font: { size: 11 } }, max: 50 }
+            x: { grid: { display: false }, ticks: { font: { size: 13, weight: 'bold' } } },
+            y: { beginAtZero: true, grid: { color: "#e4e4e4" }, ticks: { stepSize: 10, font: { size: 13 } }, max: 50 }
         }
     },
     plugins: [ChartDataLabels]
