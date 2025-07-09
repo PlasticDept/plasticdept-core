@@ -1,1 +1,126 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Incoming Dashboard</title>
+    <meta name="viewport" content="width=900">
+    <link rel="stylesheet" href="incoming-Dashboard.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <div class="dashboard-date">
+                <div>Year<br><span id="dashboard-year">2025</span></div>
+                <div>Month<br><span id="dashboard-month">March</span></div>
+            </div>
+        </div>
+        <div class="dashboard-cards">
+            <div class="dashboard-card card-total">
+                <span>TOTAL CONTAINER</span>
+                <div class="card-value" id="total-container">-</div>
+            </div>
+            <div class="dashboard-card card-blue">
+                <span>CONTAINER PALLETIZE</span>
+                <div class="card-value" id="container-palletize">-</div>
+            </div>
+            <div class="dashboard-card card-yellow">
+                <span>CONTAINER NON PALLETIZE</span>
+                <div class="card-value" id="container-non-palletize">-</div>
+            </div>
+            <div class="dashboard-card card-grey">
+                <span>CONTAINER 20"</span>
+                <div class="card-value" id="container-20">-</div>
+            </div>
+            <div class="dashboard-card card-orange">
+                <span>CONTAINER 40"</span>
+                <div class="card-value" id="container-40">-</div>
+            </div>
+        </div>
+        <div class="dashboard-grid">
+            <div class="dashboard-box box-double">
+                <div class="box-title">PALLETIZE VS CONTAINER NON PALLETIZE</div>
+                <div class="box-charts">
+                    <div class="box-chart">
+                        <div class="chart-label">DATA</div>
+                        <canvas id="chart-palletize-bar"></canvas>
+                    </div>
+                    <div class="box-chart">
+                        <div class="chart-label">PERCENTAGE</div>
+                        <canvas id="chart-palletize-pie"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="dashboard-box box-double">
+                <div class="box-title">20" VS 40"</div>
+                <div class="box-charts">
+                    <div class="box-chart">
+                        <div class="chart-label">DATA</div>
+                        <canvas id="chart-feet-bar"></canvas>
+                    </div>
+                    <div class="box-chart">
+                        <div class="chart-label">PERCENTAGE</div>
+                        <canvas id="chart-feet-pie"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="dashboard-compare-row">
+            <div class="dashboard-box box-compare">
+                <div class="box-title">COMPARE</div>
+                <table class="compare-table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Jan-25</th>
+                            <th>Feb-25</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Container</td>
+                            <td>85</td>
+                            <td>75</td>
+                            <td>-11.76% Decreased</td>
+                        </tr>
+                        <tr>
+                            <td>Palletize</td>
+                            <td>45</td>
+                            <td>45</td>
+                            <td>0.00% Increased</td>
+                        </tr>
+                        <tr>
+                            <td>Non Palletize</td>
+                            <td>40</td>
+                            <td>30</td>
+                            <td>-25.00% Decreased</td>
+                        </tr>
+                        <tr>
+                            <td>20 Feet</td>
+                            <td>53</td>
+                            <td>33</td>
+                            <td>-37.74% Decreased</td>
+                        </tr>
+                        <tr>
+                            <td>40 Feet</td>
+                            <td>32</td>
+                            <td>42</td>
+                            <td>31.25% Increased</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="dashboard-box box-barcompare">
+                <canvas id="chart-compare-bar"></canvas>
+            </div>
+        </div>
+        <div class="dashboard-box box-trend">
+            <div class="box-title">TREND LINE 1 YEAR</div>
+            <canvas id="chart-trend-line"></canvas>
+        </div>
+    </div>
+    <script src="incoming-Dashboard.js"></script>
+</body>
+</html>

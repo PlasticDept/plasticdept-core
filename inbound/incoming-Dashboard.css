@@ -1,1 +1,214 @@
+body {
+    background: #fafbfc;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
 
+.dashboard-container {
+    width: 900px;
+    margin: 20px auto;
+    box-sizing: border-box;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.dashboard-date {
+    display: flex;
+    flex-direction: column;
+    font-size: 1rem;
+    color: #222;
+    margin: 10px 0 0 0;
+    letter-spacing: 0.02em;
+}
+
+.dashboard-date > div {
+    margin-bottom: 8px;
+}
+
+.dashboard-date span {
+    font-size: 1.1em;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.dashboard-cards {
+    display: flex;
+    gap: 18px;
+    margin-bottom: 18px;
+    justify-content: center;
+}
+
+.dashboard-card {
+    flex: 1 1 0;
+    min-width: 130px;
+    max-width: 180px;
+    background: #e4e8eb;
+    border-radius: 16px;
+    padding: 18px 10px 12px 10px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    font-weight: 500;
+    font-size: 1.06rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: box-shadow 0.2s;
+}
+
+.dashboard-card .card-value {
+    margin-top: 18px;
+    font-size: 2.1rem;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+}
+
+.card-total {
+    background: #7cc86d;
+    color: #fff;
+}
+
+.card-blue {
+    background: #5395d6;
+    color: #fff;
+}
+
+.card-yellow {
+    background: #ffcc5a;
+    color: #222;
+}
+
+.card-grey {
+    background: #bcbcbc;
+    color: #222;
+}
+
+.card-orange {
+    background: #f38a4e;
+    color: #fff;
+}
+
+.dashboard-grid {
+    display: flex;
+    gap: 22px;
+    margin-bottom: 16px;
+}
+
+.dashboard-box {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    padding: 18px;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.box-title {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 10px;
+    letter-spacing: 0.01em;
+}
+
+.box-double {
+    flex: 1 1 0;
+    min-width: 0;
+    margin-right: 0;
+}
+
+.box-charts {
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+}
+
+.box-chart {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.chart-label {
+    font-size: 0.95em;
+    color: #444;
+    margin-bottom: 3px;
+    margin-top: 6px;
+}
+
+.dashboard-compare-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 18px;
+}
+
+.box-compare {
+    flex: 1.1 1 0;
+    min-width: 0;
+    padding-bottom: 0;
+    justify-content: flex-start;
+}
+
+.compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.compare-table th, .compare-table td {
+    text-align: left;
+    padding: 5px 7px;
+    font-size: 0.98em;
+    border: none;
+}
+
+.compare-table th {
+    font-weight: 600;
+}
+
+.compare-table td:last-child {
+    white-space: nowrap;
+}
+
+.box-barcompare {
+    flex: 1.2 1 0;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    padding: 18px 14px 14px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.box-trend {
+    margin-top: 10px;
+    background: #fff;
+    padding: 18px 20px 10px 20px;
+    border-radius: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+}
+
+@media (max-width: 1020px) {
+    .dashboard-container {
+        width: 98vw;
+    }
+}
+
+@media (max-width: 900px) {
+    .dashboard-cards, .dashboard-grid, .dashboard-compare-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .dashboard-card, .dashboard-box, .box-barcompare, .box-compare {
+        min-width: 0;
+        max-width: 100vw;
+    }
+}
