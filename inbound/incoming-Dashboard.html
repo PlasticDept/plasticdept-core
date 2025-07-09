@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=900">
     <link rel="stylesheet" href="incoming-Dashboard.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Chart.js datalabels plugin -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 </head>
 <body>
@@ -45,39 +44,34 @@
                 <div class="card-value" id="container-40">-</div>
             </div>
         </div>
-        <!-- Chart Titles outside containers -->
         <div class="dashboard-chart-titles">
-            <div class="chart-title">PALLETIZE VS CONTAINER NON PALLETIZE</div>
-            <div class="chart-title">20" VS 40"</div>
+            <div class="chart-title">CONTAINER PACKAGING</div>
+            <div class="chart-title">CONTAINER SIZE TYPE</div>
         </div>
-        <div class="dashboard-grid">
-            <div class="dashboard-box box-double">
-                <div class="box-charts small-charts">
-                    <div class="box-chart">
-                        <div class="chart-label">DATA</div>
-                        <canvas id="chart-palletize-bar"></canvas>
-                    </div>
-                    <div class="box-chart">
-                        <div class="chart-label">PERCENTAGE</div>
-                        <canvas id="chart-palletize-pie"></canvas>
-                    </div>
+        <div class="dashboard-grid single-chart-mode">
+            <div class="dashboard-box">
+                <div class="chart-canvas-wrapper">
+                    <canvas id="chart-palletize-bar"></canvas>
                 </div>
             </div>
-            <div class="dashboard-box box-double">
-                <div class="box-charts small-charts">
-                    <div class="box-chart">
-                        <div class="chart-label">DATA</div>
-                        <canvas id="chart-feet-bar"></canvas>
-                    </div>
-                    <div class="box-chart">
-                        <div class="chart-label">PERCENTAGE</div>
-                        <canvas id="chart-feet-pie"></canvas>
-                    </div>
+            <div class="dashboard-box">
+                <div class="chart-canvas-wrapper">
+                    <canvas id="chart-palletize-pie"></canvas>
+                </div>
+            </div>
+            <div class="dashboard-box">
+                <div class="chart-canvas-wrapper">
+                    <canvas id="chart-feet-bar"></canvas>
+                </div>
+            </div>
+            <div class="dashboard-box">
+                <div class="chart-canvas-wrapper">
+                    <canvas id="chart-feet-pie"></canvas>
                 </div>
             </div>
         </div>
         <div class="dashboard-chart-titles">
-            <div class="chart-title">COMPARE</div>
+            <div class="chart-title">COMPARISON LAST 2 MONTHS</div>
         </div>
         <div class="dashboard-compare-row">
             <div class="dashboard-box box-compare">
@@ -88,6 +82,7 @@
                             <th>Jan-25</th>
                             <th>Feb-25</th>
                             <th>Percentage</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="compare-table-body">

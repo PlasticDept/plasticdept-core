@@ -1,3 +1,4 @@
+/* Base Styles - Setting dasar untuk seluruh halaman */
 body {
     background: #fafbfc;
     font-family: 'Segoe UI', Arial, sans-serif;
@@ -5,12 +6,14 @@ body {
     padding: 0;
 }
 
+/* Container utama dashboard */
 .dashboard-container {
     width: 1100px;
     margin: 20px auto;
     box-sizing: border-box;
 }
 
+/* Header Dashboard - Bagian atas dashboard */
 .dashboard-header {
     display: flex;
     justify-content: flex-start;
@@ -18,6 +21,7 @@ body {
     margin-bottom: 10px;
 }
 
+/* Date Selector - Komponen untuk memilih tanggal/periode */
 .dashboard-date {
     display: flex;
     flex-direction: row;
@@ -40,7 +44,9 @@ body {
     font-size: 1em;
     color: #23507b;
     letter-spacing: 0.01em;
+    text-align: center;
 }
+
 .dashboard-date select {
     font-size: 1.13em;
     padding: 3px 12px;
@@ -53,14 +59,16 @@ body {
     outline: none;
     transition: border-color 0.2s;
 }
+
 .dashboard-date select:focus {
     border-color: #5395d6;
 }
 
+/* Cards Section - Kartu-kartu statistik utama */
 .dashboard-cards {
     display: flex;
     gap: 18px;
-    margin-bottom: 18px;
+    margin-bottom: 26px;
     justify-content: center;
 }
 
@@ -69,47 +77,56 @@ body {
     min-width: 180px;
     max-width: 220px;
     background: #e4e8eb;
-    border-radius: 16px;
+    border-radius: 14px;
     padding: 18px 10px 12px 10px;
     text-align: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    box-shadow: 0 3px 16px rgba(0,0,0,0.06);
     font-weight: 500;
     font-size: 1.06rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     transition: box-shadow 0.2s;
+    border: 1px solid #f0f3f7;
 }
 
+/* Warna-warna untuk card */
 .card-total {
     background: #7cc86d;
     color: #fff;
 }
+
 .card-blue {
     background: #5395d6;
     color: #fff;
 }
+
 .card-yellow {
     background: #ffcc5a;
     color: #222;
 }
+
 .card-grey {
     background: #bcbcbc;
     color: #222;
 }
+
 .card-orange {
     background: #f38a4e;
     color: #fff;
 }
+
+/* Styling khusus untuk card non-palletize */
 .card-nonpalletize {
     font-size: 0.96rem;
 }
 
 .card-nonpalletize span {
-    font-size: 0.93em;
+    font-size: 0.92em;
     white-space: nowrap;
 }
 
+/* Nilai dalam card */
 .dashboard-card .card-value {
     margin-top: 18px;
     font-size: 2.1rem;
@@ -117,98 +134,108 @@ body {
     letter-spacing: 0.05em;
 }
 
+/* Chart Titles - Judul untuk bagian chart/grafik */
 .dashboard-chart-titles {
     width: 100%;
     display: flex;
     gap: 22px;
-    margin-bottom: 2px;
+    margin-bottom: 8px;
     margin-top: 18px;
     justify-content: flex-start;
 }
+
 .dashboard-chart-titles .chart-title {
     flex: 1 1 0;
     font-weight: 700;
-    font-size: 1.06rem;
+    font-size: 1.08rem;
     letter-spacing: 0.01em;
     color: #23507b;
     margin-bottom: 2px;
     margin-right: 10px;
+    text-align: center;
 }
 
-.dashboard-grid {
+/* Single Chart Mode - Layout untuk mode tampilan chart tunggal */
+.dashboard-grid.single-chart-mode {
     display: flex;
-    gap: 22px;
+    gap: 20px;
     margin-bottom: 16px;
-    max-height: 441px;
-    min-height: 350px;
+    justify-content: center;
+    align-items: stretch;
 }
 
-.dashboard-box {
+.dashboard-grid.single-chart-mode .dashboard-box {
+    flex: 1 1 0;
+    min-width: 210px;
+    max-width: 280px;
     background: #fff;
-    border-radius: 18px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
-    padding: 18px;
+    border-radius: 16px;
+    box-shadow: 0 3px 16px rgba(0,0,0,0.08);
+    padding: 18px 16px 16px 16px;
     margin-bottom: 0;
     display: flex;
     flex-direction: column;
     align-items: stretch;
+    border: 1px solid #f0f3f7;
+    transition: box-shadow 0.2s;
+    height: 280px;
+    justify-content: center;
 }
 
-.box-double {
-    flex: 1 1 0;
-    min-width: 0;
-    margin-right: 0;
-}
-
-.box-charts {
+/* Chart Canvas - Styling untuk elemen canvas chart */
+.chart-canvas-wrapper {
+    width: 100%;
+    max-width: 220px;
+    min-width: 120px;
+    height: 190px;
+    margin: 0 auto;
     display: flex;
-    gap: 20px;
-    justify-content: space-between;
+    align-items: center;
+    justify-content: center;
 }
 
-.box-charts.small-charts .box-chart {
-    max-width: 130px;
+.dashboard-box canvas {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 220px !important;
+    max-height: 190px !important;
     min-width: 100px;
-    padding: 0 0 0 0;
-    align-items: center;
-}
-
-.box-chart {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.box-chart canvas {
-    width: 110px !important;
-    height: 110px !important;
-    max-width: 130px !important;
-    max-height: 130px !important;
-    margin-top: 0;
+    min-height: 110px;
+    background: transparent;
 }
 
 .chart-label {
-    font-size: 0.93em;
+    font-size: 1em;
     color: #444;
-    margin-bottom: 3px;
-    margin-top: 6px;
+    margin: 0;
+    margin-bottom: 8px;
+    text-align: center;
+    font-weight: 500;
 }
 
+/* Compare Section - Bagian perbandingan data */
 .dashboard-compare-row {
     display: flex;
     gap: 20px;
     margin-bottom: 18px;
+    justify-content: center;
 }
 
-.box-compare {
-    flex: 1.1 1 0;
+.dashboard-box.box-compare {
+    flex: 1.2 1 0;
     min-width: 0;
-    padding-bottom: 0;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 3px 16px rgba(0,0,0,0.08);
+    padding: 18px 16px 14px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    border: 1px solid #f0f3f7;
     justify-content: flex-start;
-    align-items: flex-start;
 }
 
+/* Compare Table - Tabel perbandingan data */
 .compare-table {
     width: 100%;
     border-collapse: separate;
@@ -219,87 +246,172 @@ body {
 
 .compare-table th, .compare-table td {
     text-align: right;
-    padding: 5px 7px;
+    padding: 5px 12px;
     font-size: 1em;
     border: none;
     font-variant-numeric: tabular-nums;
+    border-right: 1px solid rgba(0,0,0,0.05);
 }
+
 .compare-table th:first-child,
 .compare-table td:first-child {
     text-align: left;
+    padding-left: 8px;
     font-variant-numeric: normal;
 }
 
+/* Header tabel */
 .compare-table th {
-    font-weight: 600;
+    background: rgba(83, 149, 214, 0.04);
+    font-weight: 700;
+    color: #1a3d5f;
+    padding-top: 8px;
+    padding-bottom: 8px;
 }
 
-.compare-table .compare-percent {
-    font-weight: 600;
-    font-size: 1em;
-    font-variant-numeric: tabular-nums;
-    padding-right: 4px;
-    display: inline-block;
-}
-.compare-table .compare-status {
-    font-size: 1em;
-    font-weight: 600;
-    padding-left: 3px;
-    display: inline-block;
-    vertical-align: middle;
+.compare-table th:nth-child(4) { /* Percentage column header */
+    text-align: right;
 }
 
-.compare-table .compare-status.increase { color: #27ae60; }
-.compare-table .compare-status.decrease { color: #c0392b; }
-.compare-table .compare-status.unchanged { color: #888; }
-.compare-table .arrow {
+.compare-table th:last-child { /* Status column header */
+    text-align: left;
+    padding-left: 15px;
+}
+
+/* Kolom persentase dan status */
+.compare-table .percent-column {
+    text-align: right;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.compare-table .status-column {
+    text-align: left;
+    padding-left: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Styling untuk indikator status */
+.status-column.increase,
+td.status-column:has(.increase) { 
+    color: #27ae60; 
+}
+
+.status-column.decrease,
+td.status-column:has(.decrease) { 
+    color: #c0392b; 
+}
+
+.status-column.unchanged,
+td.status-column:has(.unchanged) { 
+    color: #888; 
+}
+
+/* Styling untuk arrow */
+.arrow {
     vertical-align: middle;
     font-size: 1.1em;
     font-weight: bold;
     margin-right: 2px;
 }
 
-.box-barcompare {
-    flex: 1.2 1 0;
+/* Bar Compare Chart - Grafik perbandingan dalam bentuk bar */
+.dashboard-box.box-barcompare {
+    flex: 1 1 0;
     background: #fff;
-    border-radius: 18px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    border-radius: 16px;
+    box-shadow: 0 3px 16px rgba(0,0,0,0.08);
     padding: 18px 10px 14px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #f0f3f7;
+    min-width: 240px;
+    height: 330px;
+}
+
+.dashboard-box.box-barcompare canvas {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    min-width: 0;
+    min-height: 0;
+    background: transparent;
+    aspect-ratio: unset;
+}
+
+/* Trend Chart - Grafik trend */
+.dashboard-box.box-trend {
+    margin-top: 10px;
+    background: #fff;
+    padding: 18px 20px 10px 20px;
+    border-radius: 16px;
+    box-shadow: 0 3px 16px rgba(0,0,0,0.08);
+    border: 1px solid #f0f3f7;
+    min-height: 340px;
+    max-height: 400px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.box-trend {
-    margin-top: 10px;
-    background: #fff;
-    padding: 18px 20px 10px 20px;
-    border-radius: 18px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
-}
-
 .dashboard-box.box-trend canvas {
-    min-height: 220px;
-    max-height: 260px;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 360px !important;
+    min-width: 0;
+    min-height: 0;
+    background: transparent;
+    aspect-ratio: unset;
 }
 
-@media (max-width: 1020px) {
+/* Hover Effects - Efek ketika elemen di-hover */
+.dashboard-card:hover,
+.dashboard-box:hover {
+    box-shadow: 0 8px 32px rgba(83, 149, 214, 0.10);
+    z-index: 2;
+}
+
+/* Responsive Design - Penyesuaian untuk layar berbagai ukuran */
+@media (max-width: 1160px) {
     .dashboard-container {
         width: 98vw;
+    }
+    .dashboard-grid.single-chart-mode {
+        flex-wrap: wrap;
+    }
+    .dashboard-grid.single-chart-mode .dashboard-box {
+        min-width: 210px;
+        max-width: 49vw;
+        margin-bottom: 10px;
     }
 }
 
 @media (max-width: 900px) {
-    .dashboard-cards, .dashboard-grid, .dashboard-compare-row {
+    .dashboard-cards,
+    .dashboard-grid.single-chart-mode,
+    .dashboard-compare-row {
         flex-direction: column;
         align-items: stretch;
+        gap: 18px;
     }
-    .dashboard-card, .dashboard-box, .box-barcompare, .box-compare {
+    .dashboard-card,
+    .dashboard-box,
+    .box-barcompare,
+    .box-compare {
         min-width: 0;
         max-width: 100vw;
+        margin-bottom: 10px;
     }
     .dashboard-chart-titles {
         flex-direction: column;
         gap: 2px;
+    }
+    .dashboard-box.box-barcompare {
+        min-width: 0;
+        height: 220px;
     }
 }
