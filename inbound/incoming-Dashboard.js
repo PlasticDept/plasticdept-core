@@ -71,10 +71,10 @@ const chartPalletizeBar = new Chart(document.getElementById('chart-palletize-bar
         datasets: [{
             data: [palletizeVsNon.palletize, palletizeVsNon.nonPalletize],
             backgroundColor: ['#5395d6', '#ffcc5a'],
-            borderRadius: 8,
+            borderRadius: 7,
             borderSkipped: false,
-            barPercentage: 0.65,
-            categoryPercentage: 0.65
+            barPercentage: 0.6,
+            categoryPercentage: 0.7
         }]
     },
     options: {
@@ -90,9 +90,12 @@ const chartPalletizeBar = new Chart(document.getElementById('chart-palletize-bar
                 formatter: v => v
             }
         },
+        layout: {
+            padding: { top: 15, bottom: 0, left: 0, right: 0 }
+        },
         scales: {
             x: { grid: { display: false }, ticks: { font: { size: 11, weight: 'bold' } } },
-            y: { beginAtZero: true, grid: { color: "#e4e4e4" }, ticks: { stepSize: 10, font: { size: 11 } } }
+            y: { beginAtZero: true, grid: { color: "#e4e4e4" }, ticks: { stepSize: 10, font: { size: 11 } }, max: 50 }
         }
     },
     plugins: [ChartDataLabels]
@@ -120,20 +123,21 @@ const chartPalletizePie = new Chart(document.getElementById('chart-palletize-pie
                 callbacks: {
                     label: function(ctx) {
                         const pct = ((ctx.parsed / pieTotal) * 100).toFixed(0);
-                        return `${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                        return `${pct}%`;
                     }
                 }
             },
             datalabels: {
                 color: '#23507b',
-                font: { weight: 'bold', size: 13 },
+                font: { weight: 'bold', size: 15 },
                 formatter: (value, ctx) => {
                     const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
                     const pct = ((value / total) * 100).toFixed(0) + '%';
-                    return `${value}\n${pct}`;
+                    return pct;
                 },
                 anchor: 'center',
-                align: 'center'
+                align: 'center',
+                display: true
             }
         }
     },
@@ -148,10 +152,10 @@ const chartFeetBar = new Chart(document.getElementById('chart-feet-bar'), {
         datasets: [{
             data: [feetVsFeet['20'], feetVsFeet['40']],
             backgroundColor: ['#bcbcbc', '#f38a4e'],
-            borderRadius: 8,
+            borderRadius: 7,
             borderSkipped: false,
-            barPercentage: 0.65,
-            categoryPercentage: 0.65
+            barPercentage: 0.6,
+            categoryPercentage: 0.7
         }]
     },
     options: {
@@ -167,9 +171,12 @@ const chartFeetBar = new Chart(document.getElementById('chart-feet-bar'), {
                 formatter: v => v
             }
         },
+        layout: {
+            padding: { top: 15, bottom: 0, left: 0, right: 0 }
+        },
         scales: {
             x: { grid: { display: false }, ticks: { font: { size: 11, weight: 'bold' } } },
-            y: { beginAtZero: true, grid: { color: "#e4e4e4" }, ticks: { stepSize: 10, font: { size: 11 } } }
+            y: { beginAtZero: true, grid: { color: "#e4e4e4" }, ticks: { stepSize: 10, font: { size: 11 } }, max: 50 }
         }
     },
     plugins: [ChartDataLabels]
@@ -197,20 +204,21 @@ const chartFeetPie = new Chart(document.getElementById('chart-feet-pie'), {
                 callbacks: {
                     label: function(ctx) {
                         const pct = ((ctx.parsed / feetPieTotal) * 100).toFixed(0);
-                        return `${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                        return `${pct}%`;
                     }
                 }
             },
             datalabels: {
                 color: '#23507b',
-                font: { weight: 'bold', size: 13 },
+                font: { weight: 'bold', size: 15 },
                 formatter: (value, ctx) => {
                     const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
                     const pct = ((value / total) * 100).toFixed(0) + '%';
-                    return `${value}\n${pct}`;
+                    return pct;
                 },
                 anchor: 'center',
-                align: 'center'
+                align: 'center',
+                display: true
             }
         }
     },
@@ -229,8 +237,8 @@ const chartCompareBar = new Chart(document.getElementById('chart-compare-bar'), 
                 data: compareData.map(d => d.jan),
                 borderRadius: 7,
                 borderSkipped: false,
-                barPercentage: 0.55,
-                categoryPercentage: 0.60
+                barPercentage: 0.6,
+                categoryPercentage: 0.7
             },
             {
                 label: 'Feb-25',
@@ -238,8 +246,8 @@ const chartCompareBar = new Chart(document.getElementById('chart-compare-bar'), 
                 data: compareData.map(d => d.feb),
                 borderRadius: 7,
                 borderSkipped: false,
-                barPercentage: 0.55,
-                categoryPercentage: 0.60
+                barPercentage: 0.6,
+                categoryPercentage: 0.7
             }
         ]
     },
@@ -252,7 +260,7 @@ const chartCompareBar = new Chart(document.getElementById('chart-compare-bar'), 
                 display: true,
                 anchor: 'end',
                 align: 'top',
-                font: { weight: 'bold', size: 12 },
+                font: { weight: 'bold', size: 13 },
                 color: context => context.dataset.label === "Jan-25" ? "#5395d6" : "#f38a4e",
                 formatter: v => v
             }
@@ -301,21 +309,25 @@ const chartTrendLine = new Chart(document.getElementById('chart-trend-line'), {
     plugins: [ChartDataLabels]
 });
 
-// Render compare data table with two-line for percentage and status, colored
+// Render compare data table with arrow, color and sign for percentage
 function formatCompareRow({label, jan, feb}) {
     let percent = ((feb-jan)/jan*100);
     let stat = percent > 0 ? "Increased" : percent < 0 ? "Decreased" : "Unchanged";
-    let percentStr = percent.toFixed(2).replace("-0.00", "0.00") + "%";
-    let statClass = percent > 0 ? "increase" : percent < 0 ? "decrease" : "";
+    let percentStr = (percent > 0 ? "+" : percent < 0 ? "-" : "") + Math.abs(percent).toFixed(2) + "%";
+    let statClass = percent > 0 ? "increase" : percent < 0 ? "decrease" : "unchanged";
+    let arrow = percent > 0
+        ? '<span class="arrow" style="color:#27ae60">&#9650;</span>'
+        : percent < 0
+            ? '<span class="arrow" style="color:#c0392b">&#9660;</span>'
+            : '<span class="arrow" style="color:#888">&#8212;</span>';
+
     return `<tr>
         <td>${label}</td>
         <td>${jan}</td>
         <td>${feb}</td>
         <td>
-            <div style="display:flex; flex-direction:column; align-items:flex-end;">
-                <span class="compare-percent">${percentStr}</span>
-                <span class="compare-status ${statClass}">${stat}</span>
-            </div>
+            <span class="compare-percent ${statClass}">${arrow}${percentStr}</span>
+            <span class="compare-status ${statClass}">${stat}</span>
         </td>
     </tr>`;
 }

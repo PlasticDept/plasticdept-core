@@ -24,7 +24,13 @@ body {
     font-size: 1rem;
     color: #222;
     margin: 10px 0 0 0;
-    gap: 20px;
+    gap: 32px;
+    background: #f6faff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    padding: 16px 22px 12px 18px;
+    align-items: flex-end;
+    font-weight: 600;
 }
 
 .dashboard-date label {
@@ -32,13 +38,23 @@ body {
     flex-direction: column;
     font-weight: 600;
     font-size: 1em;
+    color: #23507b;
+    letter-spacing: 0.01em;
 }
 .dashboard-date select {
     font-size: 1.13em;
-    padding: 2px 8px;
+    padding: 3px 12px;
     border-radius: 6px;
     border: 1px solid #bcbcbc;
     margin-top: 2px;
+    background: #fff;
+    font-weight: 500;
+    color: #23507b;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.dashboard-date select:focus {
+    border-color: #5395d6;
 }
 
 .dashboard-cards {
@@ -50,8 +66,8 @@ body {
 
 .dashboard-card {
     flex: 1 1 0;
-    min-width: 130px;
-    max-width: 180px;
+    min-width: 180px;
+    max-width: 220px;
     background: #e4e8eb;
     border-radius: 16px;
     padding: 18px 10px 12px 10px;
@@ -86,8 +102,6 @@ body {
     color: #fff;
 }
 .card-nonpalletize {
-    min-width: 165px;
-    max-width: 210px;
     font-size: 0.96rem;
 }
 
@@ -151,14 +165,10 @@ body {
 }
 
 .box-charts.small-charts .box-chart {
-    max-width: 180px;
-    min-width: 140px;
+    max-width: 130px;
+    min-width: 100px;
     padding: 0 0 0 0;
-}
-
-.dashboard-box .box-charts.small-charts {
-    justify-content: space-around;
-    gap: 18px;
+    align-items: center;
 }
 
 .box-chart {
@@ -169,15 +179,15 @@ body {
 }
 
 .box-chart canvas {
-    width: 120px !important;
-    height: 120px !important;
-    max-width: 140px !important;
-    max-height: 140px !important;
+    width: 110px !important;
+    height: 110px !important;
+    max-width: 130px !important;
+    max-height: 130px !important;
     margin-top: 0;
 }
 
 .chart-label {
-    font-size: 0.95em;
+    font-size: 0.93em;
     color: #444;
     margin-bottom: 3px;
     margin-top: 6px;
@@ -202,41 +212,50 @@ body {
     border-collapse: separate;
     border-spacing: 0 4px;
     margin-top: 10px;
+    font-size: 1.04em;
 }
 
 .compare-table th, .compare-table td {
-    text-align: left;
+    text-align: right;
     padding: 5px 7px;
-    font-size: 0.98em;
+    font-size: 1em;
     border: none;
+    font-variant-numeric: tabular-nums;
+}
+.compare-table th:first-child,
+.compare-table td:first-child {
+    text-align: left;
+    font-variant-numeric: normal;
 }
 
 .compare-table th {
     font-weight: 600;
 }
 
-.compare-table td {
+.compare-table .compare-percent {
+    font-weight: 600;
+    font-size: 1em;
+    font-variant-numeric: tabular-nums;
+    padding-right: 4px;
+    display: inline-block;
+}
+.compare-table .compare-status {
+    font-size: 1em;
+    font-weight: 600;
+    padding-left: 3px;
+    display: inline-block;
     vertical-align: middle;
 }
 
-.compare-percent {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-    font-weight: 600;
-    width: 60px;
-    font-size: 0.98em;
-    color: #23507b;
-    padding-right: 5px;
+.compare-table .compare-status.increase { color: #27ae60; }
+.compare-table .compare-status.decrease { color: #c0392b; }
+.compare-table .compare-status.unchanged { color: #888; }
+.compare-table .arrow {
+    vertical-align: middle;
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-right: 2px;
 }
-.compare-status {
-    text-align: left;
-    padding-left: 4px;
-    font-size: 0.97em;
-    font-weight: 600;
-    width: 60px;
-}
-.compare-status.increase { color: #27ae60; }
-.compare-status.decrease { color: #c0392b; }
 
 .box-barcompare {
     flex: 1.2 1 0;
