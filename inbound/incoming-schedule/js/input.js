@@ -223,6 +223,7 @@ function uploadMonthlyToFirebase(records) {
     containerNo = String(containerNo).trim().replace(/[.#$/\[\]\s]/g, "_"); // <-- PATCH HERE
     let processType = row["Process Type"] || row["PROCESS TYPE"] || row["Process"] || "";
     let feet = row["Feet"] || row["FEET"] || "";
+    let biz = row["Biz"] || row["BIZ"] || ""; // Menambahkan field Biz
 
     // Handle Excel serial date
     dateStr = normalizeMonthlyDateField(dateStr);
@@ -252,7 +253,8 @@ function uploadMonthlyToFirebase(records) {
       "Date": dateStr,
       "Container Number": containerNo,
       "Process Type": processType,
-      "Feet": feet
+      "Feet": feet,
+      "Biz": biz // Menambahkan field Biz ke objek database
     };
 
     updates[`${year}/${monthKey}/${day}/${containerNo}`] = dataObj;
