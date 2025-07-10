@@ -37,6 +37,15 @@ let feetPieChart;
 let compareBarChart;
 let trendLineChart;
 
+// Previous values for tracking changes
+const previousValues = {
+    totalContainer: 0,
+    palletizeCount: 0,
+    nonPalletizeCount: 0,
+    container20Count: 0,
+    container40Count: 0
+};
+
 // Month mapping for database path
 const monthNames = {
     1: "01_Jan",
@@ -110,17 +119,108 @@ async function initDashboard() {
         monthSelect.value = currentDate.getMonth() + 1;
         
         // Add event listeners
-        yearSelect.addEventListener('change', loadDashboardData);
-        monthSelect.addEventListener('change', loadDashboardData);
+        yearSelect.addEventListener('change', handleFilterChange);
+        monthSelect.addEventListener('change', handleFilterChange);
         
         // Load initial dashboard data
         await loadDashboardData();
+        updateTimestamp();
         
         console.log("Dashboard initialization complete");
         
     } catch (error) {
         console.error("Error initializing dashboard:", error);
     }
+}
+
+/**
+ * Handler for filter changes with loading animation
+ */
+function handleFilterChange() {
+    setLoadingState(true);
+    // Use setTimeout to allow the UI to update with loading state before processing
+    setTimeout(() => loadDashboardData(), 100);
+}
+
+/**
+ * Set loading state for UI elements
+ */
+function setLoadingState(isLoading) {
+    const containers = document.querySelectorAll('.dashboard-card, .dashboard-box');
+    
+    if (isLoading) {
+        containers.forEach(container => {
+            container.classList.add('loading');
+        });
+    } else {
+        containers.forEach(container => {
+            container.classList.remove('loading');
+            container.classList.add('fade-in');
+            
+            // Remove fade-in class after animation completes
+            setTimeout(() => {
+                container.classList.remove('fade-in');
+            }, 500);
+        });
+    }
+}
+
+/**
+ * Update timestamp dengan waktu lokal Indonesia
+ */
+function updateTimestamp() {
+    const now = new Date();
+    
+    // Format tanggal dan waktu dalam format Indonesia
+    const options = { 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric',
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false,
+        timeZone: 'Asia/Jakarta'
+    };
+    
+    // Format: "10 Jul 2025, 07:11"
+    const formattedTime = now.toLocaleString('id-ID', options);
+    
+    // Update elemen HTML
+    const timestampElement = document.getElementById('update-time');
+    if (timestampElement) {
+        timestampElement.textContent = formattedTime;
+    }
+}
+
+/**
+ * Animate value counting
+ */
+function animateValue(element, start, end, duration) {
+    if (start === end) return;
+    
+    element.classList.add('counting');
+    
+    const range = end - start;
+    const minTimer = 50;
+    const stepTime = Math.abs(Math.floor(duration / range));
+    const startTime = new Date().getTime();
+    const endTime = startTime + duration;
+    let timer;
+    
+    function run() {
+        const now = new Date().getTime();
+        const remaining = Math.max((endTime - now) / duration, 0);
+        const value = Math.round(end - (remaining * range));
+        element.textContent = value;
+        
+        if (value === end) {
+            clearInterval(timer);
+            element.classList.remove('counting');
+        }
+    }
+    
+    timer = setInterval(run, Math.max(stepTime, minTimer));
+    run();
 }
 
 /**
@@ -205,10 +305,93 @@ async function loadDashboardData() {
         // Load trend data for the entire year
         await loadTrendData();
         
+        // Hide loading state after all data is loaded
+        setLoadingState(false);
+        updateTimestamp(); 
+        
     } catch (error) {
         console.error("Error loading dashboard data:", error);
         resetDashboard();
+        setLoadingState(false);
     }
+}
+
+/**
+ * Reset dashboard to default state when there's an error
+ */
+function resetDashboard() {
+    // Reset card values
+    totalContainerEl.textContent = '0';
+    containerPalletizeEl.textContent = '0';
+    containerNonPalletizeEl.textContent = '0';
+    container20El.textContent = '0';
+    container40El.textContent = '0';
+    
+    // Reset comparison table
+    compareTableBody.innerHTML = '';
+    
+    // Reset all charts
+    resetCharts();
+    
+    // Remove trend indicators
+    document.querySelectorAll('.trend-indicator').forEach(el => el.remove());
+    
+    // Show error message to user
+    const errorMessage = document.createElement('div');
+    errorMessage.className = 'error-message';
+    errorMessage.textContent = 'Error loading data. Please try again later.';
+    
+    // Append error message to dashboard
+    const dashboardContainer = document.querySelector('.dashboard-container');
+    if (dashboardContainer) {
+        // Remove any existing error messages
+        const existingError = dashboardContainer.querySelector('.error-message');
+        if (existingError) existingError.remove();
+        
+        dashboardContainer.prepend(errorMessage);
+        
+        // Auto-remove error after 5 seconds
+        setTimeout(() => {
+            errorMessage.classList.add('fade-out');
+            setTimeout(() => errorMessage.remove(), 500);
+        }, 5000);
+    }
+}
+
+/**
+ * Reset all charts
+ */
+function resetCharts() {
+    // Destroy existing charts
+    if (palletizeBarChart) palletizeBarChart.destroy();
+    if (palletizePieChart) palletizePieChart.destroy();
+    if (feetBarChart) feetBarChart.destroy();
+    if (feetPieChart) feetPieChart.destroy();
+    if (compareBarChart) compareBarChart.destroy();
+    if (trendLineChart) trendLineChart.destroy();
+    
+    // Reset chart variables
+    palletizeBarChart = null;
+    palletizePieChart = null;
+    feetBarChart = null;
+    feetPieChart = null;
+    compareBarChart = null;
+    trendLineChart = null;
+}
+
+/**
+ * Reset trend chart specifically
+ */
+function resetTrendChart() {
+    if (trendLineChart) {
+        trendLineChart.destroy();
+        trendLineChart = null;
+    }
+    
+    // Clear any custom tooltips or annotations
+    const chartContainer = document.getElementById('chart-trend-line').parentNode;
+    const customTooltips = chartContainer.querySelectorAll('.custom-tooltip');
+    customTooltips.forEach(tooltip => tooltip.remove());
 }
 
 /**
@@ -279,9 +462,18 @@ async function getMonthData(year, month) {
 }
 
 /**
- * Update card values based on filtered data
+ * Update card values based on filtered data with animations
  */
 function updateCards(data) {
+    // Store the old values before updating
+    const oldValues = {
+        totalContainer: parseInt(totalContainerEl.textContent) || 0,
+        palletizeCount: parseInt(containerPalletizeEl.textContent) || 0,
+        nonPalletizeCount: parseInt(containerNonPalletizeEl.textContent) || 0,
+        container20Count: parseInt(container20El.textContent) || 0,
+        container40Count: parseInt(container40El.textContent) || 0
+    };
+
     // 1. Total Container count
     const totalContainer = data.length;
     
@@ -314,12 +506,52 @@ function updateCards(data) {
         container40Count
     });
     
-    // Update DOM elements
-    totalContainerEl.textContent = totalContainer;
-    containerPalletizeEl.textContent = palletizeCount;
-    containerNonPalletizeEl.textContent = nonPalletizeCount;
-    container20El.textContent = container20Count;
-    container40El.textContent = container40Count;
+    // Remove old trend indicators
+    document.querySelectorAll('.trend-indicator').forEach(el => el.remove());
+
+    // Update DOM elements with animation
+    animateValue(totalContainerEl, oldValues.totalContainer, totalContainer, 800);
+    animateValue(containerPalletizeEl, oldValues.palletizeCount, palletizeCount, 800);
+    animateValue(containerNonPalletizeEl, oldValues.nonPalletizeCount, nonPalletizeCount, 800);
+    animateValue(container20El, oldValues.container20Count, container20Count, 800);
+    animateValue(container40El, oldValues.container40Count, container40Count, 800);
+    
+    // Add trend indicators
+    addTrendIndicator(totalContainerEl.parentNode, totalContainer, oldValues.totalContainer);
+    addTrendIndicator(containerPalletizeEl.parentNode, palletizeCount, oldValues.palletizeCount);
+    addTrendIndicator(containerNonPalletizeEl.parentNode, nonPalletizeCount, oldValues.nonPalletizeCount);
+    addTrendIndicator(container20El.parentNode, container20Count, oldValues.container20Count);
+    addTrendIndicator(container40El.parentNode, container40Count, oldValues.container40Count);
+    
+    // Store current values for next comparison
+    previousValues.totalContainer = totalContainer;
+    previousValues.palletizeCount = palletizeCount;
+    previousValues.nonPalletizeCount = nonPalletizeCount;
+    previousValues.container20Count = container20Count;
+    previousValues.container40Count = container40Count;
+}
+
+/**
+ * Add trend indicator to card
+ */
+function addTrendIndicator(parent, newValue, oldValue) {
+    if (oldValue === 0 || newValue === oldValue) return;
+    
+    const indicator = document.createElement('span');
+    indicator.classList.add('trend-indicator');
+    
+    if (newValue > oldValue) {
+        indicator.classList.add('trend-up');
+        indicator.textContent = '↑';
+    } else if (newValue < oldValue) {
+        indicator.classList.add('trend-down');
+        indicator.textContent = '↓';
+    } else {
+        indicator.classList.add('trend-unchanged');
+        indicator.textContent = '–';
+    }
+    
+    parent.appendChild(indicator);
 }
 
 /**
@@ -406,7 +638,7 @@ function updateComparisonTable(currentData, prevData, currentMonthInfo, prevMont
     ];
     
     // Create rows for each metric
-    comparisonData.forEach(item => {
+    comparisonData.forEach((item, index) => {
         // Calculate percentage change - dari prev ke current, karena urutan kolom diubah
         // Rumus: (current - prev) / prev * 100
         let percentageChange = 0;
@@ -427,6 +659,9 @@ function updateComparisonTable(currentData, prevData, currentMonthInfo, prevMont
         // Create row
         const row = document.createElement('tr');
         
+        // Add staggered animation
+        setTimeout(() => row.classList.add('fade-in'), index * 100);
+        
         // Cell for name
         const nameCell = document.createElement('td');
         nameCell.textContent = item.name;
@@ -440,6 +675,7 @@ function updateComparisonTable(currentData, prevData, currentMonthInfo, prevMont
         // Cell for CURRENT month value (now second)
         const currentCell = document.createElement('td');
         currentCell.textContent = item.current;
+        currentCell.classList.add('highlight');
         row.appendChild(currentCell);
         
         // Cell for percentage
@@ -495,6 +731,15 @@ function updateComparisonChart(currentData, prevData, currentMonthInfo, prevMont
     
     const ctx = document.getElementById('chart-compare-bar').getContext('2d');
     
+    // Create gradients for bars
+    const orangeGradient = ctx.createLinearGradient(0, 0, 0, 400);
+    orangeGradient.addColorStop(0, '#f38a4e');
+    orangeGradient.addColorStop(1, '#e67535');
+    
+    const blueGradient = ctx.createLinearGradient(0, 0, 0, 400);
+    blueGradient.addColorStop(0, '#5395d6');
+    blueGradient.addColorStop(1, '#3b7fc4');
+    
     // Destroy existing chart if it exists
     if (compareBarChart) {
         compareBarChart.destroy();
@@ -515,9 +760,11 @@ function updateComparisonChart(currentData, prevData, currentMonthInfo, prevMont
                         prevMetrics.container20Count,
                         prevMetrics.container40Count
                     ],
-                    backgroundColor: '#f38a4e', // Warna oranye untuk bulan sebelumnya
+                    backgroundColor: orangeGradient,
                     borderColor: '#e67535',
-                    borderWidth: 1
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    hoverBackgroundColor: '#e06520'
                 },
                 {
                     label: currentMonthLabel, // Bulan terkini kedua (May)
@@ -528,21 +775,52 @@ function updateComparisonChart(currentData, prevData, currentMonthInfo, prevMont
                         currentMetrics.container20Count,
                         currentMetrics.container40Count
                     ],
-                    backgroundColor: '#5395d6', // Warna biru untuk bulan terkini
-                    borderColor: '#3780c5',
-                    borderWidth: 1
+                    backgroundColor: blueGradient,
+                    borderColor: '#3b7fc4',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    hoverBackgroundColor: '#3780c5'
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart',
+                delay: (context) => {
+                    return context.dataIndex * 100 + context.datasetIndex * 100;
+                }
+            },
             plugins: {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        boxWidth: 12
+                        boxWidth: 12,
+                        usePointStyle: true,
+                        pointStyle: 'rectRounded',
+                        font: {
+                            size: 11
+                        },
+                        padding: 15
                     }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#333',
+                    bodyColor: '#333',
+                    titleFont: {
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        weight: 'normal'
+                    },
+                    padding: 10,
+                    cornerRadius: 6,
+                    displayColors: true,
+                    borderColor: '#ddd',
+                    borderWidth: 1
                 },
                 datalabels: {
                     color: '#fff',
@@ -551,12 +829,40 @@ function updateComparisonChart(currentData, prevData, currentMonthInfo, prevMont
                     },
                     formatter: function(value) {
                         return value > 0 ? value : '';
+                    },
+                    anchor: 'center',
+                    align: 'center',
+                    offset: 0,
+                    display: function(context) {
+                        return context.dataset.data[context.dataIndex] > 0;
                     }
                 }
             },
             scales: {
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(200, 200, 200, 0.2)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 11
+                        },
+                        color: '#666'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false,
+                        drawBorder: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 11
+                        },
+                        color: '#666'
+                    }
                 }
             }
         },
@@ -565,7 +871,7 @@ function updateComparisonChart(currentData, prevData, currentMonthInfo, prevMont
 }
 
 /**
- * Update trend line chart
+ * Update trend line chart with enhanced visuals
  */
 function updateTrendChart(monthlyData, year) {
     const ctx = document.getElementById('chart-trend-line').getContext('2d');
@@ -575,17 +881,26 @@ function updateTrendChart(monthlyData, year) {
         trendLineChart.destroy();
     }
     
-    // Create gradient fill
+    // Create enhanced gradient fill with multiple color stops
     const gradientFill = ctx.createLinearGradient(0, 0, 0, 400);
-    gradientFill.addColorStop(0, 'rgba(83, 149, 214, 0.6)');
-    gradientFill.addColorStop(0.7, 'rgba(83, 149, 214, 0.1)');
-    gradientFill.addColorStop(1, 'rgba(83, 149, 214, 0)');
+    gradientFill.addColorStop(0, 'rgba(83, 149, 214, 0.7)');
+    gradientFill.addColorStop(0.4, 'rgba(83, 149, 214, 0.3)');
+    gradientFill.addColorStop(1, 'rgba(83, 149, 214, 0.05)');
     
     // Find min and max values for better axis scaling
     const maxValue = Math.max(...monthlyData) * 1.1; // Add 10% padding
-    const minValue = Math.max(0, Math.min(...monthlyData) * 0.8); // Lower bound but not below 0
+    const minValue = Math.max(0, Math.min(...monthlyData.filter(val => val > 0)) * 0.7); // Lower bound but not below 0
     
-    // Create new chart
+    // Find peak point for highlighting
+    const maxPoint = Math.max(...monthlyData);
+    const maxIndex = monthlyData.indexOf(maxPoint);
+
+    // Find minimum point for highlighting (if > 0)
+    const nonZeroData = monthlyData.filter(value => value > 0);
+    const minPoint = nonZeroData.length > 0 ? Math.min(...nonZeroData) : 0;
+    const minIndex = minPoint > 0 ? monthlyData.indexOf(minPoint) : -1;
+    
+    // Create new chart with enhanced visuals
     trendLineChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -596,11 +911,27 @@ function updateTrendChart(monthlyData, year) {
                 borderColor: '#5395d6',
                 backgroundColor: gradientFill,
                 borderWidth: 3,
-                pointRadius: 4,
-                pointBackgroundColor: '#fff',
-                pointBorderColor: '#5395d6',
+                pointRadius: (ctx) => {
+                    // Make peak and min points larger
+                    const index = ctx.dataIndex;
+                    if (index === maxIndex || index === minIndex) return 6;
+                    return 4;
+                },
+                pointBackgroundColor: (ctx) => {
+                    // Highlight peak and min points
+                    const index = ctx.dataIndex;
+                    if (index === maxIndex) return '#27ae60';
+                    if (index === minIndex) return '#e74c3c';
+                    return '#fff';
+                },
+                pointBorderColor: (ctx) => {
+                    const index = ctx.dataIndex;
+                    if (index === maxIndex) return '#27ae60';
+                    if (index === minIndex) return '#e74c3c';
+                    return '#5395d6';
+                },
                 pointBorderWidth: 2,
-                pointHoverRadius: 6,
+                pointHoverRadius: 8,
                 pointHoverBackgroundColor: '#fff',
                 pointHoverBorderColor: '#5395d6',
                 pointHoverBorderWidth: 3,
@@ -612,23 +943,30 @@ function updateTrendChart(monthlyData, year) {
             responsive: true,
             maintainAspectRatio: false,
             animation: {
-                duration: 1000,
-                easing: 'easeOutQuart'
+                duration: 1500,
+                easing: 'easeOutQuart',
+                delay: (context) => {
+                    // Stagger point animations
+                    return context.raw ? context.dataIndex * 100 : 0;
+                }
             },
             plugins: {
                 legend: {
                     position: 'top',
+                    align: 'start',
                     labels: {
                         boxWidth: 12,
                         usePointStyle: true,
                         pointStyle: 'circle',
                         font: {
-                            weight: 'bold'
-                        }
+                            weight: 'bold',
+                            size: 12
+                        },
+                        padding: 15
                     }
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
                     titleColor: '#333',
                     bodyColor: '#5395d6',
                     titleFont: {
@@ -651,10 +989,36 @@ function updateTrendChart(monthlyData, year) {
                             return context[0].label + ' ' + year;
                         },
                         label: function(context) {
-                            return 'Total Containers: ' + context.parsed.y;
+                            const index = context.dataIndex;
+                            let label = 'Total Containers: ' + context.parsed.y;
+                            
+                            // Add special indicator for peak/min
+                            if (index === maxIndex) label += ' (Peak)';
+                            if (index === minIndex) label += ' (Lowest)';
+                            
+                            return label;
+                        },
+                        // Add footer for additional context
+                        footer: function(context) {
+                            const current = context[0].parsed.y;
+                            if (monthlyData.length > 0) {
+                                const avg = monthlyData.reduce((sum, val) => sum + val, 0) / monthlyData.filter(v => v > 0).length;
+                                const diff = current - avg;
+                                const percent = avg > 0 ? Math.round((diff / avg) * 100) : 0;
+                                
+                                if (current > 0 && avg > 0) {
+                                    return `${percent > 0 ? '+' : ''}${percent}% from average (${Math.round(avg)})`;
+                                }
+                            }
+                            return '';
                         }
                     }
                 }
+            },
+            interaction: {
+                mode: 'nearest',
+                intersect: false,
+                axis: 'x'
             },
             scales: {
                 y: {
@@ -689,10 +1053,49 @@ function updateTrendChart(monthlyData, year) {
             }
         }
     });
+    
+    // Add peak annotations after chart renders
+    if (maxIndex >= 0 && maxPoint > 0) {
+        // Peak point label
+        const maxLabel = document.createElement('div');
+        maxLabel.className = 'custom-tooltip';
+        maxLabel.innerHTML = `<strong>Peak: ${maxPoint}</strong>`;
+        maxLabel.style.top = '40px';
+        maxLabel.style.left = '50%';
+        
+        // Append to chart container with delay
+        setTimeout(() => {
+            const chartContainer = trendLineChart.canvas.parentNode;
+            chartContainer.style.position = 'relative';
+            chartContainer.appendChild(maxLabel);
+            
+            // Position the label based on the chart point
+            const meta = trendLineChart.getDatasetMeta(0);
+            if (meta.data && meta.data[maxIndex]) {
+                const point = meta.data[maxIndex];
+                maxLabel.style.top = (point.y - 35) + 'px';
+                maxLabel.style.left = point.x + 'px';
+                maxLabel.style.transform = 'translateX(-50%)';
+            }
+            
+            // Add fade-in animation
+            maxLabel.style.opacity = '0';
+            setTimeout(() => {
+                maxLabel.style.opacity = '1';
+                maxLabel.style.transition = 'opacity 0.5s ease';
+            }, 100);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                maxLabel.style.opacity = '0';
+                setTimeout(() => maxLabel.remove(), 500);
+            }, 5000);
+        }, 1800);
+    }
 }
 
 /**
- * Update all charts based on filtered data
+ * Update all charts based on filtered data with enhanced visuals
  */
 function updateCharts(data) {
     const totalContainer = data.length;
@@ -740,42 +1143,97 @@ function updateCharts(data) {
 function updatePalletizeBarChart(palletizeCount, nonPalletizeCount) {
     const ctx = document.getElementById('chart-palletize-bar').getContext('2d');
     
+    // Create gradients for bars
+    const blueGradient = ctx.createLinearGradient(0, 0, 0, 300);
+    blueGradient.addColorStop(0, '#5395d6');
+    blueGradient.addColorStop(1, '#3b7fc4');
+    
+    const yellowGradient = ctx.createLinearGradient(0, 0, 0, 300);
+    yellowGradient.addColorStop(0, '#ffcc5a');
+    yellowGradient.addColorStop(1, '#ffb73a');
+    
     // Destroy existing chart if it exists
     if (palletizeBarChart) {
         palletizeBarChart.destroy();
     }
     
-    // Create new chart
+    // Create new chart with enhanced visuals
     palletizeBarChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: ['PALLETIZE', 'NON PALLETIZE'],
             datasets: [{
                 data: [palletizeCount, nonPalletizeCount],
-                backgroundColor: ['#5395d6', '#ffcc5a'],
-                borderWidth: 1
+                backgroundColor: [blueGradient, yellowGradient],
+                borderWidth: 1,
+                borderColor: ['#3b7fc4', '#ffb73a'],
+                borderRadius: 6,
+                hoverBackgroundColor: ['#4280bd', '#ffbe3d']
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart',
+                delay: (context) => context.dataIndex * 150
+            },
             plugins: {
                 legend: {
                     display: false
                 },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#333',
+                    bodyColor: '#333',
+                    titleFont: {
+                        weight: 'bold'
+                    },
+                    padding: 10,
+                    cornerRadius: 6,
+                    displayColors: true,
+                    callbacks: {
+                        title: (context) => context[0].label,
+                        label: (context) => `Count: ${context.parsed.y}`
+                    }
+                },
                 datalabels: {
-                    color: '#000',
-                    anchor: 'end',
-                    align: 'top',
+                    color: '#fff',
+                    anchor: 'center',
+                    align: 'center',
                     formatter: (value) => value,
                     font: {
-                        weight: 'bold'
+                        weight: 'bold',
+                        size: 14
                     }
                 }
             },
             scales: {
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(200, 200, 200, 0.2)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 11
+                        },
+                        color: '#666'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false,
+                        drawBorder: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 11
+                        },
+                        color: '#666'
+                    }
                 }
             }
         },
@@ -794,7 +1252,7 @@ function updatePalletizePieChart(palletizePercentage, nonPalletizePercentage) {
         palletizePieChart.destroy();
     }
     
-    // Create new chart
+    // Create new chart with enhanced visuals
     palletizePieChart = new Chart(ctx, {
         type: 'pie',
         data: {
@@ -802,15 +1260,48 @@ function updatePalletizePieChart(palletizePercentage, nonPalletizePercentage) {
             datasets: [{
                 data: [palletizePercentage, nonPalletizePercentage],
                 backgroundColor: ['#5395d6', '#ffcc5a'],
-                borderWidth: 1
+                borderWidth: 2,
+                borderColor: '#fff',
+                hoverBackgroundColor: ['#4280bd', '#ffbe3d'],
+                hoverBorderWidth: 0,
+                hoverOffset: 10 // Makes the slice "pop out" on hover
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: {
+                animateRotate: true,
+                animateScale: true,
+                duration: 1000,
+                easing: 'easeOutQuart'
+            },
             plugins: {
                 legend: {
                     display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#333',
+                    bodyColor: '#333',
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    padding: 12,
+                    cornerRadius: 8,
+                    displayColors: false,
+                    borderColor: '#ddd',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function(context) {
+                            return context.label + ': ' + context.parsed + '%';
+                        }
+                    }
                 },
                 datalabels: {
                     color: (context) => {
@@ -819,151 +1310,88 @@ function updatePalletizePieChart(palletizePercentage, nonPalletizePercentage) {
                     },
                     formatter: (value) => value + '%',
                     font: {
-                        weight: 'bold'
-                    }
+                        weight: 'bold',
+                        size: 14
+                    },
+                    textShadowBlur: 5,
+                    textShadowColor: 'rgba(0, 0, 0, 0.35)'
                 }
-            }
+            },
+            cutout: '40%' // Makes the pie chart more like a donut for modern look
         },
         plugins: [ChartDataLabels]
     });
 }
 
 /**
- * Update bar chart for Container Size (20" vs 40")
+ * Update bar chart for Container Feet (20" vs 40")
  */
 function updateFeetBarChart(container20Count, container40Count) {
     const ctx = document.getElementById('chart-feet-bar').getContext('2d');
+    
+    // Create gradients for bars
+    const greenGradient = ctx.createLinearGradient(0, 0, 0, 300);
+    greenGradient.addColorStop(0, '#2ecc71');
+    greenGradient.addColorStop(1, '#27ae60');
+    
+    const purpleGradient = ctx.createLinearGradient(0, 0, 0, 300);
+    purpleGradient.addColorStop(0, '#9b59b6');
+    purpleGradient.addColorStop(1, '#8e44ad');
     
     // Destroy existing chart if it exists
     if (feetBarChart) {
         feetBarChart.destroy();
     }
     
-    // Create new chart
+    // Create new chart with enhanced visuals
     feetBarChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['20"', '40"'],
+            labels: ['20" FEET', '40" FEET'],
             datasets: [{
                 data: [container20Count, container40Count],
-                backgroundColor: ['#bcbcbc', '#f38a4e'],
-                borderWidth: 1
+                backgroundColor: [greenGradient, purpleGradient],
+                borderWidth: 1,
+                borderColor: ['#27ae60', '#8e44ad'],
+                borderRadius: 6,
+                hoverBackgroundColor: ['#25a65a', '#8240a0']
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart',
+                delay: (context) => context.dataIndex * 150
+            },
             plugins: {
                 legend: {
                     display: false
                 },
-                datalabels: {
-                    color: '#000',
-                    anchor: 'end',
-                    align: 'top',
-                    formatter: (value) => value,
-                    font: {
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#333',
+                    bodyColor: '#333',
+                    titleFont: {
                         weight: 'bold'
+                    },
+                    padding: 10,
+                    cornerRadius: 6,
+                    displayColors: true,
+                    callbacks: {
+                        title: (context) => context[0].label,
+                        label: (context) => `Count: ${context.parsed.y}`
                     }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        },
-        plugins: [ChartDataLabels]
-    });
-}
-
-/**
- * Update pie chart for Container Size percentages
- */
-function updateFeetPieChart(container20Percentage, container40Percentage) {
-    const ctx = document.getElementById('chart-feet-pie').getContext('2d');
-    
-    // Destroy existing chart if it exists
-    if (feetPieChart) {
-        feetPieChart.destroy();
-    }
-    
-    // Create new chart
-    feetPieChart = new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: ['20"', '40"'],
-            datasets: [{
-                data: [container20Percentage, container40Percentage],
-                backgroundColor: ['#bcbcbc', '#f38a4e'],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
                 },
                 datalabels: {
                     color: '#fff',
-                    formatter: (value) => value + '%',
+                    anchor: 'center',
+                    align: 'center',
+                    formatter: (value) => value,
                     font: {
-                        weight: 'bold'
-                    }
-                }
-            }
-        },
-        plugins: [ChartDataLabels]
-    });
-}
-
-/**
- * Reset trend chart to default state
- */
-function resetTrendChart() {
-    const ctx = document.getElementById('chart-trend-line').getContext('2d');
-    
-    // Destroy existing chart if it exists
-    if (trendLineChart) {
-        trendLineChart.destroy();
-    }
-    
-    // Create gradient fill
-    const gradientFill = ctx.createLinearGradient(0, 0, 0, 400);
-    gradientFill.addColorStop(0, 'rgba(83, 149, 214, 0.6)');
-    gradientFill.addColorStop(0.7, 'rgba(83, 149, 214, 0.1)');
-    gradientFill.addColorStop(1, 'rgba(83, 149, 214, 0)');
-    
-    // Create empty chart
-    trendLineChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: fullMonthNames,
-            datasets: [{
-                label: 'Total Containers',
-                data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                borderColor: '#5395d6',
-                backgroundColor: gradientFill,
-                borderWidth: 3,
-                pointRadius: 4,
-                pointBackgroundColor: '#fff',
-                pointBorderColor: '#5395d6',
-                tension: 0.3,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                    labels: {
-                        boxWidth: 12,
-                        usePointStyle: true,
-                        pointStyle: 'circle'
+                        weight: 'bold',
+                        size: 14
                     }
                 }
             },
@@ -973,82 +1401,107 @@ function resetTrendChart() {
                     grid: {
                         color: 'rgba(200, 200, 200, 0.2)',
                         drawBorder: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 11
+                        },
+                        color: '#666'
                     }
                 },
                 x: {
                     grid: {
                         display: false,
                         drawBorder: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 11
+                        },
+                        color: '#666'
                     }
                 }
             }
-        }
+        },
+        plugins: [ChartDataLabels]
     });
 }
 
 /**
- * Reset dashboard to default state
+ * Update pie chart for Container Feet percentages
  */
-function resetDashboard() {
-    // Reset card values
-    totalContainerEl.textContent = '0';
-    containerPalletizeEl.textContent = '0';
-    containerNonPalletizeEl.textContent = '0';
-    container20El.textContent = '0';
-    container40El.textContent = '0';
+function updateFeetPieChart(container20Percentage, container40Percentage) {
+    const ctx = document.getElementById('chart-feet-pie').getContext('2d');
     
-    // Reset comparison table
-    compareTableBody.innerHTML = '';
+    // Destroy existing chart if it exists
+    if (feetPieChart) {
+        feetPieChart.destroy();
+    }
     
-    // Destroy existing charts
-    if (palletizeBarChart) palletizeBarChart.destroy();
-    if (palletizePieChart) palletizePieChart.destroy();
-    if (feetBarChart) feetBarChart.destroy();
-    if (feetPieChart) feetPieChart.destroy();
-    if (compareBarChart) compareBarChart.destroy();
-    if (trendLineChart) trendLineChart.destroy();
-    
-    // Create empty charts
-    updatePalletizeBarChart(0, 0);
-    updatePalletizePieChart(0, 0);
-    updateFeetBarChart(0, 0);
-    updateFeetPieChart(0, 0);
-    
-    // Create empty comparison chart
-    const ctx = document.getElementById('chart-compare-bar').getContext('2d');
-    compareBarChart = new Chart(ctx, {
-        type: 'bar',
+    // Create new chart with enhanced visuals
+    feetPieChart = new Chart(ctx, {
+        type: 'pie',
         data: {
-            labels: ['Container', 'Palletize', 'Non Palletize', '20" (Feet)', '40" (Feet)'],
-            datasets: [
-                {
-                    label: 'Previous Month',
-                    data: [0, 0, 0, 0, 0],
-                    backgroundColor: '#f38a4e'
-                },
-                {
-                    label: 'Current Month',
-                    data: [0, 0, 0, 0, 0],
-                    backgroundColor: '#5395d6'
-                }
-            ]
+            labels: ['20" FEET', '40" FEET'],
+            datasets: [{
+                data: [container20Percentage, container40Percentage],
+                backgroundColor: ['#2ecc71', '#9b59b6'],
+                borderWidth: 2,
+                borderColor: '#fff',
+                hoverBackgroundColor: ['#25a65a', '#8240a0'],
+                hoverBorderWidth: 0,
+                hoverOffset: 10 // Makes the slice "pop out" on hover
+            }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: {
+                animateRotate: true,
+                animateScale: true,
+                duration: 1000,
+                easing: 'easeOutQuart'
+            },
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#333',
+                    bodyColor: '#333',
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    padding: 12,
+                    cornerRadius: 8,
+                    displayColors: false,
+                    borderColor: '#ddd',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function(context) {
+                            return context.label + ': ' + context.parsed + '%';
+                        }
+                    }
+                },
+                datalabels: {
+                    color: '#fff',
+                    formatter: (value) => value + '%',
+                    font: {
+                        weight: 'bold',
+                        size: 14
+                    },
+                    textShadowBlur: 5,
+                    textShadowColor: 'rgba(0, 0, 0, 0.35)'
                 }
             },
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
+            cutout: '40%' // Makes the pie chart more like a donut for modern look
+        },
+        plugins: [ChartDataLabels]
     });
-    
-    // Reset trend chart
-    resetTrendChart();
 }
