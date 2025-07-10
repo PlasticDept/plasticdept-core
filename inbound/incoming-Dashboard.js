@@ -442,6 +442,9 @@ async function getMonthData(year, month) {
         // Structure is typically incomingSchedule/year/month/day/container_id/details
         const daysData = snapshot.val();
         
+        // Debug: Log all days with data
+        console.log("Days with data:", Object.keys(daysData));
+        
         // Loop through all days in the month
         for (const day in daysData) {
             const containers = daysData[day];
@@ -449,11 +452,20 @@ async function getMonthData(year, month) {
             // Loop through all containers for the day
             for (const containerId in containers) {
                 const containerData = containers[containerId];
+                
+                // Debug: log container data to check if Biz field exists
+                if (containerId === Object.keys(containers)[0]) {
+                    console.log("Sample container data:", containerData);
+                    console.log("Container fields:", Object.keys(containerData));
+                }
+                
                 containersData.push(containerData);
             }
         }
         
         console.log(`Found ${containersData.length} containers for ${year}/${monthPath}`);
+        console.log("Sample data fields:", containersData.length > 0 ? Object.keys(containersData[0]) : "No data");
+        
         return containersData;
     } else {
         console.log(`No data available for ${year}/${monthPath}`);
@@ -567,18 +579,36 @@ function calculateMetrics(data) {
     const nonPalletizeCount = data.filter(item => 
         item['Process Type']?.toLowerCase().includes('non palletize')).length;
     
-    // Ubah dari Feet ke Biz
-    // Hitung container berdasarkan tipe Biz
+    // Pastikan akses field Biz case-insensitive dan mengatasi berbagai kemungkinan nama field
     const bizTypes = {};
     data.forEach(item => {
-        const bizValue = item['Biz'] || 'Unknown';
+        // Coba semua kemungkinan nama field dan capitalization
+        let bizValue = null;
+        
+        // Cek berbagai kemungkinan nama field
+        if (item['Biz'] !== undefined) bizValue = item['Biz'];
+        else if (item['BIZ'] !== undefined) bizValue = item['BIZ'];
+        else if (item['biz'] !== undefined) bizValue = item['biz'];
+        
+        // Jika tidak ditemukan, cek property apa saja yang ada
+        if (bizValue === null) {
+            console.log("Field names available:", Object.keys(item));
+            bizValue = 'Unknown';
+        }
+        
+        // Log untuk debugging
+        console.log("Item data:", item, "Biz value found:", bizValue);
+        
         if (!bizTypes[bizValue]) {
             bizTypes[bizValue] = 0;
         }
         bizTypes[bizValue]++;
     });
     
-    // Masih tetap hitung Feet untuk kompatibilitas dengan kode lain
+    // Debug log
+    console.log("Biz types counted:", bizTypes);
+    
+    // Tetap hitung Feet untuk kompatibilitas
     const container20Count = data.filter(item => {
         const feet = item.Feet?.toString() || '';
         return feet.includes('20') || feet.includes('1X20');
@@ -595,7 +625,7 @@ function calculateMetrics(data) {
         nonPalletizeCount,
         container20Count,
         container40Count,
-        bizTypes // Tambahkan objek bizTypes ke hasil
+        bizTypes
     };
 }
 
@@ -1121,15 +1151,28 @@ function updateCharts(data) {
     const nonPalletizeCount = data.filter(item => 
         item['Process Type']?.toLowerCase().includes('non palletize')).length;
     
-    // Hitung tipe Biz
+    // Tambahkan debugging untuk data yang masuk
+    console.log("Total data items:", data.length);
+    console.log("Sample items:", data.slice(0, 3)); // Tampilkan 3 item pertama untuk debugging
+    
+    // Hitung tipe Biz dengan lebih robust
     const bizTypes = {};
     data.forEach(item => {
-        const bizValue = item['Biz'] || 'Unknown';
+        // Cek berbagai kemungkinan nama field
+        let bizValue = null;
+        if (item['Biz'] !== undefined) bizValue = item['Biz'];
+        else if (item['BIZ'] !== undefined) bizValue = item['BIZ'];
+        else if (item['biz'] !== undefined) bizValue = item['biz'];
+        else bizValue = 'Unknown';
+        
         if (!bizTypes[bizValue]) {
             bizTypes[bizValue] = 0;
         }
         bizTypes[bizValue]++;
     });
+    
+    // Log semua nilai Biz yang ditemukan
+    console.log("All Biz types found:", bizTypes);
     
     // Ambil label dan data dari bizTypes
     const bizLabels = Object.keys(bizTypes);
@@ -1161,7 +1204,7 @@ function updateCharts(data) {
     console.log("Chart values:", {
         palletizeCount, nonPalletizeCount, palletizePercentage, nonPalletizePercentage,
         container20Count, container40Count, container20Percentage, container40Percentage,
-        bizLabels, bizCounts, bizPercentages // Log juga informasi Biz
+        bizLabels, bizCounts, bizPercentages
     });
     
     // Update all charts
