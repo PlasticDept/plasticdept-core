@@ -567,6 +567,18 @@ function calculateMetrics(data) {
     const nonPalletizeCount = data.filter(item => 
         item['Process Type']?.toLowerCase().includes('non palletize')).length;
     
+    // Ubah dari Feet ke Biz
+    // Hitung container berdasarkan tipe Biz
+    const bizTypes = {};
+    data.forEach(item => {
+        const bizValue = item['Biz'] || 'Unknown';
+        if (!bizTypes[bizValue]) {
+            bizTypes[bizValue] = 0;
+        }
+        bizTypes[bizValue]++;
+    });
+    
+    // Masih tetap hitung Feet untuk kompatibilitas dengan kode lain
     const container20Count = data.filter(item => {
         const feet = item.Feet?.toString() || '';
         return feet.includes('20') || feet.includes('1X20');
@@ -582,7 +594,8 @@ function calculateMetrics(data) {
         palletizeCount,
         nonPalletizeCount,
         container20Count,
-        container40Count
+        container40Count,
+        bizTypes // Tambahkan objek bizTypes ke hasil
     };
 }
 
@@ -1108,6 +1121,26 @@ function updateCharts(data) {
     const nonPalletizeCount = data.filter(item => 
         item['Process Type']?.toLowerCase().includes('non palletize')).length;
     
+    // Hitung tipe Biz
+    const bizTypes = {};
+    data.forEach(item => {
+        const bizValue = item['Biz'] || 'Unknown';
+        if (!bizTypes[bizValue]) {
+            bizTypes[bizValue] = 0;
+        }
+        bizTypes[bizValue]++;
+    });
+    
+    // Ambil label dan data dari bizTypes
+    const bizLabels = Object.keys(bizTypes);
+    const bizCounts = bizLabels.map(label => bizTypes[label]);
+    
+    // Hitung persentase untuk masing-masing tipe Biz
+    const bizPercentages = bizLabels.map(label => 
+        totalContainer > 0 ? Math.round((bizTypes[label] / totalContainer) * 100) : 0
+    );
+    
+    // Hitung juga Feet untuk kompatibilitas
     const container20Count = data.filter(item => {
         const feet = item.Feet?.toString() || '';
         return feet.includes('20') || feet.includes('1X20');
@@ -1127,16 +1160,18 @@ function updateCharts(data) {
     
     console.log("Chart values:", {
         palletizeCount, nonPalletizeCount, palletizePercentage, nonPalletizePercentage,
-        container20Count, container40Count, container20Percentage, container40Percentage
+        container20Count, container40Count, container20Percentage, container40Percentage,
+        bizLabels, bizCounts, bizPercentages // Log juga informasi Biz
     });
     
     // Update all charts
     updatePalletizeBarChart(palletizeCount, nonPalletizeCount);
     updatePalletizePieChart(palletizePercentage, nonPalletizePercentage);
-    updateFeetBarChart(container20Count, container40Count);
-    updateFeetPieChart(container20Percentage, container40Percentage);
+    
+    // Update Feet charts dengan data Biz
+    updateFeetBarChart(bizLabels, bizCounts);
+    updateFeetPieChart(bizLabels, bizPercentages);
 }
-
 /**
  * Update bar chart for Container Packaging (Palletize vs Non Palletize)
  */
@@ -1326,35 +1361,52 @@ function updatePalletizePieChart(palletizePercentage, nonPalletizePercentage) {
 /**
  * Update bar chart for Container Feet (20" vs 40")
  */
-function updateFeetBarChart(container20Count, container40Count) {
+function updateFeetBarChart(bizLabels, bizCounts) {
     const ctx = document.getElementById('chart-feet-bar').getContext('2d');
-    
-    // Create gradients for bars
-    const greenGradient = ctx.createLinearGradient(0, 0, 0, 300);
-    greenGradient.addColorStop(0, '#2ecc71');
-    greenGradient.addColorStop(1, '#27ae60');
-    
-    const purpleGradient = ctx.createLinearGradient(0, 0, 0, 300);
-    purpleGradient.addColorStop(0, '#9b59b6');
-    purpleGradient.addColorStop(1, '#8e44ad');
     
     // Destroy existing chart if it exists
     if (feetBarChart) {
         feetBarChart.destroy();
     }
     
-    // Create new chart with enhanced visuals
+    // Create gradients for bars (dynamic based on number of types)
+    const gradients = [];
+    const borderColors = [];
+    const hoverColors = [];
+    
+    // Predefined colors for different business types
+    const colorSets = [
+        { gradient: ['#2ecc71', '#27ae60'], border: '#27ae60', hover: '#25a65a' },
+        { gradient: ['#9b59b6', '#8e44ad'], border: '#8e44ad', hover: '#8240a0' },
+        { gradient: ['#3498db', '#2980b9'], border: '#2980b9', hover: '#2473a6' },
+        { gradient: ['#e74c3c', '#c0392b'], border: '#c0392b', hover: '#b33528' },
+        { gradient: ['#f39c12', '#d35400'], border: '#d35400', hover: '#c04d00' }
+    ];
+    
+    // Create gradient for each Biz type
+    bizLabels.forEach((label, index) => {
+        const colorSet = colorSets[index % colorSets.length];
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, colorSet.gradient[0]);
+        gradient.addColorStop(1, colorSet.gradient[1]);
+        
+        gradients.push(gradient);
+        borderColors.push(colorSet.border);
+        hoverColors.push(colorSet.hover);
+    });
+    
+    // Create new chart with Biz data
     feetBarChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['20" FEET', '40" FEET'],
+            labels: bizLabels,
             datasets: [{
-                data: [container20Count, container40Count],
-                backgroundColor: [greenGradient, purpleGradient],
+                data: bizCounts,
+                backgroundColor: gradients,
                 borderWidth: 1,
-                borderColor: ['#27ae60', '#8e44ad'],
+                borderColor: borderColors,
                 borderRadius: 6,
-                hoverBackgroundColor: ['#25a65a', '#8240a0']
+                hoverBackgroundColor: hoverColors
             }]
         },
         options: {
@@ -1430,7 +1482,7 @@ function updateFeetBarChart(container20Count, container40Count) {
 /**
  * Update pie chart for Container Feet percentages
  */
-function updateFeetPieChart(container20Percentage, container40Percentage) {
+function updateFeetPieChart(bizLabels, bizPercentages) {
     const ctx = document.getElementById('chart-feet-pie').getContext('2d');
     
     // Destroy existing chart if it exists
@@ -1438,19 +1490,34 @@ function updateFeetPieChart(container20Percentage, container40Percentage) {
         feetPieChart.destroy();
     }
     
-    // Create new chart with enhanced visuals
+    // Predefined colors for different business types
+    const colors = [
+        '#2ecc71', '#9b59b6', '#3498db', '#e74c3c', '#f39c12', 
+        '#1abc9c', '#d35400', '#34495e', '#7f8c8d', '#16a085'
+    ];
+    
+    const hoverColors = [
+        '#25a65a', '#8240a0', '#2980b9', '#c0392b', '#e67e22',
+        '#16a085', '#c04d00', '#2c3e50', '#6c7a7a', '#138a72'
+    ];
+    
+    // Create background colors array based on number of Biz types
+    const backgroundColors = bizLabels.map((_, index) => colors[index % colors.length]);
+    const hoverBackgroundColors = bizLabels.map((_, index) => hoverColors[index % hoverColors.length]);
+    
+    // Create new chart with Biz data
     feetPieChart = new Chart(ctx, {
         type: 'pie',
         data: {
-            labels: ['20" FEET', '40" FEET'],
+            labels: bizLabels,
             datasets: [{
-                data: [container20Percentage, container40Percentage],
-                backgroundColor: ['#2ecc71', '#9b59b6'],
+                data: bizPercentages,
+                backgroundColor: backgroundColors,
                 borderWidth: 2,
                 borderColor: '#fff',
-                hoverBackgroundColor: ['#25a65a', '#8240a0'],
+                hoverBackgroundColor: hoverBackgroundColors,
                 hoverBorderWidth: 0,
-                hoverOffset: 10 // Makes the slice "pop out" on hover
+                hoverOffset: 10
             }]
         },
         options: {
