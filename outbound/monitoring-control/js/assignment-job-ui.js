@@ -1,7 +1,18 @@
 /**
  * UI Enhancement Module untuk Outbound Job Assignment
- * Menggabungkan semua peningkatan UI dan fungsi yang tadinya ada di HTML
  */
+
+// Definisikan showModalWithId dan hideModalWithId sebagai fungsi global
+// agar bisa diekspor dengan benar
+window.showModalWithId = function(modalId) {
+  const backdrop = document.getElementById(modalId + 'Backdrop');
+  if (backdrop) backdrop.classList.add('show');
+};
+
+window.hideModalWithId = function(modalId) {
+  const backdrop = document.getElementById(modalId + 'Backdrop');
+  if (backdrop) backdrop.classList.remove('show');
+};
 
 // Tunggu dokumen siap
 document.addEventListener('DOMContentLoaded', () => {
@@ -72,18 +83,6 @@ function setupDropdowns() {
 
 // Setup modal functionality
 function setupModals() {
-  // Show modal function
-  window.showModalWithId = function(modalId) {
-    const backdrop = document.getElementById(modalId + 'Backdrop');
-    if (backdrop) backdrop.classList.add('show');
-  };
-  
-  // Hide modal function
-  window.hideModalWithId = function(modalId) {
-    const backdrop = document.getElementById(modalId + 'Backdrop');
-    if (backdrop) backdrop.classList.remove('show');
-  };
-  
   // Override existing modal functions for backward compatibility
   window.showModal = function() {
     window.showModalWithId('assign');
@@ -368,13 +367,15 @@ function addCssAnimations() {
 enhanceConfirmModal();
 addCssAnimations();
 
-// Export fungsi untuk digunakan di sortir.js
+// Export fungsi untuk digunakan di file lain jika perlu
+// Hanya export fungsi yang sudah didefinisikan
 export {
   enhanceUserInterface,
   enhanceNotifications,
   enhanceButtons,
   enhanceFormControls,
   enhanceTableInteractions,
+  // Pastikan showModalWithId dan hideModalWithId didefinisikan sebelum diekspor
   showModalWithId,
   hideModalWithId
 };
