@@ -2,7 +2,6 @@
 // Versi terbaru: support upload Excel baru, simpan ke root node PhxOutboundJobs, assignment job terhubung node baru
 // Komentar sudah ditambahkan pada setiap fungsi dan listener
 
-import './assignment-job-ui.js';
 import { db, authPromise } from "./config.js";
 import { ref, set, get, update, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
