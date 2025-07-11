@@ -12,6 +12,10 @@
 </head>
 <body>
   <div class="container">
+    <!-- Compatibility elements -->
+    <span id="closeModal" style="display:none;"></span>
+    <div id="addModal" style="display:none;"></div>
+    
     <!-- Header -->
     <header class="header-bar">
       <div class="logo-title">
@@ -128,12 +132,13 @@
         Assign Selected Jobs
       </button>
       
+      <!-- PENTING: Menggunakan ID lama untuk kompatibilitas -->
       <div class="filter-dropdown" id="statusFilterDropdown">
-        <button class="filter-dropdown-toggle">
+        <button class="filter-dropdown-toggle" id="sortStatusBtn">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
           Filter by Status
         </button>
-        <div class="filter-dropdown-menu">
+        <div class="filter-dropdown-menu" id="statusDropdown">
           <select id="statusOptions" class="form-control">
             <option value="all">-- Show All --</option>
             <!-- Options filled by JS -->
@@ -141,12 +146,13 @@
         </div>
       </div>
       
+      <!-- PENTING: Menggunakan ID lama untuk kompatibilitas -->
       <div class="filter-dropdown" id="dateFilterDropdown">
-        <button class="filter-dropdown-toggle">
+        <button class="filter-dropdown-toggle" id="sortDateBtn">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
           Filter by Date
         </button>
-        <div class="filter-dropdown-menu">
+        <div class="filter-dropdown-menu" id="dateDropdown">
           <select id="dateOptions" class="form-control">
             <option value="all">-- Show All --</option>
             <!-- Options filled by JS -->
@@ -154,12 +160,13 @@
         </div>
       </div>
       
+      <!-- PENTING: Menggunakan ID lama untuk kompatibilitas -->
       <div class="filter-dropdown" id="teamFilterDropdown">
-        <button class="filter-dropdown-toggle">
+        <button class="filter-dropdown-toggle" id="sortTeamBtn">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
           Filter by Team
         </button>
-        <div class="filter-dropdown-menu">
+        <div class="filter-dropdown-menu" id="teamDropdown">
           <select id="teamOptions" class="form-control">
             <option value="all">-- Show All --</option>
             <!-- Options filled by JS -->
@@ -299,7 +306,6 @@
   </div>
 
   <script type="module" src="js/config.js"></script>
-  <script src="js/compatibility.js"></script>
   <script type="module" src="js/assignment-job-ui.js"></script>
   <script type="module" src="js/sortir.js"></script>
 </body>
