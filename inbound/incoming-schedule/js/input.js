@@ -202,6 +202,46 @@ function normalizeMonthlyDateField(dateVal) {
   return "";
 }
 
+function parseAndUploadFile(file) {
+  const fileName = file.name.toLowerCase();
+  showStatus("⏳ Memproses file daily...", "info");
+
+  if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+    const reader = new FileReader();
+    reader.onload = async function (e) {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+      await afterFileParsed(rows);
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async function (results) {
+        await afterFileParsed(results.data);
+      }
+    });
+  }
+}
+
+async function afterFileParsed(rows) {
+  try {
+    showStatus("📤 Mengupload data baru ke Database...", "info");
+    await deleteAllFirebaseRecords();
+    await uploadToFirebase(rows);
+    showStatus("✅ Upload daily selesai!", "success");
+    document.getElementById("csvFile").value = "";
+    setTimeout(() => showStatus("", ""), 3000);
+  } catch (err) {
+    console.error(err);
+    showStatus("❌ Gagal upload data daily!", "error");
+  }
+}
+
 // ================= PATCH: Monthly Upload ===================
 function uploadMonthlyToFirebase(records) {
   const monthNames = [
