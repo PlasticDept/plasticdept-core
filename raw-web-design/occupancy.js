@@ -1,24 +1,28 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Mengatur waktu dan user saat ini
-    document.getElementById('currentDate').textContent = '2025-07-11 09:50:06';
+    document.getElementById('currentDate').textContent = '2025-07-11 10:05:09';
     document.getElementById('currentUser').textContent = 'Login: PlasticDept';
     
-    // Render semua area dengan format tabel
-    renderAreaTable('DA');
-    renderAreaTable('DB');
-    renderAreaTable('DC');
-    renderAreaTable('DD');
-    renderAreaTable('DE');
+    // Render semua area dengan format tabel modern
+    renderAllAreas();
     
     // Setup modal
     setupModal();
     
     // Setup area selector
-    setupAreaSelector();
+    setupAreaTabs();
     
     // Setup search functionality
     setupSearch();
 });
+
+function renderAllAreas() {
+    renderAreaTable('DA');
+    renderAreaTable('DB');
+    renderAreaTable('DC');
+    renderAreaTable('DD');
+    renderAreaTable('DE');
+}
 
 // Mengambil max rack number di area tertentu
 function getMaxRackNumber(areaCode) {
@@ -37,77 +41,114 @@ function getMaxRackNumber(areaCode) {
     return maxRack;
 }
 
-// Render area dalam format tabel
+// Mendapatkan semua rack number yang ada di area tertentu
+function getRackNumbersInArea(areaCode) {
+    const rackNumbers = new Set();
+    
+    locations.forEach(location => {
+        if (location.startsWith(areaCode)) {
+            const parts = location.split('-');
+            rackNumbers.add(parseInt(parts[1]));
+        }
+    });
+    
+    return Array.from(rackNumbers).sort((a, b) => a - b);
+}
+
+// Render area dalam format tabel modern
 function renderAreaTable(areaCode) {
     const container = document.getElementById(`area${areaCode}`);
+    container.innerHTML = '';
     
-    // Membuat tabel
-    const table = document.createElement('table');
-    table.className = 'area-table';
-    
-    // Baris header untuk area
-    const headerRow = document.createElement('tr');
-    const areaHeader = document.createElement('th');
+    // Header area
+    const areaHeader = document.createElement('h2');
     areaHeader.className = 'area-header';
-    areaHeader.colSpan = getMaxRackNumber(areaCode) + 1; // +1 untuk kolom header
     areaHeader.textContent = `Area ${areaCode} - High Rack`;
-    headerRow.appendChild(areaHeader);
+    container.appendChild(areaHeader);
+    
+    // Mendapatkan semua nomor rack di area ini
+    const rackNumbers = getRackNumbersInArea(areaCode);
+    
+    // Membuat tabel untuk setiap rack
+    const table = document.createElement('table');
+    table.className = 'rack-table';
+    
+    // Header row dengan nomor rack
+    const headerRow = document.createElement('tr');
+    headerRow.className = 'rack-table-header';
+    
+    // Cell kosong di kiri atas
+    const emptyHeaderCell = document.createElement('th');
+    headerRow.appendChild(emptyHeaderCell);
+    
+    // Header untuk setiap rack
+    rackNumbers.forEach(rackNum => {
+        const rackHeader = document.createElement('th');
+        const formattedRackNum = rackNum.toString().padStart(2, '0');
+        rackHeader.textContent = `${areaCode}-${formattedRackNum}`;
+        headerRow.appendChild(rackHeader);
+    });
+    
     table.appendChild(headerRow);
     
-    // Membuat baris untuk setiap level-posisi (4-1 di atas, 1-1 di bawah)
-    for (let position = 4; position >= 1; position--) {
-        for (let level = 1; level <= 2; level++) {
-            const row = document.createElement('tr');
+    // Membuat baris untuk stack 4, 3, 2, 1 (dari atas ke bawah)
+    for (let stack = 4; stack >= 1; stack--) {
+        const stackRow = document.createElement('tr');
+        
+        // Label stack
+        const stackLabel = document.createElement('td');
+        stackLabel.className = 'stack-label';
+        stackLabel.textContent = `Stack ${stack}`;
+        stackRow.appendChild(stackLabel);
+        
+        // Cells untuk setiap rack
+        rackNumbers.forEach(rackNum => {
+            const cell = document.createElement('td');
+            const formattedRackNum = rackNum.toString().padStart(2, '0');
             
-            // Kolom pertama sebagai label (kosong)
-            if (level === 1 && position === 4) {
-                const firstCell = document.createElement('td');
-                firstCell.rowSpan = 8; // 2 level x 4 posisi
-                row.appendChild(firstCell);
-            }
+            // Ada 2 level untuk setiap stack (1 & 2)
+            const cellContent = document.createElement('div');
+            cellContent.className = 'location-cell-container';
+            cellContent.style.display = 'grid';
+            cellContent.style.gridTemplateColumns = '1fr 1fr';
+            cellContent.style.gap = '3px';
+            cellContent.style.height = '100%';
             
-            // Buat cell untuk setiap rack
-            for (let rack = 1; rack <= getMaxRackNumber(areaCode); rack++) {
-                const rackNum = rack.toString().padStart(2, '0');
-                const locationCode = `${areaCode}-${rackNum}-${level}-${position}`;
-                const cell = document.createElement('td');
+            for (let level = 1; level <= 2; level++) {
+                const locationCode = `${areaCode}-${formattedRackNum}-${level}-${stack}`;
+                const locationDiv = document.createElement('div');
+                locationDiv.className = 'location-cell';
+                locationDiv.textContent = `${level}-${stack}`;
+                locationDiv.dataset.location = locationCode;
                 
-                // Cek apakah lokasi ini ada dalam data
+                // Cek apakah lokasi ada dalam daftar
                 if (locations.includes(locationCode)) {
                     const locationData = occupancyData[locationCode];
-                    
-                    const locationDiv = document.createElement('div');
-                    locationDiv.className = 'location-cell';
-                    locationDiv.textContent = locationCode;
-                    locationDiv.dataset.location = locationCode;
                     
                     if (locationData && locationData.status === 'occupied') {
                         locationDiv.classList.add('occupied');
                         locationDiv.classList.add(customerColors[locationData.customer]);
-                    } else {
-                        locationDiv.classList.add('empty-cell');
                     }
                     
                     locationDiv.addEventListener('click', function() {
                         showLocationDetails(locationCode);
                     });
-                    
-                    cell.appendChild(locationDiv);
                 } else {
-                    // Lokasi tidak ada dalam daftar
-                    cell.textContent = locationCode;
-                    cell.style.color = '#aaa';
+                    // Lokasi tidak tersedia
+                    locationDiv.style.opacity = '0.3';
+                    locationDiv.style.cursor = 'default';
                 }
                 
-                row.appendChild(cell);
+                cellContent.appendChild(locationDiv);
             }
             
-            table.appendChild(row);
-        }
+            cell.appendChild(cellContent);
+            stackRow.appendChild(cell);
+        });
+        
+        table.appendChild(stackRow);
     }
     
-    // Tambahkan tabel ke container
-    container.innerHTML = '';
     container.appendChild(table);
 }
 
@@ -136,7 +177,7 @@ function showLocationDetails(locationCode) {
         document.getElementById('dateIn').textContent = formatDate(locationData.dateIn);
     }
     
-    modal.style.display = 'block';
+    modal.classList.add('active');
 }
 
 // Setup fungsi modal
@@ -145,26 +186,26 @@ function setupModal() {
     const closeButton = document.querySelector('.close-button');
     
     closeButton.addEventListener('click', function() {
-        modal.style.display = 'none';
+        modal.classList.remove('active');
     });
     
     window.addEventListener('click', function(event) {
         if (event.target === modal) {
-            modal.style.display = 'none';
+            modal.classList.remove('active');
         }
     });
 }
 
-// Setup area selector
-function setupAreaSelector() {
-    const areaButtons = document.querySelectorAll('.area-button');
+// Setup area tabs
+function setupAreaTabs() {
+    const areaTabs = document.querySelectorAll('.area-tab');
     
-    areaButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            // Remove active class from all buttons
-            areaButtons.forEach(btn => btn.classList.remove('active'));
+    areaTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Remove active class from all tabs
+            areaTabs.forEach(t => t.classList.remove('active'));
             
-            // Add active class to clicked button
+            // Add active class to clicked tab
             this.classList.add('active');
             
             // Get area code
@@ -230,8 +271,8 @@ function performSearch() {
         } 
         // Cek apakah cocok dengan nama customer
         else if (locationData && 
-                 locationData.status === 'occupied' && 
-                 locationData.customer.includes(searchTerm)) {
+                locationData.status === 'occupied' && 
+                locationData.customer.includes(searchTerm)) {
             highlightLocation(location);
             found = true;
             foundArea = locationCode.split('-')[0];
@@ -240,7 +281,7 @@ function performSearch() {
     
     if (found && foundArea) {
         // Aktifkan tab area yang ditemukan
-        document.querySelectorAll('.area-button').forEach(btn => {
+        document.querySelectorAll('.area-tab').forEach(btn => {
             btn.classList.remove('active');
             if (btn.dataset.area === foundArea) {
                 btn.classList.add('active');

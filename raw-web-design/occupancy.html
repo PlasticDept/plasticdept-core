@@ -4,89 +4,111 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Manajemen Occupancy Area dan High Rack</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="ocuppancy.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Sistem Manajemen Occupancy Area dan High Rack</h1>
-            <div class="user-info">
-                <span id="currentDate">2025-07-11 09:50:06</span>
-                <span id="currentUser">Login: PlasticDept</span>
-            </div>
-            <div class="search-container">
-                <input type="text" id="searchInput" placeholder="Cari lokasi atau customer...">
-                <button id="searchButton">Cari</button>
+    <div class="app-container">
+        <header class="main-header">
+            <div class="header-content">
+                <div class="logo-title">
+                    <i class="fas fa-warehouse"></i>
+                    <h1>Sistem Manajemen Occupancy Area dan High Rack</h1>
+                </div>
+                <div class="user-section">
+                    <div class="user-info">
+                        <div class="datetime" id="currentDate">2025-07-11 10:05:09</div>
+                        <div class="username" id="currentUser">Login: PlasticDept</div>
+                    </div>
+                    <div class="search-container">
+                        <input type="text" id="searchInput" placeholder="Cari lokasi atau customer...">
+                        <button id="searchButton" class="search-btn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </header>
 
-        <div class="legend">
-            <h3>Keterangan:</h3>
-            <div class="legend-items">
-                <div class="legend-item">
-                    <div class="color-box" style="background-color: #4CAF50;"></div>
-                    <span>Customer ABC</span>
-                </div>
-                <div class="legend-item">
-                    <div class="color-box" style="background-color: #2196F3;"></div>
-                    <span>Customer DEF</span>
-                </div>
-                <div class="legend-item">
-                    <div class="color-box" style="background-color: #FF9800;"></div>
-                    <span>Customer GHI</span>
-                </div>
-                <div class="legend-item">
-                    <div class="color-box" style="background-color: #9C27B0;"></div>
-                    <span>Customer JKL</span>
-                </div>
-                <div class="legend-item">
-                    <div class="color-box" style="background-color: #e0e0e0;"></div>
-                    <span>Kosong</span>
+        <div class="main-content">
+            <div class="legend-container">
+                <div class="legend">
+                    <div class="legend-title">Keterangan:</div>
+                    <div class="legend-items">
+                        <div class="legend-item">
+                            <div class="color-box customer-abc"></div>
+                            <span>Customer ABC</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="color-box customer-def"></div>
+                            <span>Customer DEF</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="color-box customer-ghi"></div>
+                            <span>Customer GHI</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="color-box customer-jkl"></div>
+                            <span>Customer JKL</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="color-box empty-box"></div>
+                            <span>Kosong</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="area-selector">
-            <button class="area-button active" data-area="DA">Area DA</button>
-            <button class="area-button" data-area="DB">Area DB</button>
-            <button class="area-button" data-area="DC">Area DC</button>
-            <button class="area-button" data-area="DD">Area DD</button>
-            <button class="area-button" data-area="DE">Area DE</button>
-        </div>
+            <div class="area-tabs">
+                <button class="area-tab" data-area="DA">Area DA</button>
+                <button class="area-tab" data-area="DB">Area DB</button>
+                <button class="area-tab" data-area="DC">Area DC</button>
+                <button class="area-tab active" data-area="DD">Area DD</button>
+                <button class="area-tab" data-area="DE">Area DE</button>
+            </div>
 
-        <div class="occupancy-container">
-            <div class="area-view" id="areaDA">
-                <!-- Area DA akan dirender secara dinamis -->
-            </div>
-            
-            <div class="area-view" id="areaDB" style="display: none;">
-                <!-- Area DB akan dirender secara dinamis -->
-            </div>
-            
-            <div class="area-view" id="areaDC" style="display: none;">
-                <!-- Area DC akan dirender secara dinamis -->
-            </div>
-            
-            <div class="area-view" id="areaDD" style="display: none;">
-                <!-- Area DD akan dirender secara dinamis -->
-            </div>
-            
-            <div class="area-view" id="areaDE" style="display: none;">
-                <!-- Area DE akan dirender secara dinamis -->
+            <div class="area-content">
+                <div class="area-view" id="areaDA" style="display: none;"></div>
+                <div class="area-view" id="areaDB" style="display: none;"></div>
+                <div class="area-view" id="areaDC" style="display: none;"></div>
+                <div class="area-view" id="areaDD"></div>
+                <div class="area-view" id="areaDE" style="display: none;"></div>
             </div>
         </div>
 
         <div id="detailModal" class="modal">
             <div class="modal-content">
-                <span class="close-button">&times;</span>
-                <h2 id="locationTitle">Detail Lokasi</h2>
-                <div id="locationDetails">
-                    <p><strong>Lokasi:</strong> <span id="locationCode"></span></p>
-                    <p><strong>Status:</strong> <span id="locationStatus"></span></p>
-                    <p><strong>Customer:</strong> <span id="customerName"></span></p>
-                    <p><strong>Material:</strong> <span id="materialName"></span></p>
-                    <p><strong>Quantity:</strong> <span id="materialQty"></span></p>
-                    <p><strong>Tanggal Masuk:</strong> <span id="dateIn"></span></p>
+                <div class="modal-header">
+                    <h2 id="locationTitle">Detail Lokasi</h2>
+                    <span class="close-button">
+                        <i class="fas fa-times"></i>
+                    </span>
+                </div>
+                <div class="modal-body">
+                    <div class="detail-item">
+                        <span class="detail-label">Lokasi:</span>
+                        <span class="detail-value" id="locationCode"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value" id="locationStatus"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Customer:</span>
+                        <span class="detail-value" id="customerName"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Material:</span>
+                        <span class="detail-value" id="materialName"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Quantity:</span>
+                        <span class="detail-value" id="materialQty"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Tanggal Masuk:</span>
+                        <span class="detail-value" id="dateIn"></span>
+                    </div>
                 </div>
             </div>
         </div>
