@@ -1,48 +1,112 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Render rack area A
-    renderOccupancyGrid('highRackAreaA', 'A', 20);
-    
-    // Render rack area B
-    renderOccupancyGrid('highRackAreaB', 'B', 20);
+    // Render semua area
+    renderArea('DA');
+    renderArea('DB');
+    renderArea('DC');
+    renderArea('DD');
+    renderArea('DE');
     
     // Setup modal
     setupModal();
     
+    // Setup area selector
+    setupAreaSelector();
+    
     // Setup search functionality
     setupSearch();
+    
+    // Tampilkan tanggal dan user saat ini
+    document.getElementById('currentDate').textContent = '2025-07-11 09:38:27';
+    document.getElementById('currentUser').textContent = 'Login: PlasticDept';
 });
 
-// Render grid dengan lokasi penyimpanan
-function renderOccupancyGrid(containerId, areaPrefix, count) {
-    const container = document.getElementById(containerId);
+// Render satu area rack
+function renderArea(areaCode) {
+    const container = document.getElementById(`rack${areaCode}`);
+    container.innerHTML = '';
     
-    for (let i = 1; i <= count; i++) {
-        const locationCode = `${areaPrefix}${i}`;
-        const locationData = occupancyData[locationCode];
+    // Ambil semua rack di area tertentu (01-15)
+    const racks = [];
+    for (let i = 1; i <= 15; i++) {
+        const rackNumber = i.toString().padStart(2, '0');
+        const rackCode = `${areaCode}-${rackNumber}`;
         
-        const locationBox = document.createElement('div');
-        locationBox.className = 'location-box';
-        locationBox.textContent = locationCode;
-        locationBox.dataset.location = locationCode;
-        
-        if (locationData && locationData.status === 'occupied') {
-            locationBox.classList.add('occupied');
-            locationBox.classList.add(customerColors[locationData.customer]);
+        // Cek apakah rack ini ada dalam data
+        const rackExists = locations.some(loc => loc.startsWith(rackCode));
+        if (rackExists) {
+            racks.push(rackNumber);
         }
-        
-        locationBox.addEventListener('click', function() {
-            showLocationDetails(locationCode);
-        });
-        
-        container.appendChild(locationBox);
     }
+    
+    // Render setiap rack
+    racks.forEach(rackNumber => {
+        renderRack(areaCode, rackNumber, container);
+    });
+}
+
+// Render sebuah rack
+function renderRack(areaCode, rackNumber, container) {
+    const rackDiv = document.createElement('div');
+    rackDiv.className = 'rack';
+    
+    const rackHeader = document.createElement('div');
+    rackHeader.className = 'rack-header';
+    rackHeader.textContent = `${areaCode}-${rackNumber}`;
+    
+    const rackGrid = document.createElement('div');
+    rackGrid.className = 'rack-grid';
+    
+    // Cari semua lokasi untuk rack ini
+    const rackLocations = [];
+    
+    // Untuk setiap kombinasi level (1-2) dan posisi (1-4)
+    for (let level = 1; level <= 2; level++) {
+        for (let position = 1; position <= 4; position++) {
+            const locationCode = `${areaCode}-${rackNumber}-${level}-${position}`;
+            
+            // Buat kotak lokasi
+            const locationBox = document.createElement('div');
+            locationBox.className = 'location-box';
+            locationBox.textContent = `${level}-${position}`;
+            locationBox.dataset.location = locationCode;
+            
+            // Cek apakah lokasi ini ada dalam data
+            if (locations.includes(locationCode)) {
+                const locationData = occupancyData[locationCode];
+                
+                if (locationData && locationData.status === 'occupied') {
+                    locationBox.classList.add('occupied');
+                    locationBox.classList.add(customerColors[locationData.customer]);
+                }
+                
+                locationBox.addEventListener('click', function() {
+                    showLocationDetails(locationCode);
+                });
+            } else {
+                // Jika lokasi tidak ada dalam daftar, tampilkan sebagai non-interaktif
+                locationBox.style.opacity = '0.3';
+                locationBox.style.cursor = 'default';
+                locationBox.title = 'Lokasi tidak tersedia';
+            }
+            
+            rackGrid.appendChild(locationBox);
+        }
+    }
+    
+    rackDiv.appendChild(rackHeader);
+    rackDiv.appendChild(rackGrid);
+    container.appendChild(rackDiv);
 }
 
 // Menampilkan detail lokasi dalam modal
 function showLocationDetails(locationCode) {
     const locationData = occupancyData[locationCode];
+    
+    if (!locationData) return; // Keluar jika tidak ada data
+    
     const modal = document.getElementById('detailModal');
     
+    document.getElementById('locationTitle').textContent = `Detail Lokasi: ${locationCode}`;
     document.getElementById('locationCode').textContent = locationCode;
     
     if (locationData.status === 'empty') {
@@ -75,6 +139,32 @@ function setupModal() {
         if (event.target === modal) {
             modal.style.display = 'none';
         }
+    });
+}
+
+// Setup area selector
+function setupAreaSelector() {
+    const areaButtons = document.querySelectorAll('.area-button');
+    
+    areaButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove active class from all buttons
+            areaButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            // Get area code
+            const areaCode = this.dataset.area;
+            
+            // Hide all area views
+            document.querySelectorAll('.area-view').forEach(view => {
+                view.style.display = 'none';
+            });
+            
+            // Show selected area view
+            document.getElementById(`area${areaCode}`).style.display = 'block';
+        });
     });
 }
 
@@ -111,8 +201,11 @@ function performSearch() {
     
     // Cari lokasi atau customer yang cocok
     let found = false;
+    let foundArea = null;
     
     allBoxes.forEach(box => {
+        if (!box.dataset.location) return;
+        
         const locationCode = box.dataset.location;
         const locationData = occupancyData[locationCode];
         
@@ -120,6 +213,7 @@ function performSearch() {
         if (locationCode.includes(searchTerm)) {
             highlightBox(box);
             found = true;
+            foundArea = locationCode.split('-')[0];
         } 
         // Cek apakah cocok dengan nama customer
         else if (locationData && 
@@ -127,8 +221,27 @@ function performSearch() {
                  locationData.customer.includes(searchTerm)) {
             highlightBox(box);
             found = true;
+            foundArea = locationCode.split('-')[0];
         }
     });
+    
+    if (found && foundArea) {
+        // Aktifkan tab area yang ditemukan
+        document.querySelectorAll('.area-button').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.area === foundArea) {
+                btn.classList.add('active');
+            }
+        });
+        
+        // Tampilkan area yang ditemukan
+        document.querySelectorAll('.area-view').forEach(view => {
+            view.style.display = 'none';
+            if (view.id === `area${foundArea}`) {
+                view.style.display = 'block';
+            }
+        });
+    }
     
     if (!found) {
         alert('Tidak ditemukan lokasi atau customer yang sesuai dengan pencarian');

@@ -11,7 +11,7 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
 }
@@ -20,13 +20,23 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
     flex-wrap: wrap;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #ddd;
 }
 
 header h1 {
     font-size: 24px;
     margin-bottom: 10px;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-size: 14px;
+    color: #666;
 }
 
 .search-container {
@@ -85,32 +95,85 @@ header h1 {
     border-radius: 4px;
 }
 
-.rack-label {
-    font-size: 18px;
-    font-weight: bold;
-    margin: 20px 0 10px 0;
+.area-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
 }
 
-.occupancy-container {
+.area-button {
+    padding: 10px 15px;
+    background-color: #e0e0e0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.area-button:hover {
+    background-color: #d0d0d0;
+}
+
+.area-button.active {
+    background-color: #007bff;
+    color: white;
+}
+
+.area-view {
     margin-top: 20px;
 }
 
-.occupancy-grid {
+.area-view h2 {
+    margin-bottom: 15px;
+    font-size: 20px;
+    color: #333;
+}
+
+.rack-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.rack {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    width: calc(25% - 15px);
+    min-width: 280px;
+}
+
+.rack-header {
+    font-weight: bold;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #eee;
+}
+
+.rack-grid {
     display: grid;
-    grid-template-columns: repeat(10, 1fr);
-    gap: 10px;
-    margin-bottom: 30px;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 8px;
 }
 
 .location-box {
     background-color: #e0e0e0;
     border-radius: 4px;
-    padding: 15px 0;
+    padding: 8px 5px;
     text-align: center;
     font-weight: bold;
+    font-size: 13px;
     cursor: pointer;
     transition: transform 0.2s;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 45px;
 }
 
 .location-box:hover {
@@ -131,6 +194,10 @@ header h1 {
 
 .location-box.customer-ghi {
     background-color: #FF9800;
+}
+
+.location-box.customer-jkl {
+    background-color: #9C27B0;
 }
 
 /* Modal Styles */
@@ -175,18 +242,43 @@ header h1 {
     margin: 10px 0;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1200px) {
+    .rack {
+        width: calc(33.33% - 14px);
+    }
+}
+
+@media (max-width: 900px) {
+    .rack {
+        width: calc(50% - 10px);
+    }
+}
+
+@media (max-width: 600px) {
+    .rack {
+        width: 100%;
+    }
+    
     header {
         flex-direction: column;
         align-items: flex-start;
     }
     
-    .occupancy-grid {
-        grid-template-columns: repeat(5, 1fr);
+    .user-info {
+        align-items: flex-start;
+        margin-top: 10px;
+    }
+    
+    .search-container {
+        width: 100%;
+    }
+    
+    #searchInput {
+        flex-grow: 1;
     }
     
     .modal-content {
-        width: 90%;
+        width: 95%;
         margin: 30% auto;
     }
 }

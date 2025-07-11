@@ -10,6 +10,10 @@
     <div class="container">
         <header>
             <h1>Sistem Manajemen Occupancy Area dan High Rack</h1>
+            <div class="user-info">
+                <span id="currentDate">2025-07-11 09:38:27</span>
+                <span id="currentUser">Login: PlasticDept</span>
+            </div>
             <div class="search-container">
                 <input type="text" id="searchInput" placeholder="Cari lokasi atau customer...">
                 <button id="searchButton">Cari</button>
@@ -32,18 +36,49 @@
                     <span>Customer GHI</span>
                 </div>
                 <div class="legend-item">
+                    <div class="color-box" style="background-color: #9C27B0;"></div>
+                    <span>Customer JKL</span>
+                </div>
+                <div class="legend-item">
                     <div class="color-box" style="background-color: #e0e0e0;"></div>
                     <span>Kosong</span>
                 </div>
             </div>
         </div>
 
+        <div class="area-selector">
+            <button class="area-button active" data-area="DA">Area DA</button>
+            <button class="area-button" data-area="DB">Area DB</button>
+            <button class="area-button" data-area="DC">Area DC</button>
+            <button class="area-button" data-area="DD">Area DD</button>
+            <button class="area-button" data-area="DE">Area DE</button>
+        </div>
+
         <div class="occupancy-container">
-            <div class="rack-label">High Rack - Area A</div>
-            <div class="occupancy-grid" id="highRackAreaA"></div>
+            <div class="area-view" id="areaDA">
+                <h2>Area DA - High Rack</h2>
+                <div class="rack-container" id="rackDA"></div>
+            </div>
             
-            <div class="rack-label">High Rack - Area B</div>
-            <div class="occupancy-grid" id="highRackAreaB"></div>
+            <div class="area-view" id="areaDB" style="display: none;">
+                <h2>Area DB - High Rack</h2>
+                <div class="rack-container" id="rackDB"></div>
+            </div>
+            
+            <div class="area-view" id="areaDC" style="display: none;">
+                <h2>Area DC - High Rack</h2>
+                <div class="rack-container" id="rackDC"></div>
+            </div>
+            
+            <div class="area-view" id="areaDD" style="display: none;">
+                <h2>Area DD - High Rack</h2>
+                <div class="rack-container" id="rackDD"></div>
+            </div>
+            
+            <div class="area-view" id="areaDE" style="display: none;">
+                <h2>Area DE - High Rack</h2>
+                <div class="rack-container" id="rackDE"></div>
+            </div>
         </div>
 
         <div id="detailModal" class="modal">

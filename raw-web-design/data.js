@@ -1,225 +1,108 @@
-// Data occupancy area dan high rack
-const occupancyData = {
-    // Area A
-    "A1": { 
-        status: "occupied", 
-        customer: "ABC", 
-        material: "Bahan Baku Plastik", 
-        quantity: "500 kg", 
-        dateIn: "2025-07-05" 
-    },
-    "A2": { 
-        status: "occupied", 
-        customer: "DEF", 
-        material: "Komponen Elektronik", 
-        quantity: "200 unit", 
-        dateIn: "2025-07-08" 
-    },
-    "A3": { 
-        status: "empty" 
-    },
-    "A4": { 
-        status: "occupied", 
-        customer: "ABC", 
-        material: "Kemasan Produk", 
-        quantity: "1000 pcs", 
-        dateIn: "2025-07-02" 
-    },
-    "A5": { 
-        status: "occupied", 
-        customer: "GHI", 
-        material: "Sparepart Mesin", 
-        quantity: "50 set", 
-        dateIn: "2025-07-10" 
-    },
-    "A6": { 
-        status: "empty" 
-    },
-    "A7": { 
-        status: "occupied", 
-        customer: "DEF", 
-        material: "PCB Assembly", 
-        quantity: "300 unit", 
-        dateIn: "2025-07-03" 
-    },
-    "A8": { 
-        status: "occupied", 
-        customer: "ABC", 
-        material: "Label Produk", 
-        quantity: "2000 pcs", 
-        dateIn: "2025-07-09" 
-    },
-    "A9": { 
-        status: "empty" 
-    },
-    "A10": { 
-        status: "occupied", 
-        customer: "GHI", 
-        material: "Komponen Mekanik", 
-        quantity: "150 unit", 
-        dateIn: "2025-07-01" 
-    },
-    
-    // Lanjutkan dengan data untuk A11-A20
-    "A11": { status: "empty" },
-    "A12": { 
-        status: "occupied", 
-        customer: "ABC", 
-        material: "Box Packaging", 
-        quantity: "300 pcs", 
-        dateIn: "2025-07-06" 
-    },
-    "A13": { 
-        status: "occupied", 
-        customer: "DEF", 
-        material: "Cable Assembly", 
-        quantity: "100 set", 
-        dateIn: "2025-07-05" 
-    },
-    "A14": { status: "empty" },
-    "A15": { 
-        status: "occupied", 
-        customer: "GHI", 
-        material: "Metal Parts", 
-        quantity: "250 kg", 
-        dateIn: "2025-07-04" 
-    },
-    "A16": { 
-        status: "occupied", 
-        customer: "ABC", 
-        material: "Plastic Components", 
-        quantity: "450 pcs", 
-        dateIn: "2025-07-09" 
-    },
-    "A17": { status: "empty" },
-    "A18": { 
-        status: "occupied", 
-        customer: "DEF", 
-        material: "LCD Modules", 
-        quantity: "75 units", 
-        dateIn: "2025-07-07" 
-    },
-    "A19": { 
-        status: "occupied", 
-        customer: "GHI", 
-        material: "Rubber Seals", 
-        quantity: "1000 pcs", 
-        dateIn: "2025-07-08" 
-    },
-    "A20": { status: "empty" },
-    
-    // Area B
-    "B1": { 
-        status: "occupied", 
-        customer: "DEF", 
-        material: "Power Supply Units", 
-        quantity: "100 units", 
-        dateIn: "2025-07-06" 
-    },
-    "B2": { status: "empty" },
-    "B3": { 
-        status: "occupied", 
-        customer: "ABC", 
-        material: "Plastic Housing", 
-        quantity: "350 pcs", 
-        dateIn: "2025-07-03" 
-    },
-    "B4": { 
-        status: "occupied", 
-        customer: "GHI", 
-        material: "Bearing Assembly", 
-        quantity: "200 sets", 
-        dateIn: "2025-07-10" 
-    },
-    "B5": { 
-        status: "occupied", 
-        customer: "DEF", 
-        material: "Sensor Modules", 
-        quantity: "150 units", 
-        dateIn: "2025-07-01" 
-    },
-    "B6": { status: "empty" },
-    "B7": { 
-        status: "occupied", 
-        customer: "ABC", 
-        material: "Plastic Resin", 
-        quantity: "600 kg", 
-        dateIn: "2025-07-09" 
-    },
-    "B8": { 
-        status: "occupied", 
-        customer: "GHI", 
-        material: "Aluminum Parts", 
-        quantity: "300 kg", 
-        dateIn: "2025-07-04" 
-    },
-    "B9": { status: "empty" },
-    "B10": { 
-        status: "occupied", 
-        customer: "DEF", 
-        material: "Battery Packs", 
-        quantity: "120 units", 
-        dateIn: "2025-07-05" 
-    },
-    
-    // Lanjutkan dengan data untuk B11-B20
-    "B11": { 
-        status: "occupied", 
-        customer: "ABC", 
-        material: "Adhesive Tape", 
-        quantity: "400 rolls", 
-        dateIn: "2025-07-02" 
-    },
-    "B12": { status: "empty" },
-    "B13": { 
-        status: "occupied", 
-        customer: "GHI", 
-        material: "Fasteners", 
-        quantity: "5000 pcs", 
-        dateIn: "2025-07-07" 
-    },
-    "B14": { 
-        status: "occupied", 
-        customer: "DEF", 
-        material: "Circuit Boards", 
-        quantity: "250 pcs", 
-        dateIn: "2025-07-08" 
-    },
-    "B15": { status: "empty" },
-    "B16": { 
-        status: "occupied", 
-        customer: "ABC", 
-        material: "Color Pigments", 
-        quantity: "100 kg", 
-        dateIn: "2025-07-09" 
-    },
-    "B17": { 
-        status: "occupied", 
-        customer: "GHI", 
-        material: "Steel Frames", 
-        quantity: "80 units", 
-        dateIn: "2025-07-10" 
-    },
-    "B18": { status: "empty" },
-    "B19": { 
-        status: "occupied", 
-        customer: "DEF", 
-        material: "RFID Tags", 
-        quantity: "1500 pcs", 
-        dateIn: "2025-07-01" 
-    },
-    "B20": { 
-        status: "occupied", 
-        customer: "ABC", 
-        material: "Injection Molds", 
-        quantity: "10 sets", 
-        dateIn: "2025-07-04" 
-    }
+// Data struktur lokasi
+const locations = [
+    "DA-01-2-4", "DA-02-1-4", "DA-02-2-4", "DA-03-1-2", "DA-03-1-4", "DA-03-2-2", "DA-04-1-2", "DA-04-2-2", 
+    "DA-06-1-4", "DA-07-2-4", "DA-08-2-2", "DA-09-1-4", "DA-09-2-4", "DA-11-1-2", "DA-11-2-4", "DA-12-2-2", 
+    "DA-12-2-4", "DA-13-1-1", "DA-13-2-1", "DA-13-2-2", "DB-01-2-2", "DB-02-1-3", "DB-02-2-2", "DB-03-1-3", 
+    "DB-03-2-2", "DB-03-2-4", "DB-04-1-4", "DB-05-1-2", "DB-05-2-3", "DB-06-1-4", "DB-06-2-4", "DB-07-1-2", 
+    "DB-07-2-3", "DB-07-2-4", "DB-08-1-4", "DB-08-2-4", "DB-09-1-2", "DB-10-1-2", "DB-11-2-2", "DB-12-1-4", 
+    "DB-12-2-2", "DB-13-1-3", "DB-13-2-2", "DB-13-2-4", "DC-01-1-2", "DC-01-1-3", "DC-01-1-4", "DC-01-2-3", 
+    "DC-01-2-4", "DC-02-1-2", "DC-02-2-2", "DC-02-2-4", "DC-03-1-2", "DC-03-1-4", "DC-03-2-2", "DC-03-2-4", 
+    "DC-04-1-2", "DC-04-1-3", "DC-04-1-4", "DC-05-1-3", "DC-05-1-4", "DC-05-2-2", "DC-05-2-3", "DC-05-2-4", 
+    "DC-06-1-2", "DC-06-1-4", "DC-06-2-2", "DC-06-2-4", "DC-07-1-2", "DC-07-1-4", "DC-07-2-2", "DC-07-2-4", 
+    "DC-08-1-2", "DC-08-2-2", "DC-08-2-3", "DC-09-1-2", "DC-09-1-4", "DC-10-1-4", "DC-10-2-2", "DC-11-2-2", 
+    "DC-11-2-4", "DC-12-1-2", "DC-12-1-4", "DC-12-2-2", "DC-12-2-4", "DC-13-1-4", "DC-13-2-2", "DC-14-1-2", 
+    "DC-14-1-4", "DC-14-2-2", "DC-14-2-4", "DC-15-1-2", "DC-15-1-4", "DD-01-1-2", "DD-01-1-4", "DD-01-2-1", 
+    "DD-01-2-2", "DD-01-2-3", "DD-01-2-4", "DD-02-1-1", "DD-02-1-2", "DD-02-1-4", "DD-02-2-1", "DD-02-2-2", 
+    "DD-02-2-4", "DD-03-1-1", "DD-03-1-2", "DD-03-1-3", "DD-03-1-4", "DD-03-2-1", "DD-03-2-2", "DD-03-2-3", 
+    "DD-03-2-4", "DD-04-1-1", "DD-04-1-2", "DD-04-1-3", "DD-04-1-4", "DD-04-2-1", "DD-04-2-3", "DD-04-2-4", 
+    "DD-05-1-1", "DD-05-1-2", "DD-05-1-3", "DD-05-1-4", "DD-05-2-1", "DD-05-2-2", "DD-05-2-3", "DD-05-2-4", 
+    "DD-06-1-1", "DD-06-1-2", "DD-06-1-4", "DD-06-2-1", "DD-06-2-2", "DD-06-2-4", "DD-07-1-1", "DD-07-1-2", 
+    "DD-07-1-3", "DD-07-1-4", "DD-07-2-1", "DD-07-2-2", "DD-07-2-4", "DD-08-1-1", "DD-08-1-2", "DD-08-1-3", 
+    "DD-08-1-4", "DD-08-2-2", "DD-08-2-3", "DD-08-2-4", "DD-09-1-2", "DD-09-1-3", "DD-09-1-4", "DD-09-2-1", 
+    "DD-09-2-2", "DD-09-2-3", "DD-09-2-4", "DD-10-1-1", "DD-10-1-2", "DD-10-1-4", "DD-10-2-2", "DD-10-2-3", 
+    "DD-10-2-4", "DD-11-1-1", "DD-11-1-2", "DD-11-1-3", "DD-11-1-4", "DD-11-2-1", "DD-11-2-2", "DD-11-2-3", 
+    "DD-11-2-4", "DD-12-1-1", "DD-12-1-2", "DD-12-1-3", "DD-12-1-4", "DD-12-2-1", "DD-12-2-2", "DD-12-2-3", 
+    "DD-12-2-4", "DD-13-1-1", "DD-13-1-2", "DD-13-1-3", "DD-13-1-4", "DD-13-2-2", "DD-13-2-4", "DD-14-1-1", 
+    "DD-14-1-2", "DD-14-1-4", "DD-14-2-1", "DD-14-2-2", "DD-14-2-4", "DD-15-1-1", "DD-15-1-2", "DD-15-1-4", 
+    "DD-15-2-1", "DD-15-2-2", "DD-15-2-3", "DD-15-2-4", "DE-01-1-1", "DE-01-1-2", "DE-01-1-3", "DE-01-1-4", 
+    "DE-01-2-1", "DE-01-2-2", "DE-01-2-3", "DE-01-2-4", "DE-02-1-1", "DE-02-1-2", "DE-02-1-3", "DE-02-1-4", 
+    "DE-02-2-1", "DE-02-2-2", "DE-02-2-3", "DE-02-2-4", "DE-03-1-1", "DE-03-1-2", "DE-03-1-3", "DE-03-1-4", 
+    "DE-03-2-2", "DE-03-2-3", "DE-03-2-4", "DE-04-1-1", "DE-04-1-2", "DE-04-1-3", "DE-04-1-4", "DE-04-2-1", 
+    "DE-04-2-2", "DE-04-2-3", "DE-04-2-4", "DE-05-1-1", "DE-05-1-2", "DE-05-1-3", "DE-05-1-4", "DE-05-2-1", 
+    "DE-05-2-2", "DE-05-2-3", "DE-05-2-4", "DE-06-1-1", "DE-06-1-2", "DE-06-1-3", "DE-06-1-4", "DE-06-2-1", 
+    "DE-06-2-2", "DE-06-2-3", "DE-06-2-4", "DE-07-1-1", "DE-07-1-2", "DE-07-1-3", "DE-07-1-4", "DE-07-2-1", 
+    "DE-07-2-2", "DE-07-2-3", "DE-08-2-1", "DE-09-1-1", "DE-09-1-2", "DE-09-1-3", "DE-09-1-4", "DE-09-2-1", 
+    "DE-09-2-2", "DE-09-2-4", "DE-10-1-1", "DE-10-1-2", "DE-10-1-3", "DE-10-1-4", "DE-10-2-1", "DE-10-2-2", 
+    "DE-10-2-3", "DE-10-2-4", "DE-11-1-1", "DE-11-1-2", "DE-11-1-3", "DE-11-1-4", "DE-11-2-2", "DE-11-2-3", 
+    "DE-11-2-4", "DE-12-1-2", "DE-12-1-3", "DE-12-1-4", "DE-12-2-2", "DE-12-2-3", "DE-12-2-4", "DE-13-1-1", 
+    "DE-13-1-2", "DE-13-1-3", "DE-13-1-4", "DE-13-2-1", "DE-13-2-2", "DE-13-2-3", "DE-13-2-4", "DE-14-1-1", 
+    "DE-14-1-2", "DE-14-1-3", "DE-14-1-4", "DE-14-2-1", "DE-14-2-2", "DE-14-2-3", "DE-14-2-4", "DE-15-1-1", 
+    "DE-15-1-2", "DE-15-1-3", "DE-15-1-4", "DE-15-2-1", "DE-15-2-2", "DE-15-2-4"
+];
+
+// Inisialisasi data acak untuk occupancy
+const occupancyData = {};
+
+// Daftar customer
+const customers = ["ABC", "DEF", "GHI", "JKL"];
+const materials = {
+    "ABC": [
+        "Raw Material Plastic A", "Raw Material Plastic B", "Plastic Pellets", 
+        "HDPE Compound", "LDPE Compound", "PP Compound", "PVC Compound", 
+        "Color Masterbatch", "Additives", "Plastic Fillers"
+    ],
+    "DEF": [
+        "Injection Mold Tools", "Blow Mold Tools", "Compression Mold Tools", 
+        "Packaging Materials", "PP Sheets", "PE Sheets", "Plastic Trays", 
+        "Labels", "Plastic Containers", "Bottle Preforms"
+    ],
+    "GHI": [
+        "Recycled Plastic Flakes", "Recycled Plastic Pellets", "Bio-based Plastics", 
+        "Biodegradable Compounds", "Plastic Regrinds", "Plastic Scrap", 
+        "Plastic Parts", "Plastic Components", "Molded Products", "Finished Goods"
+    ],
+    "JKL": [
+        "Testing Materials", "QC Samples", "Plastic Film Rolls", "Packaging Films", 
+        "Polymer Blends", "Custom Compounds", "Specialty Plastics", 
+        "Engineering Plastics", "Plastic Sheets", "Plastic Profiles"
+    ]
 };
+
+// Buat data occupancy acak (60% terisi, 40% kosong)
+locations.forEach(location => {
+    if (Math.random() < 0.6) {
+        // Lokasi terisi
+        const randomCustomer = customers[Math.floor(Math.random() * customers.length)];
+        const customerMaterials = materials[randomCustomer];
+        const randomMaterial = customerMaterials[Math.floor(Math.random() * customerMaterials.length)];
+        const randomQuantity = `${Math.floor(Math.random() * 900) + 100} ${Math.random() < 0.5 ? 'kg' : 'pcs'}`;
+        
+        // Buat tanggal acak dalam 2 minggu terakhir
+        const now = new Date('2025-07-11');
+        const randomDaysAgo = Math.floor(Math.random() * 14);
+        const date = new Date(now);
+        date.setDate(now.getDate() - randomDaysAgo);
+        const dateString = date.toISOString().split('T')[0];
+        
+        occupancyData[location] = {
+            status: "occupied",
+            customer: randomCustomer,
+            material: randomMaterial,
+            quantity: randomQuantity,
+            dateIn: dateString
+        };
+    } else {
+        // Lokasi kosong
+        occupancyData[location] = {
+            status: "empty"
+        };
+    }
+});
 
 // Konfigurasi customer dan warna
 const customerColors = {
     "ABC": "customer-abc",
     "DEF": "customer-def",
-    "GHI": "customer-ghi"
+    "GHI": "customer-ghi",
+    "JKL": "customer-jkl"
 };
