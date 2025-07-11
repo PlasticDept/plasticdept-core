@@ -67,6 +67,27 @@ function getStatusProgress(timeIn, unloadingTime, finish) {
 
 function formatDate(dateStr) {
   if (!dateStr) return "";
+  
+  // Cek apakah dateStr adalah angka (Excel serial date)
+  if (typeof dateStr === 'number' || !isNaN(Number(dateStr))) {
+    // Konversi Excel serial date ke JavaScript Date
+    const serialValue = typeof dateStr === 'number' ? dateStr : Number(dateStr);
+    const utc_days = Math.floor(serialValue - 25569);
+    const utc_value = utc_days * 86400;
+    const date_info = new Date(utc_value * 1000);
+    
+    const day = date_info.getDate();
+    const month = date_info.getMonth(); // 0-11
+    const year = date_info.getFullYear();
+    
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    
+    const shortYear = year.toString().slice(-2);
+    return `${day}-${monthNames[month]}-${shortYear}`;
+  }
+  
+  // Proses jika dateStr adalah string (format DD/MM/YYYY)
   const parts = dateStr.split("/");
   if (parts.length !== 3) return dateStr;
 
