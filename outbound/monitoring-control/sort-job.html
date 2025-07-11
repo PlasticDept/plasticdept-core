@@ -12,8 +12,9 @@
 </head>
 <body>
   <div class="container">
-    <!-- HEADER BAR (pindah ke atas & center) -->
+    <!-- HEADER BAR (diposisikan di tengah) -->
     <div class="header-bar">
+      <div class="header-left"></div>
       <div class="logo-title">
         <img src="https://img.icons8.com/color/48/000000/warehouse.png" width="36" />
         Outbound Job Assignment
@@ -29,66 +30,105 @@
 
     <div id="notification" class="notification-bar"></div>
 
-    <!-- Upload + Plan Target in one bar, flex -->
-    <div class="top-bar">
-      <div class="top-bar-left">
-        <!-- Shift Toggle -->
-        <div class="shift-toggle" style="margin-bottom: 16px;">
-          <input type="radio" name="shiftType" id="shiftDay" value="Day" checked>
-          <label for="shiftDay">Day Shift</label>
-          <input type="radio" name="shiftType" id="shiftNight" value="Night">
-          <label for="shiftNight">Night Shift</label>
-        </div>
-        <!-- Toggle Phoenix/Z-Logix -->
-        <div class="mode-toggle">
-          <input type="radio" name="modeToggle" id="modePhoenix" value="phoenix" checked>
-          <label for="modePhoenix">Phoenix</label>
-          <input type="radio" name="modeToggle" id="modeZLogix" value="zlogix">
-          <label for="modeZLogix">Z-Logix</label>
-        </div>
-        <!-- Upload Section -->
-        <div class="upload-section">
-          <input type="file" id="fileInput" accept=".xlsx, .xls" />
-          <button id="uploadBtn">Upload</button>
-        </div>
+    <!-- Shift Toggle & Upload Section -->
+    <div class="shift-panel">
+      <div class="shift-toggle">
+        <input type="radio" name="shiftType" id="shiftDay" value="Day" checked>
+        <label for="shiftDay">Day Shift</label>
+        <input type="radio" name="shiftType" id="shiftNight" value="Night">
+        <label for="shiftNight">Night Shift</label>
       </div>
-      <!-- Tambahkan div baru untuk tabel MP PIC -->
-      <div class="top-bar-mp-pic-list">
-        <div id="mpPicTableContainer"></div>
+      
+      <!-- Toggle Phoenix/Z-Logix -->
+      <div class="mode-toggle">
+        <input type="radio" name="modeToggle" id="modePhoenix" value="phoenix" checked>
+        <label for="modePhoenix">Phoenix</label>
+        <input type="radio" name="modeToggle" id="modeZLogix" value="zlogix">
+        <label for="modeZLogix">Z-Logix</label>
       </div>
-      <div class="top-bar-right">
-        <div class="form-row">
-          <input type="number" id="planTargetInput" placeholder="Masukkan jumlah" min="0">
-          <select id="planTeamSelector">
-            <option value="Sugity">Team Sugity</option>
-            <option value="Reguler">Team Reguler</option>
-          </select>
+      
+      <!-- Upload Section -->
+      <div class="upload-section">
+        <input type="file" id="fileInput" accept=".xlsx, .xls" />
+        <button id="uploadBtn">Upload</button>
+      </div>
+    </div>
+
+    <!-- Data Input Card (Tabel user + Form input) -->
+    <div class="data-input-card">
+      <!-- Tabel User Assignment -->
+      <div class="user-table-section">
+        <table class="user-table">
+          <thead>
+            <tr>
+              <th>Nama</th>
+              <th>Team</th>
+              <th>User ID</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="userTableBody">
+            <!-- Data tabel user diisi secara dinamis -->
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Form Input Section -->
+      <div class="form-input-section">
+        <!-- Set Target Form -->
+        <div class="form-group">
+          <h3>Set Target</h3>
+          <div class="form-controls">
+            <select id="planTeamSelector">
+              <option value="Sugity">Team Sugity</option>
+              <option value="Reguler">Team Reguler</option>
+            </select>
+            <input type="number" id="planTargetInput" placeholder="Masukkan jumlah" min="0">
+          </div>
           <button id="setPlanTargetBtn" type="button">Set Target</button>
         </div>
-        <div class="form-row">
-          <input type="number" id="manPowerInput" placeholder="Jumlah man power" min="0">
-          <select id="manPowerTeamSelector">
-            <option value="Sugity">Team Sugity</option>
-            <option value="Reguler">Team Reguler</option>
-          </select>
+        
+        <!-- Set MP Form -->
+        <div class="form-group">
+          <h3>Set MP</h3>
+          <div class="form-controls">
+            <select id="manPowerTeamSelector">
+              <option value="Sugity">Team Sugity</option>
+              <option value="Reguler">Team Reguler</option>
+            </select>
+            <input type="number" id="manPowerInput" placeholder="Jumlah man power" min="0">
+          </div>
           <button id="setManPowerBtn" type="button">Set MP</button>
         </div>
-        <div class="form-row">
-          <input type="number" id="mpOvertimeInput" placeholder="Man Power OT" min="0">
-          <button id="setMpOvertimeBtn" type="button">Set MP OT</button>
-        </div>
-        <div class="form-row" id="mpPicRow">
-          <select id="mpPicSelector">
-            <option value="">-- Pilih PIC --</option>
-            <!-- Opsi diisi via JS -->
-          </select>
-          <select id="mpPicTeamSelector">
-            <option value="Sugity">Team Sugity</option>
-            <option value="Reguler">Team Reguler</option>
-          </select>
+        
+        <!-- Set MP PIC Form -->
+        <div class="form-group">
+          <h3>Set MP PIC</h3>
+          <div class="form-controls">
+            <select id="mpPicTeamSelector">
+              <option value="Sugity">Team Sugity</option>
+              <option value="Reguler">Team Reguler</option>
+            </select>
+            <select id="mpPicSelector">
+              <option value="">-- Pilih PIC --</option>
+              <!-- Opsi diisi via JS -->
+            </select>
+          </div>
           <button id="setMpPicBtn" type="button">Set MP PIC</button>
         </div>
+        
+        <!-- Set MP OT Form -->
+        <div class="form-group">
+          <h3>Set MP OT</h3>
+          <div class="form-controls">
+            <input type="number" id="mpOvertimeInput" placeholder="Masukkan jumlah" min="0">
+          </div>
+          <button id="setMpOvertimeBtn" type="button">Set MP OT</button>
+        </div>
       </div>
+    </div>
+
+    <!-- Toolbar dengan Card Styling -->
     <div class="toolbar">
       <button id="bulkAddBtn">Assign Job Selected</button>
       <div class="dropdown-container">
@@ -96,13 +136,7 @@
         <div id="statusDropdown" class="dropdown-menu">
           <select id="statusOptions">
             <option value="all">-- Show All --</option>
-            <option value="Pending Pick">Pending Pick</option>
-            <option value="Pending Allocation">Pending Allocation</option>
-            <option value="Partial Picked">Partial Picked</option>
-            <option value="Partial Packed">Partial Packed</option>
-            <option value="Packed">Packed</option>
-            <option value="Loading">Loading</option>
-            <option value="Completed">Completed</option>
+            <!-- Options filled by JS -->
           </select>
         </div>
       </div>
@@ -111,6 +145,7 @@
         <div id="dateDropdown" class="dropdown-menu">
           <select id="dateOptions">
             <option value="all">-- Show All --</option>
+            <!-- Options filled by JS -->
           </select>
         </div>
       </div>
@@ -119,9 +154,7 @@
         <div id="teamDropdown" class="dropdown-menu">
           <select id="teamOptions">
             <option value="all">-- Show All --</option>
-            <option value="Reguler">Reguler</option>
-            <option value="Sugity">Sugity</option>
-            <option value="none">None / Blank</option>
+            <!-- Options filled by JS -->
           </select>
         </div>
       </div>
@@ -129,11 +162,10 @@
         <a href="team-sugity.html" target="_blank" class="toolbar-link">Team Sugity Target</a>
         <a href="team-reguler.html" target="_blank" class="toolbar-link">Team Reguler Target</a>
         <a href="dashboard.html" target="_blank" class="toolbar-link">Outbound Dashboard</a>
-        <a href="achievement.html" target="_blank" class="toolbar-link">Achievement Report</a>
-        <a href="report.html" target="_blank" class="toolbar-link">Daily Report</a>
+        <a href="report.html" target="_blank" class="toolbar-link">Report</a>
       </div>
-      <button id="clearDatabaseBtn" class="danger">Delete Prev Data</button>
-      <button id="exportExcelBtn" class="success" style="background:#43a047;">Save Target to Databse</button>
+      <button id="clearDatabaseBtn" class="danger">Hapus Semua Data</button>
+      <button id="exportExcelBtn" class="success">Export Target Job Excel</button>
     </div>
 
     <div id="filterIndicator" class="filter-indicator"></div>
@@ -191,7 +223,7 @@
       </div>
     </div>
 
-    <!-- Modal Logout Profesional -->
+    <!-- Modal Logout -->
     <div id="logoutModal" class="modal">
       <div class="modal-content">
         <h3>Konfirmasi Logout</h3>
@@ -204,6 +236,7 @@
         </div>
       </div>
     </div>
+    
     <!-- Spinner/Loading overlay -->
     <div id="exportLoadingOverlay" style="display:none;">
       <div class="export-loading-content">
@@ -212,6 +245,7 @@
       </div>
     </div>
   </div>
+
   <script type="module" src="js/config.js"></script>
   <script type="module" src="js/sortir.js"></script>
   <script>
@@ -232,7 +266,36 @@
           document.querySelectorAll(".dropdown-container").forEach(c => c.classList.remove("show"));
         }
       });
+
+      // Contoh data untuk tabel user
+      // Ini hanya contoh visual, data sebenarnya akan diambil dari Firebase
+      populateUserTable();
     });
+
+    // Fungsi untuk menampilkan data user (sample)
+    function populateUserTable() {
+      const userTableBody = document.getElementById("userTableBody");
+      if (!userTableBody) return;
+
+      // Data contoh - akan digantikan dengan data dari Firebase
+      const userData = [
+        { name: "Samsul", team: "Reguler", userId: "100169" },
+        { name: "Egi Elisa Putra", team: "Sugity", userId: "300044" },
+        { name: "Rusgana", team: "Sugity", userId: "300092" }
+      ];
+
+      userTableBody.innerHTML = '';
+      userData.forEach(user => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${user.name}</td>
+          <td>${user.team}</td>
+          <td>${user.userId}</td>
+          <td><button class="hapus-btn">Hapus</button></td>
+        `;
+        userTableBody.appendChild(row);
+      });
+    }
   </script>
 </body>
 </html>
