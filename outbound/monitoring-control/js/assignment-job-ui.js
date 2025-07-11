@@ -2,17 +2,21 @@
  * UI Enhancement Module untuk Outbound Job Assignment
  */
 
-// Definisikan showModalWithId dan hideModalWithId sebagai fungsi global
-// agar bisa diekspor dengan benar
-window.showModalWithId = function(modalId) {
+// Definisikan fungsi sebagai variabel lokal di dalam modul terlebih dahulu
+// sehingga dapat diekspor dengan benar
+function showModalWithId(modalId) {
   const backdrop = document.getElementById(modalId + 'Backdrop');
   if (backdrop) backdrop.classList.add('show');
-};
+}
 
-window.hideModalWithId = function(modalId) {
+function hideModalWithId(modalId) {
   const backdrop = document.getElementById(modalId + 'Backdrop');
   if (backdrop) backdrop.classList.remove('show');
-};
+}
+
+// Kemudian kita juga bisa menetapkan fungsi ke objek window jika diperlukan
+window.showModalWithId = showModalWithId;
+window.hideModalWithId = hideModalWithId;
 
 // Tunggu dokumen siap
 document.addEventListener('DOMContentLoaded', () => {
@@ -22,7 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // Fungsi utama untuk meningkatkan UI
 function enhanceUserInterface() {
   // Tambahkan class styling ke container utama
-  document.querySelector('.container')?.classList.add('professional-ui');
+  const container = document.querySelector('.container');
+  if (container) container.classList.add('professional-ui');
   
   // Set up file input name display
   setupFileInput();
@@ -85,11 +90,11 @@ function setupDropdowns() {
 function setupModals() {
   // Override existing modal functions for backward compatibility
   window.showModal = function() {
-    window.showModalWithId('assign');
+    showModalWithId('assign');
   };
   
   window.hideModal = function() {
-    window.hideModalWithId('assign');
+    hideModalWithId('assign');
   };
   
   // Close modal with close buttons
@@ -367,15 +372,13 @@ function addCssAnimations() {
 enhanceConfirmModal();
 addCssAnimations();
 
-// Export fungsi untuk digunakan di file lain jika perlu
-// Hanya export fungsi yang sudah didefinisikan
+// Export fungsi untuk digunakan di file lain
 export {
   enhanceUserInterface,
   enhanceNotifications,
   enhanceButtons,
   enhanceFormControls,
   enhanceTableInteractions,
-  // Pastikan showModalWithId dan hideModalWithId didefinisikan sebelum diekspor
   showModalWithId,
   hideModalWithId
 };
