@@ -1,10 +1,10 @@
 /**
  * Compatibility layer untuk mengatasi perbedaan antara UI lama dan baru
- * File ini harus dimuat sebelum sortir.js
+ * File ini HARUS dimuat sebelum sortir.js
  */
 
-// Tunggu dokumen siap
-document.addEventListener('DOMContentLoaded', function() {
+// LANGSUNG JALANKAN tanpa menunggu DOMContentLoaded
+(function() {
   // Menangani kasus elemen closeModal yang tidak ada
   if (!document.getElementById('closeModal')) {
     // Buat elemen dummy yang tersembunyi
@@ -30,13 +30,6 @@ document.addEventListener('DOMContentLoaded', function() {
       if (oldModal) {
         oldModal.style.display = 'none';
       }
-    });
-    
-    // Sambungkan event listener antara elemen baru dan lama
-    document.querySelectorAll('.modal-close, #closeAssignModal').forEach(function(closeBtn) {
-      closeBtn.addEventListener('click', function() {
-        dummyCloseModal.click();
-      });
     });
   }
   
@@ -68,4 +61,4 @@ document.addEventListener('DOMContentLoaded', function() {
       if (backdrop) backdrop.classList.remove('show');
     };
   }
-});
+})(); // IIFE - Immediately Invoked Function Expression
