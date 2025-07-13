@@ -123,15 +123,21 @@ function formatDate(input) {
  * Badge color untuk status tertentu.
  */
 function badgeForStatus(status) {
-  switch (status.toLowerCase()) { // <-- tambahkan .toLowerCase()
-    case "newjob": return "badge-info";
-    case "downloaded":
-    case "picked":
-    case "partialpicked": return "badge-warning";
+  switch ((status || "").toLowerCase()) {
+    case "pending allocation":
+    case "partial allocation":
+    case "pending pick":
+    case "partial picked":
+    case "pending pack":
+    case "partial pack":
+      return "badge-warning";
     case "packed":
-    case "loaded": return "badge-success";
-    case "completed": return "badge-completed"; 
-    default: return "badge-info";
+    case "loading":
+      return "badge-success";
+    case "completed":
+      return "badge-completed";
+    default:
+      return "badge-info";
   }
 }
 
@@ -547,98 +553,43 @@ function parseExcel(file) {
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
 
-      let json = [];
-      if (currentMode === "phoenix") {
-        // --- PHOENIX MODE ---
-        const headerIndex = 2;
-        const headers = sheetData[headerIndex];
-        if (!headers) {
-          showNotification("Header tidak ditemukan pada baris ke-3. Pastikan format file Phoenix benar.", true);
-          if (fileInput) fileInput.value = ""; // Reset only if element exists
-          return;
-        }
-        const colIndex = {
-          JobNo: headers.findIndex(h => h.trim().toLowerCase() === "job no."),
-          ETD: headers.findIndex(h => h.trim().toLowerCase() === "etd"),
-          DeliveryNoteNo: headers.findIndex(h => h.trim().toLowerCase() === "delivery note no."),
-          RefNo: headers.findIndex(h => h.trim().toLowerCase() === "ref no."),
-          Status: headers.findIndex(h => h.trim().toLowerCase() === "status"),
-          BCNo: headers.findIndex(h => h.trim().toLowerCase() === "bc no."),
-        };
-        const requiredKeys = Object.keys(colIndex);
-        const missingHeaders = requiredKeys.filter(key => colIndex[key] === -1);
-        if (missingHeaders.length > 0) {
-          showNotification(
-            "File yang Anda upload tidak sesuai dengan sistem yang dipilih. Silakan pilih file yang benar.",
-            true
-          );
-          if (fileInput) fileInput.value = ""; // Reset only if element exists
-          return;
-        }
-        const rows = sheetData.slice(headerIndex + 1);
-        json = rows
-          .map(row => ({
-            JobNo: row[colIndex.JobNo] ?? "",
-            ETD: row[colIndex.ETD] ?? "",
-            DeliveryNoteNo: row[colIndex.DeliveryNoteNo] ?? "",
-            RefNo: row[colIndex.RefNo] ?? "",
-            Status: row[colIndex.Status] ?? "",
-            BCNo: row[colIndex.BCNo] ?? ""
-          }))
-          .filter(job => job.JobNo && job.JobNo.trim() !== "");
-      } else if (currentMode === "zlogix") {
-        // --- Z-LOGIX MODE ---
-        // Cari baris header (yang mengandung "Job No" dsb)
-        let headerIndex = -1;
-        for (let i = 0; i < sheetData.length; i++) {
-          if (
-            sheetData[i].some(h =>
-              typeof h === "string" && h.trim().toLowerCase() === "job no"
-            )
-          ) {
-            headerIndex = i;
-            break;
-          }
-        }
-        if (headerIndex === -1) {
-          showNotification("Header tidak ditemukan pada file Z-Logix. Pastikan format file benar.", true);
-          if (fileInput) fileInput.value = ""; // Reset only if element exists
-          return;
-        }
-        const headers = sheetData[headerIndex];
-        const colIndex = {
-          JobNo: headers.findIndex(h => h.trim().toLowerCase() === "job no"),
-          DeliveryDate: headers.findIndex(h => h.trim().toLowerCase() === "delivery date"),
-          DeliveryNote: headers.findIndex(h => h.trim().toLowerCase() === "delivery note"),
-          Remark: headers.findIndex(h => h.trim().toLowerCase() === "remark"),
-          PlanQty: headers.findIndex(h => h.trim().toLowerCase() === "plan qty"),
-          Status: headers.findIndex(h => h.trim().toLowerCase() === "status"),
-        };
-        const requiredKeys = Object.keys(colIndex);
-        const missingHeaders = requiredKeys.filter(key => colIndex[key] === -1);
-        if (missingHeaders.length > 0) {
-          showNotification(
-            `File tidak bisa diproses. Pastikan header berikut ada dan benar penulisannya: ${missingHeaders.join(", ")}`,
-            true
-          );
-          if (fileInput) fileInput.value = ""; // Reset only if element exists
-          return;
-        }
-        const rows = sheetData.slice(headerIndex + 1);
-        json = rows
-          .map(row => ({
-            JobNo: row[colIndex.JobNo] ?? "",
-            ETD: row[colIndex.DeliveryDate] ?? "",
-            DeliveryNoteNo: row[colIndex.DeliveryNote] ?? "",
-            RefNo: row[colIndex.Remark] ?? "",
-            Status: row[colIndex.Status] ?? "",
-            BCNo: row[colIndex.PlanQty] ?? ""
-          }))
-          .filter(job => job.JobNo && job.JobNo.trim() !== "");
-      } else {
-        showNotification("Mode tidak valid.", true);
+      // Hanya Phoenix mode
+      const headerIndex = 2;
+      const headers = sheetData[headerIndex];
+      if (!headers) {
+        showNotification("Header tidak ditemukan pada baris ke-3. Pastikan format file Phoenix benar.", true);
+        if (fileInput) fileInput.value = "";
         return;
       }
+      
+      const colIndex = {
+        JobNo: headers.findIndex(h => h.trim().toLowerCase() === "job no."),
+        ETD: headers.findIndex(h => h.trim().toLowerCase() === "etd"),
+        DeliveryNoteNo: headers.findIndex(h => h.trim().toLowerCase() === "delivery note no."),
+        RefNo: headers.findIndex(h => h.trim().toLowerCase() === "ref no."),
+        Status: headers.findIndex(h => h.trim().toLowerCase() === "status"),
+        BCNo: headers.findIndex(h => h.trim().toLowerCase() === "bc no."),
+      };
+      
+      const requiredKeys = Object.keys(colIndex);
+      const missingHeaders = requiredKeys.filter(key => colIndex[key] === -1);
+      if (missingHeaders.length > 0) {
+        showNotification("Header file tidak sesuai format Phoenix.", true);
+        if (fileInput) fileInput.value = "";
+        return;
+      }
+      
+      const rows = sheetData.slice(headerIndex + 1);
+      const json = rows
+        .map(row => ({
+          JobNo: row[colIndex.JobNo] ?? "",
+          ETD: row[colIndex.ETD] ?? "",
+          DeliveryNoteNo: row[colIndex.DeliveryNoteNo] ?? "",
+          RefNo: row[colIndex.RefNo] ?? "",
+          Status: row[colIndex.Status] ?? "",
+          BCNo: row[colIndex.BCNo] ?? ""
+        }))
+        .filter(job => job.JobNo && job.JobNo.trim() !== "");
 
       syncJobsToFirebase(json);
 
@@ -646,7 +597,7 @@ function parseExcel(file) {
       console.error("ERROR parsing Excel:", err);
       showNotification("Terjadi kesalahan saat membaca file Excel.", true);
     }
-    if (fileInput) fileInput.value = ""; // Reset only if element exists
+    if (fileInput) fileInput.value = "";
   };
   reader.readAsArrayBuffer(file);
 }
@@ -882,17 +833,6 @@ let currentSort = { key: null, asc: true };
 let currentMode = "phoenix"; // default
 let currentSortColumn = null;
 let currentSortDirection = 'asc';
-
-// Ambil mode dari localStorage jika ada
-const savedMode = localStorage.getItem("outboundSystemMode");
-// Mode toggle functionality restored for hidden elements
-if (savedMode === "zlogix" || savedMode === "phoenix") {
-  currentMode = savedMode;
-  if (document.getElementById("modePhoenix")) document.getElementById("modePhoenix").checked = savedMode === "phoenix";
-  if (document.getElementById("modeZLogix")) document.getElementById("modeZLogix").checked = savedMode === "zlogix";
-} else {
-  currentMode = "phoenix"; // Default to phoenix mode
-}
 
 // Listener tombol set plan target (jika masih digunakan)
 setPlanTargetBtn?.addEventListener("click", handleSetPlanTarget);
@@ -1216,90 +1156,18 @@ if (position === "Asst. Manager" || position === "Manager") {
   if (deleteDataBtn) deleteDataBtn.style.display = "none";
 }
 
-// Mode switcher
-// Mode switcher functionality - hidden but functional for compatibility
-const modePhoenix = document.getElementById("modePhoenix");
-const modeZLogix = document.getElementById("modeZLogix");
-
-if (modePhoenix) {
-  modePhoenix.addEventListener("change", function() {
-    if (this.checked) {
-      currentMode = "phoenix";
-      localStorage.setItem("outboundSystemMode", "phoenix");
-      populateStatusOptions(currentMode);
-      applyMultiFilter();
-      updateFilterIndicator();
-    }
-  });
-}
-
-if (modeZLogix) {
-  modeZLogix.addEventListener("change", function() {
-    if (this.checked) {
-      currentMode = "zlogix";
-      localStorage.setItem("outboundSystemMode", "zlogix");
-      populateStatusOptions(currentMode);
-      applyMultiFilter();
-      updateFilterIndicator();
-    }
-  });
-}
-
-
-authPromise.then(() => {
-  console.log('Auth promise resolved');
-  populateStatusOptions(currentMode);
+// Inisialisasi pada DOMContentLoaded
+document.addEventListener("DOMContentLoaded", () => {
+  console.log('DOM Content Loaded');
   
-  // Load data first, then setup table
-  loadJobsFromFirebase();
-});
-
-const STATUS_OPTIONS = {
-  phoenix: [
-    "Pending Allocation",
-    "Partial Allocation",
-    "Pending Pick",
-    "Partial Picked",
-    "Pending Pack",
-    "Partial Pack",
-    "Packed",
-    "Loading",
-    "Completed"
-  ],
-  zlogix: [
-    "NewJob",
-    "Downloaded",
-    "PartialDownloaded",
-    "PartialPicked",
-    "Picked",
-    "Packed",
-    "Loaded",
-    "Completed"
-  ]
-};
-
-function populateStatusOptions(mode) {
-  statusOptions.innerHTML = '<option value="all">-- Show All --</option>';
-  STATUS_OPTIONS[mode].forEach(status => {
-    const option = document.createElement("option");
-    option.value = status;
-    option.textContent = status;
-    statusOptions.appendChild(option);
-  });
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-  // Initialize plain table setup
+  // Setup other components first
+  populateMpPicSelector();
+  renderMpPicListTable();
   
-  // Ambil nama dari localStorage (sudah di-set di proses login: localStorage.setItem("pic", user.Name || username);)
-  const userName = localStorage.getItem('pic') || 'User';
-  function getInitials(name) {
-    return name.split(' ').map(part => part[0]).join('').toUpperCase();
-  }
-  const userAvatar = document.getElementById('userAvatar');
-  const userFullName = document.getElementById('userFullName');
-  if (userAvatar) userAvatar.textContent = getInitials(userName);
-  if (userFullName) userFullName.textContent = userName;
+  // Setup basic event listeners for table (fallback)
+  attachTableEventListeners();
+  
+  // Use plain HTML table
 });
 
 // Kumpulkan mapping nama ke userID (ambil dari key node, bukan isi objek)==================================================================================
@@ -1531,4 +1399,12 @@ document.addEventListener("DOMContentLoaded", () => {
   attachTableEventListeners();
   
   // Use plain HTML table
+});
+
+authPromise.then(() => {
+  console.log('Auth promise resolved');
+  populateStatusOptions(); // Hapus parameter currentMode
+  
+  // Load data first, then setup table
+  loadJobsFromFirebase();
 });
