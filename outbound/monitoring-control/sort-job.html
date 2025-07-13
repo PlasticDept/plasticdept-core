@@ -8,16 +8,28 @@
   <link rel="stylesheet" href="css/sortir.css" />
   <link rel="icon" type="image/png" href="img/reverse-logistic.png"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,700&display=swap" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- XLSX Library -->
+  <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
   <div class="container">
     <!-- HEADER BAR (pindah ke atas & center) -->
     <div class="header-bar">
+      <!-- Shift Toggle - rata kiri -->
+      <div class="shift-toggle">
+        <input type="radio" name="shiftType" id="shiftDay" value="Day" checked>
+        <label for="shiftDay">Day Shift</label>
+        <input type="radio" name="shiftType" id="shiftNight" value="Night">
+        <label for="shiftNight">Night Shift</label>
+      </div>
+      
+      <!-- Logo Title - di tengah -->
       <div class="logo-title">
         <img src="https://img.icons8.com/color/48/000000/warehouse.png" width="36" />
         Outbound Job Assignment
       </div>
+      
+      <!-- User Profile - rata kanan -->
       <div class="user-profile">
         <div class="avatar" id="userAvatar">JD</div>
         <span id="userFullName" class="user-full-name">Nama User</span>
@@ -29,66 +41,70 @@
 
     <div id="notification" class="notification-bar"></div>
 
-    <!-- Upload + Plan Target in one bar, flex -->
+    <!-- New Layout: MP PIC Table + Control Panel -->
     <div class="top-bar">
-      <div class="top-bar-left">
-        <!-- Shift Toggle -->
-        <div class="shift-toggle" style="margin-bottom: 16px;">
-          <input type="radio" name="shiftType" id="shiftDay" value="Day" checked>
-          <label for="shiftDay">Day Shift</label>
-          <input type="radio" name="shiftType" id="shiftNight" value="Night">
-          <label for="shiftNight">Night Shift</label>
-        </div>
-        <!-- Toggle Phoenix/Z-Logix -->
-        <div class="mode-toggle">
-          <input type="radio" name="modeToggle" id="modePhoenix" value="phoenix" checked>
-          <label for="modePhoenix">Phoenix</label>
-          <input type="radio" name="modeToggle" id="modeZLogix" value="zlogix">
-          <label for="modeZLogix">Z-Logix</label>
-        </div>
-        <!-- Upload Section -->
-        <div class="upload-section">
-          <input type="file" id="fileInput" accept=".xlsx, .xls" />
-          <button id="uploadBtn">Upload</button>
-        </div>
-      </div>
-      <!-- Tambahkan div baru untuk tabel MP PIC -->
+      <!-- MP PIC Table Section -->
       <div class="top-bar-mp-pic-list">
         <div id="mpPicTableContainer"></div>
       </div>
+      
+      <!-- Control Panel Section - 4 columns horizontal layout -->
       <div class="top-bar-right">
-        <div class="form-row">
-          <input type="number" id="planTargetInput" placeholder="Masukkan jumlah" min="0">
-          <select id="planTeamSelector">
-            <option value="Sugity">Team Sugity</option>
-            <option value="Reguler">Team Reguler</option>
-          </select>
-          <button id="setPlanTargetBtn" type="button">Set Target</button>
-        </div>
-        <div class="form-row">
-          <input type="number" id="manPowerInput" placeholder="Jumlah man power" min="0">
-          <select id="manPowerTeamSelector">
-            <option value="Sugity">Team Sugity</option>
-            <option value="Reguler">Team Reguler</option>
-          </select>
-          <button id="setManPowerBtn" type="button">Set MP</button>
-        </div>
-        <div class="form-row">
-          <input type="number" id="mpOvertimeInput" placeholder="Man Power OT" min="0">
-          <button id="setMpOvertimeBtn" type="button">Set MP OT</button>
-        </div>
-        <div class="form-row" id="mpPicRow">
-          <select id="mpPicSelector">
-            <option value="">-- Pilih PIC --</option>
-            <!-- Opsi diisi via JS -->
-          </select>
-          <select id="mpPicTeamSelector">
-            <option value="Sugity">Team Sugity</option>
-            <option value="Reguler">Team Reguler</option>
-          </select>
-          <button id="setMpPicBtn" type="button">Set MP PIC</button>
+        <div class="control-panel-grid">
+          <!-- Set Target Column -->
+          <div class="control-column">
+            <label class="control-label">Set Target</label>
+            <select id="planTeamSelector" class="control-select">
+              <option value="Sugity">Team Sugity</option>
+              <option value="Reguler">Team Reguler</option>
+            </select>
+            <input type="number" id="planTargetInput" placeholder="Qty Target" min="0" class="control-input">
+            <button id="setPlanTargetBtn" type="button" class="control-button">Set Target</button>
+          </div>
+          
+          <!-- Set MP Column -->
+          <div class="control-column">
+            <label class="control-label">Set MP</label>
+            <select id="manPowerTeamSelector" class="control-select">
+              <option value="Sugity">Team Sugity</option>
+              <option value="Reguler">Team Reguler</option>
+            </select>
+            <input type="number" id="manPowerInput" placeholder="Qty MP" min="0" class="control-input">
+            <button id="setManPowerBtn" type="button" class="control-button">Set MP</button>
+          </div>
+          
+          <!-- Set PIC Column -->
+          <div class="control-column">
+            <label class="control-label">Set PIC</label>
+            <select id="mpPicTeamSelector" class="control-select">
+              <option value="Sugity">Team Sugity</option>
+              <option value="Reguler">Team Reguler</option>
+            </select>
+            <select id="mpPicSelector" class="control-input">
+              <option value="">PIC Selector</option>
+              <!-- Opsi diisi via JS -->
+            </select>
+            <button id="setMpPicBtn" type="button" class="control-button">Set PIC</button>
+          </div>
+          
+          <!-- Set MP OT Column -->
+          <div class="control-column">
+            <label class="control-label">Set MP OT</label>
+            <div class="control-spacer"></div>
+            <input type="number" id="mpOvertimeInput" placeholder="QTy MP" min="0" class="control-input">
+            <button id="setMpOvertimeBtn" type="button" class="control-button">Set MP OT</button>
+          </div>
         </div>
       </div>
+    </div>
+
+    <!-- Hidden elements to prevent JavaScript errors -->
+    <div style="display: none;">
+      <input type="file" id="fileInput" accept=".xlsx, .xls" />
+      <button id="uploadBtn">Upload</button>
+      <input type="radio" name="modeToggle" id="modePhoenix" value="phoenix" checked>
+      <input type="radio" name="modeToggle" id="modeZLogix" value="zlogix">
+    </div>
     <div class="toolbar">
       <button id="bulkAddBtn">Assign Job Selected</button>
       <div class="dropdown-container">
@@ -138,22 +154,24 @@
 
     <div id="filterIndicator" class="filter-indicator"></div>
 
-    <table id="jobTable">
-      <thead>
-        <tr>
-          <th><input type="checkbox" id="selectAll" /></th>
-          <th onclick="sortTableBy('jobNo')" data-key="jobNo">Job No</th>
-          <th onclick="sortTableBy('deliveryDate')" data-key="deliveryDate">Delivery Date</th>
-          <th onclick="sortTableBy('deliveryNote')" data-key="deliveryNote">Delivery Note</th>
-          <th onclick="sortTableBy('remark')" data-key="remark">Remark</th>
-          <th onclick="sortTableBy('status')" data-key="status">Status</th>
-          <th onclick="sortTableBy('qty')" data-key="qty">Qty</th>
-          <th onclick="sortTableBy('team')" data-key="team">Team</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="table-container">
+      <table id="jobTable" class="display" style="width:100%">
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="selectAll" /></th>
+            <th>Job No</th>
+            <th>Delivery Date</th>
+            <th>Delivery Note</th>
+            <th>Remark</th>
+            <th>Status</th>
+            <th>Qty</th>
+            <th>Team</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
 
     <!-- Modal Pop-up Assign Job -->
     <div id="addModal" class="modal">

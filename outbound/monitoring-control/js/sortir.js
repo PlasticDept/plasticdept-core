@@ -136,7 +136,7 @@ function badgeForStatus(status) {
 }
 
 /**
- * Membuat satu baris (row) untuk table job.
+ * Membuat satu baris (row) untuk table job (kembali ke pendekatan HTML).
  */
 function createTableRow(job) {
   const row = document.createElement("tr");
@@ -151,74 +151,196 @@ function createTableRow(job) {
     <td>${Number(job.qty).toLocaleString()}</td>
     <td>${job.team}</td>
     <td class="table-actions">
-      <button class="assign">Assign</button>
-      <button class="unassign">Unassign</button>
+      <button class="assign" data-jobno="${job.jobNo}">Assign</button>
+      <button class="unassign" data-jobno="${job.jobNo}">Unassign</button>
     </td>
   `;
+  
+  return row;
+}
 
-// Fungsi sorting table langsung dari DOM, tetap bisa digunakan
-window.sortTableBy = function (key) {
-  const tbody = document.querySelector("#jobTable tbody");
-  if (!tbody) {
-    console.warn("Tbody belum tersedia saat sort dijalankan.");
-    return;
+/**
+ * Helper untuk mendapatkan class badge berdasarkan status
+ */
+function getBadgeClass(status) {
+  switch (status) {
+    case "Pending": return "badge-warning";
+    case "Packed": return "badge-success";
+    case "Completed": return "badge-completed";
+    default: return "badge-info";
   }
+}
 
-  const rows = Array.from(tbody.querySelectorAll("tr"));
-
-  const jobsOnScreen = rows.map(row => {
-    const cells = row.querySelectorAll("td");
-    return {
-      element: row,
-      jobNo: cells[1]?.textContent.trim(),
-      deliveryDate: cells[2]?.textContent.trim(),
-      deliveryNote: cells[3]?.textContent.trim(),
-      remark: cells[4]?.textContent.trim(),
-      status: cells[5]?.textContent.trim(),
-      qty: parseInt(cells[6]?.textContent.replace(/,/g, "") || "0"),
-      team: cells[7]?.textContent.trim()
-    };
+/**
+ * Fungsi untuk menangani event checkbox select all
+ */
+function handleSelectAllChange() {
+  const selectAllCheckbox = document.getElementById('selectAll');
+  const checkboxes = document.querySelectorAll('#jobTable tbody input[type="checkbox"]');
+  
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = selectAllCheckbox.checked;
   });
+}
 
-  if (window.sortTableBy.lastKey === key) {
-    window.sortTableBy.asc = !window.sortTableBy.asc;
+/**
+ * Fungsi untuk sorting tabel berdasarkan kolom
+ */
+function sortTable(columnIndex, columnKey) {
+  // Determine sort direction
+  if (currentSortColumn === columnIndex) {
+    currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
   } else {
-    window.sortTableBy.asc = true;
+    currentSortDirection = 'asc';
   }
-  window.sortTableBy.lastKey = key;
-
-  jobsOnScreen.sort((a, b) => {
-    const valA = a[key]?.toUpperCase?.() || "";
-    const valB = b[key]?.toUpperCase?.() || "";
-    if (valA < valB) return window.sortTableBy.asc ? -1 : 1;
-    if (valA > valB) return window.sortTableBy.asc ? 1 : -1;
+  
+  currentSortColumn = columnIndex;
+  
+  // Get data to sort (use filtered data if exists, otherwise all data)
+  const dataToSort = filteredJobs.length > 0 ? filteredJobs : allJobsData;
+  
+  // Sort the data
+  const sortedData = [...dataToSort].sort((a, b) => {
+    let aValue = a[columnKey];
+    let bValue = b[columnKey];
+    
+    // Handle different data types
+    if (columnKey === 'qty') {
+      aValue = parseFloat(aValue) || 0;
+      bValue = parseFloat(bValue) || 0;
+    } else if (columnKey === 'deliveryDate') {
+      aValue = new Date(aValue);
+      bValue = new Date(bValue);
+    } else {
+      // String comparison
+      aValue = String(aValue || '').toLowerCase();
+      bValue = String(bValue || '').toLowerCase();
+    }
+    
+    if (aValue < bValue) return currentSortDirection === 'asc' ? -1 : 1;
+    if (aValue > bValue) return currentSortDirection === 'asc' ? 1 : -1;
     return 0;
   });
+  
+  // Update filtered data or all data based on what was sorted
+  if (filteredJobs.length > 0) {
+    filteredJobs = sortedData;
+  } else {
+    allJobsData = sortedData;
+  }
+  
+  // Re-render table
+  renderTableData(sortedData);
+  
+  // Update header visual indicators
+  updateSortHeaders(columnIndex);
+}
 
-  tbody.innerHTML = "";
-  jobsOnScreen.forEach(job => tbody.appendChild(job.element));
-};
+/**
+ * Update visual indicators for sorted headers
+ */
+function updateSortHeaders(activeColumnIndex) {
+  const headers = document.querySelectorAll('#jobTable thead th');
+  
+  headers.forEach((th, index) => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    
+    if (index === activeColumnIndex) {
+      th.classList.add(currentSortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+    }
+  });
+}
 
-  // Listener tombol assign pada baris
-  row.querySelector(".assign").addEventListener("click", async (e) => {
-  // Cek apakah ada checkbox yang tercentang di tabel (selain yang sedang di-assign)
-    const checked = document.querySelectorAll("#jobTable tbody input[type='checkbox']:checked");
+/**
+ * Render table data to tbody
+ */
+function renderTableData(data) {
+  const tbody = document.querySelector('#jobTable tbody');
+  if (!tbody) return;
+  
+  tbody.innerHTML = '';
+  
+  data.forEach(job => {
+    const row = createTableRow(job);
+    tbody.appendChild(row);
+  });
+  
+  // Re-attach event listeners
+  attachTableEventListeners();
+  updateSelectAllCheckbox();
+}
+
+/**
+ * Initialize table headers with sorting capability
+ */
+function initializeTableHeaders() {
+  const headers = document.querySelectorAll('#jobTable thead th');
+  const columnMappings = [
+    { key: null, sortable: false }, // Checkbox column
+    { key: 'jobNo', sortable: true },
+    { key: 'deliveryDate', sortable: true },
+    { key: 'deliveryNote', sortable: true },
+    { key: 'remark', sortable: true },
+    { key: 'status', sortable: true },
+    { key: 'qty', sortable: true },
+    { key: 'team', sortable: true },
+    { key: null, sortable: false } // Action column
+  ];
+  
+  headers.forEach((th, index) => {
+    const mapping = columnMappings[index];
+    
+    if (mapping && mapping.sortable) {
+      th.classList.add('sortable');
+      th.addEventListener('click', () => {
+        sortTable(index, mapping.key);
+      });
+    }
+  });
+}
+
+/**
+ * Attach event listeners untuk tombol dalam tabel
+ */
+function attachTableEventListeners() {
+  // Remove old listeners and add new ones
+  document.removeEventListener('click', handleTableClick);
+  document.addEventListener('click', handleTableClick);
+  
+  // Handle checkbox changes
+  document.removeEventListener('change', handleCheckboxChange);
+  document.addEventListener('change', handleCheckboxChange);
+}
+
+function handleTableClick(e) {
+  // Handle assign button clicks
+  if (e.target.classList.contains('assign')) {
+    e.preventDefault();
+    const jobNo = e.target.getAttribute('data-jobno');
+    
+    // Cek apakah ada checkbox yang tercentang di tabel
+    const checked = document.querySelectorAll('tbody input[type="checkbox"]:checked');
     if (checked.length > 0) {
-      // Optional: tampilkan notifikasi supaya user tahu kenapa tidak bisa assign
       showNotification("Terdapat checkbox yang tercentang.", true);
       return;
     }
-    if (job.team && job.team.trim() !== "") {
-      showNotification("⚠️ Job ini sudah di-assign ke team: " + job.team, true);
+    
+    // Cek apakah job sudah di-assign
+    const jobData = allJobsData.find(job => job.jobNo === jobNo);
+    if (jobData && jobData.team && jobData.team.trim() !== "") {
+      showNotification("⚠️ Job ini sudah di-assign ke team: " + jobData.team, true);
       return;
     }
-    selectedSingleJob = job.jobNo;
+    
+    selectedSingleJob = jobNo;
     showModal();
-  });
-
-  // Listener tombol unassign pada baris
-  row.querySelector(".unassign").addEventListener("click", async (e) => {
-    const jobNo = job.jobNo;
+  }
+  
+  // Handle unassign button clicks
+  if (e.target.classList.contains('unassign')) {
+    e.preventDefault();
+    const jobNo = e.target.getAttribute('data-jobno');
+    
     const jobRef = ref(db, "PhxOutboundJobs/" + jobNo);
     get(jobRef).then(snapshot => {
       if (!snapshot.exists()) {
@@ -245,9 +367,43 @@ window.sortTableBy = function (key) {
         }
       });
     });
-  });
+  }
+}
 
-  return row;
+function handleCheckboxChange(e) {
+  if (e.target.type === 'checkbox') {
+    if (e.target.id === 'selectAll') {
+      // Handle select all
+      const isChecked = e.target.checked;
+      document.querySelectorAll('tbody input[type="checkbox"]').forEach(cb => {
+        cb.checked = isChecked;
+      });
+    } else {
+      // Handle individual checkbox
+      updateSelectAllCheckbox();
+    }
+  }
+}
+
+/**
+ * Update status select all checkbox
+ */
+function updateSelectAllCheckbox() {
+  const totalCheckboxes = document.querySelectorAll('tbody input[type="checkbox"]').length;
+  const checkedCheckboxes = document.querySelectorAll('tbody input[type="checkbox"]:checked').length;
+  
+  const selectAllCheckbox = document.getElementById('selectAll');
+  if (selectAllCheckbox) {
+    if (checkedCheckboxes === 0) {
+      selectAllCheckbox.indeterminate = false;
+      selectAllCheckbox.checked = false;
+    } else if (checkedCheckboxes === totalCheckboxes) {
+      selectAllCheckbox.indeterminate = false;
+      selectAllCheckbox.checked = true;
+    } else {
+      selectAllCheckbox.indeterminate = true;
+    }
+  }
 }
 
 /**
@@ -324,8 +480,8 @@ function populateTeamOptions(teams) {
  * Mengambil data job yang dipilih (checked).
  */
 function getSelectedJobs() {
-  const checkboxes = document.querySelectorAll("tbody input[type='checkbox']:checked");
-  return Array.from(checkboxes).map(cb => cb.getAttribute("data-jobno"));
+  const checkboxes = document.querySelectorAll('tbody input[type="checkbox"]:checked');
+  return Array.from(checkboxes).map(cb => cb.getAttribute('data-jobno'));
 }
 
 /**
@@ -398,7 +554,7 @@ function parseExcel(file) {
         const headers = sheetData[headerIndex];
         if (!headers) {
           showNotification("Header tidak ditemukan pada baris ke-3. Pastikan format file Phoenix benar.", true);
-          fileInput.value = "";
+          if (fileInput) fileInput.value = ""; // Reset only if element exists
           return;
         }
         const colIndex = {
@@ -416,7 +572,7 @@ function parseExcel(file) {
             "File yang Anda upload tidak sesuai dengan sistem yang dipilih. Silakan pilih file yang benar.",
             true
           );
-          fileInput.value = "";
+          if (fileInput) fileInput.value = ""; // Reset only if element exists
           return;
         }
         const rows = sheetData.slice(headerIndex + 1);
@@ -446,7 +602,7 @@ function parseExcel(file) {
         }
         if (headerIndex === -1) {
           showNotification("Header tidak ditemukan pada file Z-Logix. Pastikan format file benar.", true);
-          fileInput.value = "";
+          if (fileInput) fileInput.value = ""; // Reset only if element exists
           return;
         }
         const headers = sheetData[headerIndex];
@@ -465,7 +621,7 @@ function parseExcel(file) {
             `File tidak bisa diproses. Pastikan header berikut ada dan benar penulisannya: ${missingHeaders.join(", ")}`,
             true
           );
-          fileInput.value = "";
+          if (fileInput) fileInput.value = ""; // Reset only if element exists
           return;
         }
         const rows = sheetData.slice(headerIndex + 1);
@@ -490,7 +646,7 @@ function parseExcel(file) {
       console.error("ERROR parsing Excel:", err);
       showNotification("Terjadi kesalahan saat membaca file Excel.", true);
     }
-    fileInput.value = "";
+    if (fileInput) fileInput.value = ""; // Reset only if element exists
   };
   reader.readAsArrayBuffer(file);
 }
@@ -555,26 +711,45 @@ function syncJobsToFirebase(jobs) {
  * Load jobs dari node baru PhxOutboundJobs ke tabel assignment.
  */
 function loadJobsFromFirebase() {
-  jobTable.innerHTML = "";
+  console.log('Loading jobs from Firebase...');
   allJobsData = [];
+  
   get(ref(db, "PhxOutboundJobs"))
     .then(snapshot => {
+      console.log('Firebase data received');
       if (snapshot.exists()) {
         const data = snapshot.val();
         const uniqueDates = new Set();
         const uniqueTeams = new Set();
+        
+        // Process data
         Object.values(data).forEach(job => {
           allJobsData.push(job);
-          const row = createTableRow(job);
-          jobTable.appendChild(row);
           uniqueDates.add(job.deliveryDate);
           uniqueTeams.add(job.team || "");
         });
+        
+        console.log(`Added ${allJobsData.length} jobs to data array`);
+        
+        // Render table data
+        renderTableData(allJobsData);
+        
+        // Initialize table headers for sorting
+        initializeTableHeaders();
+        
         populateDateOptions(uniqueDates);
         populateTeamOptions(uniqueTeams);
+      } else {
+        console.log('No data in Firebase');
+        // Clear table
+        const tbody = document.querySelector('#jobTable tbody');
+        if (tbody) {
+          tbody.innerHTML = '';
+        }
       }
     })
-    .catch(() => {
+    .catch((error) => {
+      console.error("Error loading data:", error);
       showNotification("Gagal mengambil data dari Firebase.", true);
     });
 }
@@ -585,16 +760,25 @@ function loadJobsFromFirebase() {
 function refreshDataWithoutReset() {
   get(ref(db, "PhxOutboundJobs")).then(snapshot => {
     const data = snapshot.val();
-    jobTable.innerHTML = "";
     allJobsData = [];
+    
+    // Clear tbody
+    const tbody = document.querySelector('#jobTable tbody');
+    if (tbody) {
+      tbody.innerHTML = '';
+    }
+    
     if (data) {
       const uniqueDates = new Set();
       const uniqueTeams = new Set();
+      
       Object.values(data).forEach(job => {
         allJobsData.push(job);
         uniqueDates.add(job.deliveryDate);
         uniqueTeams.add(job.team || "");
       });
+      
+      // Apply current filters (plain HTML version)
       applyMultiFilter();
       updateFilterIndicator();
     }
@@ -608,18 +792,22 @@ function applyMultiFilter() {
   const selectedStatus = statusOptions.value;
   const selectedDate = dateOptions.value;
   const selectedTeam = teamOptions.value;
-  jobTable.innerHTML = "";
+  
   filteredJobs = [];
+  
   allJobsData.forEach(job => {
     const matchStatus = selectedStatus === "all" || job.status === selectedStatus;
     const matchDate = selectedDate === "all" || job.deliveryDate === selectedDate;
     const isBlankTeam = !job.team || job.team.toLowerCase() === "none";
     const matchTeam = selectedTeam === "all" || (selectedTeam === "none" && isBlankTeam) || job.team === selectedTeam;
+    
     if (matchStatus && matchDate && matchTeam) {
-      jobTable.appendChild(createTableRow(job));
       filteredJobs.push(job);
     }
   });
+  
+  // Render filtered data
+  renderTableData(filteredJobs);
 }
 
 /**
@@ -662,8 +850,8 @@ window.navigateTo = function (page) {
 ========================= */
 
 // Ambil semua elemen DOM yang diperlukan
-const fileInput = document.getElementById("fileInput");
-const uploadBtn = document.getElementById("uploadBtn");
+const fileInput = document.getElementById("fileInput"); // Hidden element to prevent errors
+const uploadBtn = document.getElementById("uploadBtn"); // Hidden element to prevent errors
 const jobTable = document.getElementById("jobTable").getElementsByTagName("tbody")[0];
 const bulkAddBtn = document.getElementById("bulkAddBtn");
 const modal = document.getElementById("addModal");
@@ -687,17 +875,23 @@ const manPowerTeamSelector = document.getElementById("manPowerTeamSelector");
 const setManPowerBtn = document.getElementById("setManPowerBtn");
 
 let selectedSingleJob = null;
+// Global variables
 let allJobsData = [];
 let filteredJobs = [];
 let currentSort = { key: null, asc: true };
 let currentMode = "phoenix"; // default
+let currentSortColumn = null;
+let currentSortDirection = 'asc';
 
 // Ambil mode dari localStorage jika ada
 const savedMode = localStorage.getItem("outboundSystemMode");
+// Mode toggle functionality restored for hidden elements
 if (savedMode === "zlogix" || savedMode === "phoenix") {
   currentMode = savedMode;
-  document.getElementById("modePhoenix").checked = savedMode === "phoenix";
-  document.getElementById("modeZLogix").checked = savedMode === "zlogix";
+  if (document.getElementById("modePhoenix")) document.getElementById("modePhoenix").checked = savedMode === "phoenix";
+  if (document.getElementById("modeZLogix")) document.getElementById("modeZLogix").checked = savedMode === "zlogix";
+} else {
+  currentMode = "phoenix"; // Default to phoenix mode
 }
 
 // Listener tombol set plan target (jika masih digunakan)
@@ -762,15 +956,17 @@ function handleSetMpOvertime() {
 }
 document.getElementById("setMpOvertimeBtn")?.addEventListener("click", handleSetMpOvertime);
 
-// Listener upload file Excel baru
-uploadBtn.addEventListener("click", () => {
-  const file = fileInput.files[0];
-  if (file) {
-    parseExcel(file);
-  } else {
-    showNotification("Pilih file Excel terlebih dahulu.", true);
-  }
-});
+// Upload functionality - hidden but functional for compatibility
+if (uploadBtn) {
+  uploadBtn.addEventListener("click", () => {
+    const file = fileInput?.files[0];
+    if (file) {
+      parseExcel(file);
+    } else {
+      showNotification("Pilih file Excel terlebih dahulu.", true);
+    }
+  });
+}
 
 // Listener tombol bulk assign
 bulkAddBtn.addEventListener("click", async () => {
@@ -844,11 +1040,7 @@ confirmAdd.addEventListener("click", async () => {
   }
 });
 
-// Listener select all checkbox
-selectAllCheckbox.addEventListener("change", (e) => {
-  document.querySelectorAll("tbody input[type='checkbox']")
-    .forEach(cb => cb.checked = e.target.checked);
-});
+// Setup event listeners untuk checkbox dan tombol action
 
 // Listener tombol close modal
 closeModal.addEventListener("click", hideModal);
@@ -1025,28 +1217,40 @@ if (position === "Asst. Manager" || position === "Manager") {
 }
 
 // Mode switcher
-document.getElementById("modePhoenix").addEventListener("change", function() {
-  if (this.checked) {
-    currentMode = "phoenix";
-    localStorage.setItem("outboundSystemMode", "phoenix"); // simpan ke localStorage
-    populateStatusOptions(currentMode);
-    applyMultiFilter();
-    updateFilterIndicator();
-  }
-});
-document.getElementById("modeZLogix").addEventListener("change", function() {
-  if (this.checked) {
-    currentMode = "zlogix";
-    localStorage.setItem("outboundSystemMode", "zlogix"); // simpan ke localStorage
-    populateStatusOptions(currentMode);
-    applyMultiFilter();
-    updateFilterIndicator();
-  }
-});
+// Mode switcher functionality - hidden but functional for compatibility
+const modePhoenix = document.getElementById("modePhoenix");
+const modeZLogix = document.getElementById("modeZLogix");
+
+if (modePhoenix) {
+  modePhoenix.addEventListener("change", function() {
+    if (this.checked) {
+      currentMode = "phoenix";
+      localStorage.setItem("outboundSystemMode", "phoenix");
+      populateStatusOptions(currentMode);
+      applyMultiFilter();
+      updateFilterIndicator();
+    }
+  });
+}
+
+if (modeZLogix) {
+  modeZLogix.addEventListener("change", function() {
+    if (this.checked) {
+      currentMode = "zlogix";
+      localStorage.setItem("outboundSystemMode", "zlogix");
+      populateStatusOptions(currentMode);
+      applyMultiFilter();
+      updateFilterIndicator();
+    }
+  });
+}
 
 
 authPromise.then(() => {
+  console.log('Auth promise resolved');
   populateStatusOptions(currentMode);
+  
+  // Load data first, then setup table
   loadJobsFromFirebase();
 });
 
@@ -1085,6 +1289,8 @@ function populateStatusOptions(mode) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+  // Initialize plain table setup
+  
   // Ambil nama dari localStorage (sudah di-set di proses login: localStorage.setItem("pic", user.Name || username);)
   const userName = localStorage.getItem('pic') || 'User';
   function getInitials(name) {
@@ -1315,6 +1521,14 @@ async function renderMpPicListTable() {
 
 // Inisialisasi pada DOMContentLoaded
 document.addEventListener("DOMContentLoaded", () => {
+  console.log('DOM Content Loaded');
+  
+  // Setup other components first
   populateMpPicSelector();
   renderMpPicListTable();
+  
+  // Setup basic event listeners for table (fallback)
+  attachTableEventListeners();
+  
+  // Use plain HTML table
 });
