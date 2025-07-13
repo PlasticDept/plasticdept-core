@@ -34,6 +34,50 @@ function showExportLoading(isShow = true) {
   if (overlay) overlay.style.display = isShow ? "flex" : "none";
 }
 
+/**
+ * Mengisi data user ke elemen HTML dan localStorage
+ */
+function populateUserData(userId) {
+  // Ambil referensi ke elemen HTML
+  const userFullNameElement = document.getElementById('userFullName');
+  const userShiftElement = document.getElementById('userShift');
+  const userInitialElement = document.getElementById('userInitial');
+  
+  // Ambil data user dari Firebase berdasarkan userId
+  get(ref(db, `users/${userId}`))
+    .then((snapshot) => {
+      if (snapshot.exists()) {
+        const userData = snapshot.val();
+        
+        // Simpan data ke localStorage untuk penggunaan di halaman lain
+        localStorage.setItem('fullName', userData.Name || '');
+        localStorage.setItem('shift', userData.Shift || '');
+        localStorage.setItem('position', userData.Position || '');
+        localStorage.setItem('pic', userData.Name || '');
+        
+        // Isi elemen HTML dengan data user
+        if (userFullNameElement) userFullNameElement.textContent = userData.Name || '';
+        if (userShiftElement) userShiftElement.textContent = userData.Shift || '';
+        
+        // Set initial (huruf pertama dari nama)
+        if (userInitialElement) {
+          const initial = userData.Name ? userData.Name.charAt(0).toUpperCase() : '';
+          userInitialElement.textContent = initial;
+        }
+        
+        // Update avatar jika ada
+        const userAvatar = document.getElementById('userAvatar');
+        if (userAvatar) {
+          const initial = userData.Name ? userData.Name.charAt(0).toUpperCase() : '';
+          userAvatar.textContent = initial;
+        }
+      }
+    })
+    .catch((error) => {
+      console.error("Error getting user data:", error);
+    });
+}
+
 async function getTeamNameForCurrentUser() {
   // Ambil nama user yang sedang login dari elemen userFullName atau localStorage
   const userName = document.getElementById("userFullName")?.textContent?.trim() ||
@@ -1428,10 +1472,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // Use plain HTML table
 });
 
-authPromise.then(() => {
+authPromise.then((auth) => {
   console.log('Auth promise resolved');
-  populateStatusOptions(); // Hapus parameter currentMode
+  populateStatusOptions();
+  
+  // Tambahkan kode berikut untuk mendapatkan userId dan mengisi data user
+  const userId = auth.currentUser.uid;
+  populateUserData(userId);
   
   // Load data first, then setup table
   loadJobsFromFirebase();
+}).catch(error => {
+  console.error("Auth error:", error);
 });
