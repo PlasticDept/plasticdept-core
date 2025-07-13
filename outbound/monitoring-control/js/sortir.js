@@ -834,6 +834,33 @@ let currentMode = "phoenix"; // default
 let currentSortColumn = null;
 let currentSortDirection = 'asc';
 
+// Status options untuk Phoenix
+const STATUS_OPTIONS = [
+  "Pending Allocation",
+  "Partial Allocation", 
+  "Pending Pick",
+  "Partial Picked",
+  "Pending Pack",
+  "Partial Pack",
+  "Packed",
+  "Loading",
+  "Completed"
+];
+
+/**
+ * Populate status filter dropdown options
+ */
+function populateStatusOptions() {
+  if (!statusOptions) return;
+  statusOptions.innerHTML = '<option value="all">-- Show All --</option>';
+  STATUS_OPTIONS.forEach(status => {
+    const option = document.createElement("option");
+    option.value = status;
+    option.textContent = status;
+    statusOptions.appendChild(option);
+  });
+}
+
 // Listener tombol set plan target (jika masih digunakan)
 setPlanTargetBtn?.addEventListener("click", handleSetPlanTarget);
 
