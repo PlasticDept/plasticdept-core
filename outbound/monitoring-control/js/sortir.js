@@ -174,7 +174,7 @@ function badgeForStatus(status) {
     case "pending pick":
     case "partial picked":
     case "pending pack":
-    case "partial pack":
+    case "partial packed":
       return "badge-warning";
     case "packed":
     case "loading":
