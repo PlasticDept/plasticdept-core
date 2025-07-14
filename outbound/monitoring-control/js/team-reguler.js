@@ -216,7 +216,9 @@ function loadTeamJobs() {
         paging: true,
         searching: true,
         ordering: true,
-        info: true
+        info: true,
+        pageLength: -1,
+        lengthMenu: [[-1], ["All"]]
       });
     }
   });
