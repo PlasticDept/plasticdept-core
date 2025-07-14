@@ -35,13 +35,23 @@ function showExportLoading(isShow = true) {
 }
 
 /**
- * Mengisi data user ke elemen HTML dan localStorage
+ * Mengisi data user ke elemen HTML dari Firebase
+ * Berdasarkan ID pengguna yang login
  */
-function populateUserData(userId) {
+function populateUserData() {
+  // Ambil ID pengguna yang sudah login dari localStorage
+  const userId = localStorage.getItem("userId");
+  
+  if (!userId) {
+    console.warn("ID user tidak ditemukan di localStorage");
+    return;
+  }
+  
   // Ambil referensi ke elemen HTML
   const userFullNameElement = document.getElementById('userFullName');
   const userShiftElement = document.getElementById('userShift');
   const userInitialElement = document.getElementById('userInitial');
+  const userAvatar = document.getElementById('userAvatar');
   
   // Ambil data user dari Firebase berdasarkan userId
   get(ref(db, `users/${userId}`))
@@ -60,17 +70,13 @@ function populateUserData(userId) {
         if (userShiftElement) userShiftElement.textContent = userData.Shift || '';
         
         // Set initial (huruf pertama dari nama)
-        if (userInitialElement) {
-          const initial = userData.Name ? userData.Name.charAt(0).toUpperCase() : '';
-          userInitialElement.textContent = initial;
-        }
+        const initial = userData.Name ? userData.Name.charAt(0).toUpperCase() : '';
+        if (userInitialElement) userInitialElement.textContent = initial;
+        if (userAvatar) userAvatar.textContent = initial;
         
-        // Update avatar jika ada
-        const userAvatar = document.getElementById('userAvatar');
-        if (userAvatar) {
-          const initial = userData.Name ? userData.Name.charAt(0).toUpperCase() : '';
-          userAvatar.textContent = initial;
-        }
+        console.log("User data loaded successfully:", userData.Name);
+      } else {
+        console.warn("Data user dengan ID", userId, "tidak ditemukan");
       }
     })
     .catch((error) => {
@@ -1472,16 +1478,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // Use plain HTML table
 });
 
-authPromise.then((auth) => {
+authPromise.then(() => {
   console.log('Auth promise resolved');
   populateStatusOptions();
   
-  // Tambahkan kode berikut untuk mendapatkan userId dan mengisi data user
-  const userId = auth.currentUser.uid;
-  populateUserData(userId);
+  // Panggil fungsi untuk mengisi data user
+  populateUserData();
   
   // Load data first, then setup table
   loadJobsFromFirebase();
-}).catch(error => {
-  console.error("Auth error:", error);
 });
