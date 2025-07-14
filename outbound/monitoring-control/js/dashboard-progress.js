@@ -148,7 +148,7 @@ async function loadDashboardData() {
     const qty = parseInt(job.qty) || 0;
     const status = (job.status || '').toLowerCase();
     const team = (job.team || '').trim();
-    if (status === "newjob" && (!team || team === "")) {
+    if (status === "Pending Pick" && (!team || team === "")) {
       outstandingQty += qty;
     }
   }
