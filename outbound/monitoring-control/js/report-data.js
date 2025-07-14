@@ -272,9 +272,9 @@ authPromise.then(async () => {
                 remOrderVal = null;
 
             } else {
-                // remOrder-actual: jumlah qty semua status newjob (tanpa filter tanggal)
+                // remOrder-actual: jumlah qty semua status pending pick (tanpa filter tanggal)
                 remOrderVal = Object.values(jobs || {}).reduce((sum, job) => {
-                    return (String(job.status).toLowerCase() === "newjob")
+                    return (String(job.status).toLowerCase() === "pending pick")
                         ? sum + (parseInt(job.qty, 10) || 0)
                         : sum;
                 }, 0);
