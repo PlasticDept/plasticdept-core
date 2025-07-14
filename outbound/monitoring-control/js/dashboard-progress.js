@@ -170,13 +170,13 @@ async function loadDashboardData() {
 
     if (team === "sugity") {
       sumActualSugity += qty;
-      if (["packed", "loaded", "completed"].includes(status)) {
+      if (["packed", "loading", "completed"].includes(status)) {
         sumAchievedSugity += qty;
       }
       sugityJobs.push(job);
     } else if (team === "reguler") {
       sumActualReguler += qty;
-      if (["packed", "loaded", "completed"].includes(status)) {
+      if (["packed", "loading", "completed"].includes(status)) {
         sumAchievedReguler += qty;
       }
       regulerJobs.push(job);
