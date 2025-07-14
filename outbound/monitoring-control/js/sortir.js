@@ -35,52 +35,47 @@ function showExportLoading(isShow = true) {
 }
 
 /**
- * Mengisi data user ke elemen HTML dari Firebase
- * Berdasarkan ID pengguna yang login
+ * Mengisi data user ke elemen HTML berdasarkan username yang tersimpan saat login
  */
-function populateUserData() {
-  // Ambil ID pengguna yang sudah login dari localStorage
-  const userId = localStorage.getItem("userId");
+function populateUserProfileData() {
+  // Ambil username (yang digunakan sebagai ID user di database) dari localStorage
+  const username = localStorage.getItem("username");
   
-  if (!userId) {
-    console.warn("ID user tidak ditemukan di localStorage");
+  if (!username) {
+    console.warn("Username tidak ditemukan di localStorage");
     return;
   }
   
-  // Ambil referensi ke elemen HTML
+  // Referensi ke elemen UI
   const userFullNameElement = document.getElementById('userFullName');
-  const userShiftElement = document.getElementById('userShift');
+  const userAvatarElement = document.getElementById('userAvatar');
   const userInitialElement = document.getElementById('userInitial');
-  const userAvatar = document.getElementById('userAvatar');
+  const userShiftElement = document.getElementById('userShift');
   
-  // Ambil data user dari Firebase berdasarkan userId
-  get(ref(db, `users/${userId}`))
+  // Ambil data user langsung dari node users/[username]
+  get(ref(db, `users/${username}`))
     .then((snapshot) => {
       if (snapshot.exists()) {
         const userData = snapshot.val();
         
-        // Simpan data ke localStorage untuk penggunaan di halaman lain
-        localStorage.setItem('fullName', userData.Name || '');
-        localStorage.setItem('shift', userData.Shift || '');
-        localStorage.setItem('position', userData.Position || '');
-        localStorage.setItem('pic', userData.Name || '');
+        // Isi data di UI
+        if (userFullNameElement) userFullNameElement.textContent = userData.Name || username;
         
-        // Isi elemen HTML dengan data user
-        if (userFullNameElement) userFullNameElement.textContent = userData.Name || '';
+        // Set initial untuk avatar dan userInitial
+        const initial = userData.Name ? userData.Name.charAt(0).toUpperCase() : 'U';
+        if (userAvatarElement) userAvatarElement.textContent = initial;
+        if (userInitialElement) userInitialElement.textContent = initial;
+        
+        // Set shift jika ada elemen shift
         if (userShiftElement) userShiftElement.textContent = userData.Shift || '';
         
-        // Set initial (huruf pertama dari nama)
-        const initial = userData.Name ? userData.Name.charAt(0).toUpperCase() : '';
-        if (userInitialElement) userInitialElement.textContent = initial;
-        if (userAvatar) userAvatar.textContent = initial;
-        
-        console.log("User data loaded successfully:", userData.Name);
+        console.log("✅ Data profil user berhasil ditampilkan");
       } else {
-        console.warn("Data user dengan ID", userId, "tidak ditemukan");
+        console.warn("Data user tidak ditemukan untuk username:", username);
       }
     })
     .catch((error) => {
-      console.error("Error getting user data:", error);
+      console.error("Error saat mengambil data user:", error);
     });
 }
 
@@ -1237,14 +1232,15 @@ if (position === "Asst. Manager" || position === "Manager") {
 document.addEventListener("DOMContentLoaded", () => {
   console.log('DOM Content Loaded');
   
+  // Tambahkan panggilan ke fungsi populasi data user
+  populateUserProfileData();
+  
   // Setup other components first
   populateMpPicSelector();
   renderMpPicListTable();
   
   // Setup basic event listeners for table (fallback)
   attachTableEventListeners();
-  
-  // Use plain HTML table
 });
 
 // Kumpulkan mapping nama ke userID (ambil dari key node, bukan isi objek)==================================================================================
@@ -1468,22 +1464,23 @@ async function renderMpPicListTable() {
 document.addEventListener("DOMContentLoaded", () => {
   console.log('DOM Content Loaded');
   
+  // Tambahkan panggilan ke fungsi populasi data user
+  populateUserProfileData();
+  
   // Setup other components first
   populateMpPicSelector();
   renderMpPicListTable();
   
   // Setup basic event listeners for table (fallback)
   attachTableEventListeners();
-  
-  // Use plain HTML table
 });
 
 authPromise.then(() => {
   console.log('Auth promise resolved');
   populateStatusOptions();
   
-  // Panggil fungsi untuk mengisi data user
-  populateUserData();
+  // Tambahkan panggilan ke fungsi populasi data user
+  populateUserProfileData();
   
   // Load data first, then setup table
   loadJobsFromFirebase();
