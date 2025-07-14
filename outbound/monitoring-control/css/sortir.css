@@ -13,7 +13,8 @@ body {
   padding: 32px 32px 24px 32px;
   max-width: 85%;
   position: relative;
-  overflow: visible !important;
+  overflow: hidden !important;  /* ubah ke hidden untuk mencegah overflow */
+  width: calc(100% - 72px);     /* pastikan container tidak melebihi viewport */
 }
 
 /* HEADER */
@@ -139,12 +140,13 @@ body {
   z-index: 99;
   background: #fff;
   box-shadow: 0 1px 7px rgba(33,118,174,0.06);
-  display: flex;
   justify-content: space-between;
   align-items: stretch;
   gap: 24px;
   padding: 12px 0;
   flex-wrap: wrap;
+  overflow: visible; /* pastikan overflow-nya visible */
+  width: 100%; /* pastikan full width */
 }
 
 .top-bar-left {
@@ -222,13 +224,15 @@ input#fileInput {
   height: 240px;     /* atau tinggi sesuai kebutuhan, misal 220px, 250px, dll */
   min-height: 240px;
   justify-content: space-between;
-  min-width: 600px;
+  width: 100%;       /* ganti dari min-width: 600px */
+  min-width: 0;      /* untuk memungkinkan element mengecil jika perlu */
   max-width: 800px;
   margin: 0 18px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  flex: 0 0 600px;
+  flex: 1 1 auto;    /* ganti dari flex: 0 0 600px untuk memungkinkan resizing */
+  overflow: auto;    /* tambahkan untuk mencegah konten keluar */
 }
 
 .mp-pic-list-table {
@@ -241,6 +245,8 @@ input#fileInput {
   border-radius: 8px;
   box-shadow: 0 2px 7px rgba(33,118,174,0.07);
   font-size: 1em;
+  display: block;
+  overflow-x: auto;  /* tambahkan scrolling untuk tabel yang terlalu lebar */
 }
 
 .mp-pic-list-table th, .mp-pic-list-table td {
@@ -286,9 +292,20 @@ input#fileInput {
   }
   .top-bar-mp-pic-list {
     margin: 18px 0 0 0;
-    min-width: 270px;
+    min-width: 0;
+    width: 100%;
     max-width: 100%;
     flex: 1 1 100%;
+  }
+  
+  .control-panel-grid {
+    min-width: 0;
+    width: 100%;
+  }
+  
+  .control-column {
+    min-width: 130px;
+    flex: 1 1 130px;
   }
 }
 
@@ -314,15 +331,17 @@ input#fileInput {
   flex-direction: column;
   justify-content: center;
   align-items: stretch;
-  min-width: 920px;
+  width: 100%;       /* ganti dari min-width: 920px */
+  min-width: 0;      /* untuk memungkinkan element mengecil jika perlu */
   max-width: 1200px;
-  flex: 1;
+  flex: 2;           /* beri bobot lebih besar dibanding top-bar-mp-pic-list */
   background: linear-gradient(135deg, #f8fafc 0%, #fff 100%);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(33,118,174,0.08);
   padding: 24px;
   border: 1px solid #e5eafc;
   margin: 0;
+  overflow: auto;    /* tambahkan untuk mencegah konten keluar */
 }
 
 .form-row {
@@ -747,7 +766,15 @@ button.success:hover {
   .top-bar-right {
     min-width: 0;
     width: 100%;
+    overflow: visible;
   }
+  
+  .top-bar-mp-pic-list {
+    min-width: 0;
+    width: 100%;
+    margin: 0 0 18px 0;
+  }
+  
   .form-row {
     flex-direction: column;
     align-items: flex-start;
@@ -763,6 +790,17 @@ button.success:hover {
     width: 100%;
     min-width: 0;
     max-width: 100%;
+  }
+  
+  .control-panel-grid {
+    flex-direction: column;
+    min-width: 0;
+    width: 100%;
+  }
+  
+  .control-column {
+    max-width: 100%;
+    width: 100%;
   }
 }
 
@@ -861,30 +899,30 @@ button.success:hover {
 /* Lebar kolom tabel MP PIC aktif */
 .mp-pic-list-table th:nth-child(1),
 .mp-pic-list-table td:nth-child(1) {  /* Nama */
-  width: 200px;
-  min-width: 160px;
+  width: 40%;
+  min-width: 120px;
   max-width: 260px;
 }
 
 .mp-pic-list-table th:nth-child(2),
 .mp-pic-list-table td:nth-child(2) {  /* Team */
-  width: 104px;
-  min-width: 90px;
+  width: 20%;
+  min-width: 60px;
   max-width: 120px;
 }
 
 .mp-pic-list-table th:nth-child(3),
 .mp-pic-list-table td:nth-child(3) {  /* User ID */
-  width: 104px;
-  min-width: 70px;
+  width: 20%;
+  min-width: 60px;
   max-width: 120px;
   text-align: center;
 }
 
 .mp-pic-list-table th:nth-child(4),
 .mp-pic-list-table td:nth-child(4) {  /* Action */
-  width: 104px;
-  min-width: 70px;
+  width: 20%;
+  min-width: 60px;
   max-width: 120px;
   text-align: center;
 }
@@ -1036,7 +1074,8 @@ input[type="checkbox"] {
   gap: 20px;
   justify-content: space-between;
   width: 100%;
-  min-width: 800px;
+  min-width: 0;     /* ganti dari min-width: 800px untuk memungkinkan element mengecil */
+  flex-wrap: wrap;  /* memungkinkan elemen wrap ke baris baru pada layar kecil */
 }
 
 .control-column {
@@ -1044,7 +1083,7 @@ input[type="checkbox"] {
   flex-direction: column;
   gap: 8px;
   flex: 1;
-  min-width: 180px;
+  min-width: 150px;  /* sedikit turunkan dari 180px */
   max-width: 220px;
 }
 
