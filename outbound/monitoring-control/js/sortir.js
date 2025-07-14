@@ -886,7 +886,7 @@ const STATUS_OPTIONS = [
   "Pending Pick",
   "Partial Picked",
   "Pending Pack",
-  "Partial Pack",
+  "Partial Packed",
   "Packed",
   "Loading",
   "Completed"
