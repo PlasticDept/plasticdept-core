@@ -170,7 +170,7 @@ document.getElementById("loginForm").addEventListener("submit", async function(e
       }
     } else {
       // Non-operator, redirect ke sort-job
-      window.location.href = "monitoring-control/sort-job.html";
+      window.location.href = "monitoring-control/plastic.html";
     }
   } catch (err) {
     errorMsg.textContent = err.message || "Terjadi kesalahan saat login.";
