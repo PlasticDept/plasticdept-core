@@ -1181,6 +1181,73 @@ window.addEventListener("click", (e) => {
   }
 });
 
+// ========== DOWNLOAD OUTBOUND DATA ==========
+document.getElementById("downloadDataOutboundBtn").addEventListener("click", async () => {
+  showExportLoading(true); // Tampilkan spinner
+
+  try {
+    // Ambil data dari PhxOutboundJobs
+    const snapshot = await get(ref(db, "PhxOutboundJobs"));
+    if (!snapshot.exists()) {
+      showNotification("Tidak ada data outbound untuk diunduh.", true);
+      showExportLoading(false);
+      return;
+    }
+
+    // Konversi data ke format array untuk Excel
+    const data = snapshot.val();
+    const jobsArray = Object.values(data).map(job => ({
+      "Job No": job.jobNo || "",
+      "Delivery Date": job.deliveryDate || "",
+      "Delivery Note": job.deliveryNote || "",
+      "Remark": job.remark || "",
+      "Status": job.status || "",
+      "Qty": job.qty || "",
+      "Team": job.team || "",
+      "Job Type": job.jobType || "",
+      "Shift": job.shift || "",
+      "Team Name": job.teamName || ""
+    }));
+
+    // Buat workbook Excel baru
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(jobsArray);
+
+    // Buat header style dengan lebar kolom yang sesuai
+    const wscols = [
+      {wch: 15}, // Job No
+      {wch: 15}, // Delivery Date
+      {wch: 25}, // Delivery Note
+      {wch: 30}, // Remark
+      {wch: 15}, // Status
+      {wch: 10}, // Qty
+      {wch: 10}, // Team
+      {wch: 12}, // Job Type
+      {wch: 12}, // Shift
+      {wch: 15}  // Team Name
+    ];
+    ws['!cols'] = wscols;
+
+    // Tambahkan worksheet ke workbook
+    XLSX.utils.book_append_sheet(wb, ws, "Outbound Jobs");
+
+    // Generate nama file dengan timestamp
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+    const fileName = `Outbound_Data_${dateStr}_${timeStr}.xlsx`;
+
+    // Download file Excel
+    XLSX.writeFile(wb, fileName);
+    showNotification(`Data outbound berhasil diunduh sebagai ${fileName}`);
+  } catch (error) {
+    console.error("Error downloading data:", error);
+    showNotification("Terjadi kesalahan saat mengunduh data.", true);
+  } finally {
+    showExportLoading(false); // Sembunyikan spinner setelah selesai
+  }
+});
+
 // SHIFT TOGGLE LOGIC
 const shiftDayRadio = document.getElementById("shiftDay");
 const shiftNightRadio = document.getElementById("shiftNight");
