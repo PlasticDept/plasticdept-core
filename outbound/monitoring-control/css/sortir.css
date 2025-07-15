@@ -13,7 +13,7 @@ body {
   padding: 32px 32px 24px 32px;
   max-width: 85%;
   position: relative;
-  overflow: hidden !important;  /* ubah ke hidden untuk mencegah overflow */
+  overflow: visible;
   width: calc(100% - 72px);     /* pastikan container tidak melebihi viewport */
 }
 
@@ -414,6 +414,7 @@ input#fileInput {
 
 /* TOOLBAR */
 .toolbar {
+  position: -webkit-sticky; /* Untuk dukungan browser Safari */
   position: sticky;
   top: 0.5px;
   z-index: 98;
@@ -549,6 +550,7 @@ table {
 
 /* TABLE HEADER */
 thead th {
+  position: -webkit-sticky; /* Untuk dukungan browser Safari */
   position: sticky;
   z-index: 97;
   top: 142px;
