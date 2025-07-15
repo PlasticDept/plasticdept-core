@@ -1124,18 +1124,20 @@ async function saveOutJobAchievement() {
     const shiftPath = job.shift === "Night Shift" ? "NightShift" : "DayShift";
     const teamName = job.teamName;
     if (!result[shiftPath][teamName]) result[shiftPath][teamName] = {};
+    
+    // Gunakan sanitizeValue untuk semua properti untuk mencegah undefined
     result[shiftPath][teamName][job.jobNo] = {
-      deliveryDate: job.deliveryDate,
-      deliveryNote: job.deliveryNote,
-      jobNo: job.jobNo,
-      jobType: job.jobType,
-      qty: job.qty,
-      remark: job.remark,
-      shift: job.shift,
-      status: job.status,
-      team: job.team,
-      teamName: job.teamName,
-      finishAt: job.finishAt || "" // Ambil dari PhxOutboundJobs, biarkan kosong kalau tidak ada
+      deliveryDate: sanitizeValue(job.deliveryDate),
+      deliveryNote: sanitizeValue(job.deliveryNote),
+      jobNo: sanitizeValue(job.jobNo),
+      jobType: sanitizeValue(job.jobType),
+      qty: sanitizeValue(job.qty),
+      remark: sanitizeValue(job.remark),
+      shift: sanitizeValue(job.shift),
+      status: sanitizeValue(job.status),
+      team: sanitizeValue(job.team),
+      teamName: sanitizeValue(job.teamName),
+      finishAt: sanitizeValue(job.finishAt || "")
     };
   }
 
