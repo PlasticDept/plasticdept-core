@@ -224,7 +224,8 @@ body {
 
 .shift-selector {
     display: flex;
-    margin-bottom: 16px;
+    margin-bottom: 1px;
+    margin-top: 20px;
     grid-column: span 2;
 }
 
@@ -774,7 +775,7 @@ select.form-control {
 /* MP PIC List - Redesigned Compact Version */
 .mp-pic-section {
     grid-column: span 2;
-    margin-top: 16px;
+    margin-top: 2px;
 }
 
 .mp-pic-header {
