@@ -1529,21 +1529,6 @@ async function renderMpPicListTable() {
   });
 }
 
-// Inisialisasi pada DOMContentLoaded
-document.addEventListener("DOMContentLoaded", () => {
-  console.log('DOM Content Loaded');
-  
-  // Tambahkan panggilan ke fungsi populasi data user
-  populateUserProfileData();
-  
-  // Setup other components first
-  populateMpPicSelector();
-  renderMpPicListTable();
-  
-  // Setup basic event listeners for table (fallback)
-  attachTableEventListeners();
-});
-
 authPromise.then(() => {
   console.log('Auth promise resolved');
   populateStatusOptions();
