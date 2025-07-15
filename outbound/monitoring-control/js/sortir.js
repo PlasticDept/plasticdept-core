@@ -1217,37 +1217,69 @@ document.getElementById("downloadDataOutboundBtn").addEventListener("click", asy
 
     // Konversi data ke format array untuk Excel
     const data = snapshot.val();
-    const jobsArray = Object.values(data).map(job => ({
-      "Job No": job.jobNo || "",
-      "Delivery Date": job.deliveryDate || "",
-      "Delivery Note": job.deliveryNote || "",
-      "Remark": job.remark || "",
-      "Status": job.status || "",
-      "Qty": job.qty || "",
-      "Team": job.team || "",
-      "Job Type": job.jobType || "",
-      "Shift": job.shift || "",
-      "Team Name": job.teamName || ""
-    }));
+    const jobsArray = Object.values(data).map(job => {
+      // Konversi qty ke number
+      const qtyValue = job.qty ? Number(job.qty) : "";
+      
+      // Format delivery date dengan benar
+      let deliveryDate = "";
+      try {
+        if (job.deliveryDate) {
+          // Jika sudah dalam format "DD-MMM-YYYY", ubah ke date object Excel
+          const dateParts = job.deliveryDate.split("-");
+          if (dateParts.length === 3) {
+            const months = {"Jan":0,"Feb":1,"Mar":2,"Apr":3,"May":4,"Jun":5,
+                           "Jul":6,"Aug":7,"Sep":8,"Oct":9,"Nov":10,"Dec":11};
+            const day = parseInt(dateParts[0]);
+            const month = months[dateParts[1]];
+            const year = parseInt(dateParts[2]);
+            if (!isNaN(day) && month !== undefined && !isNaN(year)) {
+              // Konversi ke format date Excel (serial number)
+              const dateObj = new Date(year, month, day);
+              deliveryDate = dateObj;
+            } else {
+              deliveryDate = job.deliveryDate;
+            }
+          } else {
+            deliveryDate = job.deliveryDate;
+          }
+        }
+      } catch (e) {
+        deliveryDate = job.deliveryDate || "";
+      }
+
+      return {
+        "Job No": job.jobNo || "",
+        "Delivery Date": deliveryDate,
+        "Delivery Note": job.deliveryNote || "",
+        "Remark": job.remark || "",
+        "Status": job.status || "",
+        "Qty": qtyValue, // Pastikan sebagai number
+        "Team": job.team || "",
+        "Job Type": job.jobType || "",
+        "Shift": job.shift || "",
+        "Team Name": job.teamName || ""
+      };
+    });
 
     // Buat workbook Excel baru
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(jobsArray);
 
-    // Buat header style dengan lebar kolom yang sesuai
-    const wscols = [
+    // Set tipe data kolom
+    if (!ws['!cols']) ws['!cols'] = [];
+    ws['!cols'] = [
       {wch: 15}, // Job No
-      {wch: 15}, // Delivery Date
+      {wch: 15, dt: 'd'}, // Delivery Date - set sebagai date
       {wch: 25}, // Delivery Note
       {wch: 30}, // Remark
       {wch: 15}, // Status
-      {wch: 10}, // Qty
+      {wch: 10, dt: 'n'}, // Qty - set sebagai numeric
       {wch: 10}, // Team
       {wch: 12}, // Job Type
       {wch: 12}, // Shift
       {wch: 15}  // Team Name
     ];
-    ws['!cols'] = wscols;
 
     // Tambahkan worksheet ke workbook
     XLSX.utils.book_append_sheet(wb, ws, "Outbound Jobs");
