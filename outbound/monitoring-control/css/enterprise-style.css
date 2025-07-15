@@ -90,10 +90,6 @@ body {
     color: #0078d4;
 }
 
-.main-nav a.active {
-    background-color: #0078d4;
-    color: white;
-}
 
 .main-nav a i {
     margin-right: 8px;
