@@ -1468,10 +1468,12 @@ document.getElementById("setMpPicBtn")?.addEventListener("click", async function
 });
 
 /* --- Render Tabel MP PIC Aktif Full JS --- */
+/* --- Render Tabel MP PIC Aktif dalam format Card --- */
 async function renderMpPicListTable() {
   const container = document.getElementById('mpPicTableContainer');
   if (!container) return;
   container.innerHTML = '';
+  container.className = 'mp-pic-cards'; // Ensure the correct class is applied
 
   // Fetch Data
   let data = [];
@@ -1500,76 +1502,57 @@ async function renderMpPicListTable() {
     return mpPicSortAsc ? cmp : -cmp;
   });
 
-  // Build Table
-  const table = document.createElement('table');
-  table.className = 'mp-pic-list-table';
-  table.style.width = '100%';
-
-  // Thead
-  const thead = document.createElement('thead');
-  const headerRow = document.createElement('tr');
-  const headers = [
-    { text: 'Nama', key: 'name' },
-    { text: 'Team', key: 'team' },
-    { text: 'User ID', key: 'userID' },
-    { text: 'Action', key: 'action' }
-  ];
-  headers.forEach((header, idx) => {
-    const th = document.createElement('th');
-    th.textContent = header.text;
-    th.style.textAlign = 'center';
-    th.style.cursor = (header.key === 'team' || header.key === 'name') ? 'pointer' : 'default';
-    if (header.key === mpPicSortOrder) {
-      th.classList.add('sorted');
-      th.innerHTML += mpPicSortAsc ? ' ▲' : ' ▼';
-    }
-    // Add sorting event
-    if (header.key === 'team' || header.key === 'name') {
-      th.addEventListener('click', function() {
-        if (mpPicSortOrder === header.key) {
-          mpPicSortAsc = !mpPicSortAsc;
-        } else {
-          mpPicSortOrder = header.key;
-          mpPicSortAsc = true;
-        }
-        renderMpPicListTable();
-      });
-    }
-    headerRow.appendChild(th);
-  });
-  thead.appendChild(headerRow);
-  table.appendChild(thead);
-
-  // Tbody
-  const tbody = document.createElement('tbody');
+  // Render as cards
   if (data.length === 0) {
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
-    td.colSpan = 4;
-    td.textContent = 'Belum ada MP PIC';
-    td.style.textAlign = 'center';
-    tr.appendChild(td);
-    tbody.appendChild(tr);
+    // Show empty state
+    const emptyState = document.createElement('div');
+    emptyState.className = 'mp-pic-empty';
+    emptyState.textContent = 'Belum ada MP PIC';
+    container.appendChild(emptyState);
   } else {
+    // Create a card for each PIC
     data.forEach(entry => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td style="text-align:center;">${entry.name}</td>
-        <td style="text-align:center;">${entry.team}</td>
-        <td style="text-align:center;">${entry.userID}</td>
-        <td style="text-align:center;">
-          <button type="button" class="hapus-mp-pic-btn" data-userid="${entry.userID}">Hapus</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
+      const card = document.createElement('div');
+      card.className = 'mp-pic-card';
+      
+      // Info section (name, team, userID)
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'mp-pic-info';
+      
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'mp-pic-name';
+      nameDiv.textContent = entry.name;
+      infoDiv.appendChild(nameDiv);
+      
+      const detailsDiv = document.createElement('div');
+      detailsDiv.className = 'mp-pic-details';
+      
+      const teamSpan = document.createElement('span');
+      teamSpan.className = 'mp-pic-team';
+      teamSpan.textContent = entry.team;
+      detailsDiv.appendChild(teamSpan);
+      
+      const userIdSpan = document.createElement('span');
+      userIdSpan.className = 'mp-pic-userid';
+      userIdSpan.textContent = entry.userID;
+      detailsDiv.appendChild(userIdSpan);
+      
+      infoDiv.appendChild(detailsDiv);
+      card.appendChild(infoDiv);
+      
+      // Delete button
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'delete-btn';
+      deleteBtn.textContent = 'Hapus';
+      deleteBtn.setAttribute('data-userid', entry.userID);
+      card.appendChild(deleteBtn);
+      
+      container.appendChild(card);
     });
   }
-  table.appendChild(tbody);
 
-  container.appendChild(table);
-
-  // Hapus handler
-  container.querySelectorAll('.hapus-mp-pic-btn').forEach(btn => {
+  // Attach event listeners to delete buttons
+  container.querySelectorAll('.delete-btn').forEach(btn => {
     btn.addEventListener('click', async function() {
       const userID = this.getAttribute('data-userid');
       if (!userID) return;
@@ -1577,7 +1560,6 @@ async function renderMpPicListTable() {
         title: "Konfirmasi Hapus MP PIC",
         message: `Apakah Anda yakin ingin menghapus MP PIC ini?`,
         okText: "Hapus",
-        okClass: "logout",
         cancelText: "Batal",
         onConfirm: async () => {
           await remove(ref(db, `MPPIC/${userID}`));
