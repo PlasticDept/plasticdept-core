@@ -29,6 +29,13 @@ function showNotification(message, isError = false) {
   }, 4000);
 }
 
+function formatNumericValue(value) {
+  if (!value || value === "" || value === undefined || value === null || isNaN(value)) {
+    return "";
+  }
+  return Number(value).toLocaleString();
+}
+
 function showExportLoading(isShow = true) {
   const overlay = document.getElementById("exportLoadingOverlay");
   if (overlay) overlay.style.display = isShow ? "flex" : "none";
@@ -133,9 +140,12 @@ function handleSetPlanTarget() {
  * Fungsi helper untuk membersihkan value agar selalu string.
  */
 function sanitizeValue(value) {
+  if (value === undefined || value === null) return "";
   if (typeof value === "object") return "";
   if (typeof value === "function") return "";
-  return value ?? "";
+  if (String(value).toLowerCase() === "undefined" || 
+      String(value).toLowerCase() === "nan") return "";
+  return value;
 }
 
 /**
@@ -192,15 +202,26 @@ function badgeForStatus(status) {
 function createTableRow(job) {
   const row = document.createElement("tr");
   const badgeClass = badgeForStatus(job.status);
+  
+  // Sanitasi nilai sebelum menampilkan
+  const remark = sanitizeValue(job.remark);
+  const team = sanitizeValue(job.team);
+  
+  // Khusus untuk qty, tangani kasus numerik
+  let qtyDisplay = "";
+  if (job.qty && !isNaN(job.qty)) {
+    qtyDisplay = Number(job.qty).toLocaleString();
+  }
+  
   row.innerHTML = `
     <td><input type="checkbox" data-jobno="${job.jobNo}"></td>
-    <td>${job.jobNo}</td>
-    <td>${job.deliveryDate}</td>
-    <td>${job.deliveryNote}</td>
-    <td>${job.remark}</td>
-    <td><span class="badge ${badgeClass}">${job.status}</span></td>
-    <td>${Number(job.qty).toLocaleString()}</td>
-    <td>${job.team}</td>
+    <td>${sanitizeValue(job.jobNo)}</td>
+    <td>${sanitizeValue(job.deliveryDate)}</td>
+    <td>${sanitizeValue(job.deliveryNote)}</td>
+    <td>${remark}</td>
+    <td><span class="badge ${badgeClass}">${sanitizeValue(job.status)}</span></td>
+    <td>${qtyDisplay}</td>
+    <td>${team}</td>
     <td class="table-actions">
       <button class="assign" data-jobno="${job.jobNo}">Assign</button>
       <button class="unassign" data-jobno="${job.jobNo}">Unassign</button>
