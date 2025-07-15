@@ -593,6 +593,15 @@ tbody tr:hover {
 .badge-success { background: #2ecc71; color: #fff; }
 .badge-warning { background: #f1c40f; color: #6f580d; }
 .badge-danger { background: #e74c3c; color: #fff; }
+
+/* Status baru dengan warna kustom */
+.badge-pending-allocation { background: #FFA500; color: #FFFFFF; } /* Oranye */
+.badge-partial-allocation { background: #FFD580; color: #000000; } /* Oranye muda */
+.badge-pending-pick { background: #FF4C4C; color: #FFFFFF; } /* Merah */
+.badge-partial-picked { background: #87CEFA; color: #000000; } /* Biru muda */
+.badge-pending-pack { background: #6A5ACD; color: #FFFFFF; } /* Ungu */
+.badge-partial-packed { background: #B0C4DE; color: #000000; } /* Abu-abu kebiruan */
+
 .badge {
   display: inline-block;
   padding: 3px 13px;

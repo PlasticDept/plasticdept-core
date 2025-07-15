@@ -178,14 +178,21 @@ function formatDate(input) {
  * Badge color untuk status tertentu.
  */
 function badgeForStatus(status) {
-  switch ((status || "").toLowerCase()) {
+  const statusLower = (status || "").toLowerCase();
+  
+  switch (statusLower) {
     case "pending allocation":
+      return "badge-pending-allocation";
     case "partial allocation":
+      return "badge-partial-allocation";
     case "pending pick":
+      return "badge-pending-pick";
     case "partial picked":
+      return "badge-partial-picked";
     case "pending pack":
+      return "badge-pending-pack";
     case "partial packed":
-      return "badge-warning";
+      return "badge-partial-packed";
     case "packed":
     case "loading":
       return "badge-success";
