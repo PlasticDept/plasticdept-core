@@ -91,6 +91,7 @@ body {
 }
 
 
+
 .main-nav a i {
     margin-right: 8px;
     font-size: 16px;
@@ -150,15 +151,20 @@ body {
 
 /* Secondary Navigation */
 .secondary-nav {
-    background-color: #f0f4f8;
-    border-bottom: 1px solid #e0e6ed;
-    padding: 0 24px;
-    z-index: 9;
+  background-color: #f0f4f8;
+  border-bottom: 1px solid #e0e6ed;
+  padding: 0 24px;
+  z-index: 9;
+  display: flex; /* Menggunakan flexbox */
+  justify-content: space-between; /* Elemen akan berada di sisi kiri dan kanan */
+  align-items: center; /* Menyelaraskan elemen secara vertikal */
 }
 
 .tab-container {
-    position: relative;
-    overflow: visible; /* Pastikan overflow visible untuk menampilkan dropdown */
+  display: flex;
+  position: relative;
+  overflow: visible;
+  align-items: center; /* Memastikan semua item sejajar secara vertikal */
 }
 
 .tab {
@@ -223,18 +229,22 @@ body {
 }
 
 .shift-selector {
-    display: flex;
-    margin-bottom: 1px;
-    margin-top: 20px;
-    grid-column: span 2;
+  display: flex;
+  align-items: center;
+  margin: 0; /* Hapus margin yang sebelumnya ada */
 }
 
 .radio-container {
-    display: flex;
-    align-items: center;
-    margin-right: 24px;
-    cursor: pointer;
+  display: flex;
+  align-items: center;
+  margin-right: 16px;
+  cursor: pointer;
 }
+
+.radio-container:last-child {
+  margin-right: 0;
+}
+
 
 .radio-container input[type="radio"] {
     margin-right: 8px;
@@ -519,9 +529,9 @@ select.form-control {
 }
 
 .enterprise-table th {
-    background-color: #0078d4;
+    background-color: #2176ae;
     color: white;
-    text-align: left;
+    text-align: center;
     padding: 12px;
     font-weight: 500;
     position: sticky;

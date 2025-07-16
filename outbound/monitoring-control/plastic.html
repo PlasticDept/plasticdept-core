@@ -57,8 +57,11 @@
               <a href="https://plasticdept.github.io/plasticdept-core/inbound/container-dashboard.html" class="dropdown-item"><i class="fas fa-cubes"></i> Incoming Container Dashboard</a>
             </div>
           </li>
-          <li>
-            <a href="#" class="nav-link"><i class="fas fa-warehouse"></i> Inventory</a>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link"><i class="fas fa-warehouse"></i> Inventory <i class="fas fa-chevron-down"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="https://plasticdept.github.io/plasticdept-core/inventory/occupancy.html" class="dropdown-item"><i class="fas fa-chart-pie"></i> Occupancy</a>
+            </div>
           </li>
           <li class="nav-dropdown">
             <a href="#" class="nav-link"><i class="fas fa-chart-bar"></i> Reports <i class="fas fa-chevron-down"></i></a>
@@ -93,14 +96,8 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- NOTIFICATION BAR -->
-    <div id="notification" class="notification-bar"></div>
-
-    <!-- CONTROLS CONTAINER -->
-    <div class="controls-container">
-      <!-- Shift Selector -->
+      
+      <!-- Shift Selector dipindahkan ke sini -->
       <div class="shift-selector">
         <label class="radio-container">
           <input type="radio" name="shiftType" id="shiftDay" value="Day">
@@ -111,7 +108,13 @@
           <span class="radio-label">Night Shift</span>
         </label>
       </div>
+    </div>
 
+    <!-- NOTIFICATION BAR -->
+    <div id="notification" class="notification-bar"></div>
+
+    <!-- CONTROLS CONTAINER -->
+    <div class="controls-container">
       <!-- Setting Cards -->
       <div class="setting-cards">
         <!-- Set Target Card -->
