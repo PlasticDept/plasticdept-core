@@ -263,7 +263,7 @@ async function setupRoleButtons() {
     // Non-operator: hanya tombol back yang tampil
     if (backBtn) {
       backBtn.style.display = "inline-block";
-      backBtn.onclick = () => window.location.href = "sort-job.html";
+      backBtn.onclick = () => window.location.href = "plastic.html";
     }
     if (logoutBtn) logoutBtn.style.display = "none";
   }
