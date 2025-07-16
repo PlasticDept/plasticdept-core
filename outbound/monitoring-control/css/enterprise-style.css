@@ -252,6 +252,7 @@ body {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
+    text-align: center;
 }
 
 .setting-card {
