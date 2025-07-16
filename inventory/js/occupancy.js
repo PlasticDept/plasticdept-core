@@ -36,18 +36,17 @@ document.addEventListener('DOMContentLoaded', async function() {
 // Fetch data from Supabase
 async function fetchOccupancyData() {
     try {
-        // Get all location records from master_location table
-        let { data, error } = await supabase
+        // Menggunakan supabaseClient (bukan supabase)
+        let { data, error } = await supabaseClient
             .from('master_location')
             .select('*');
             
         if (error) throw error;
         
-        // Reset data
+        // Proses data seperti biasa...
         occupancyData = {};
         locations = [];
         
-        // Process data
         data.forEach(record => {
             const locationId = record.id;
             locations.push(locationId);
@@ -582,7 +581,7 @@ async function processAndUploadData(data) {
         if (updates.length > 0) {
             try {
                 // Use upsert - insert if not exists, update if exists
-                const { data, error } = await supabase
+                const { data: result, error } = await supabaseClient
                     .from('master_location')
                     .upsert(updates)
                     .select();
