@@ -1,3 +1,7 @@
+const supabaseUrl = 'https://ndmwhoagrdcndybnjilw.supabase.co';
+const supabaseKey = 'sb_publishable_M0cRLsz1mAGSWsvMTTMfHA_fbZI5-Rl';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
 // Global variables
 let occupancyData = {};
 let locations = [];
