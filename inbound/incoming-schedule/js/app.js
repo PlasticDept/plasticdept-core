@@ -12,12 +12,11 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
-const auth = firebase.auth();
 
 // User info
 const currentUser = {
     login: 'PlasticDept',
-    timestamp: '2025-07-17 13:52:22'
+    timestamp: '2025-07-17 14:13:22'
 };
 
 // DOM Elements
@@ -57,44 +56,57 @@ let isAuthenticated = false;
 function authenticateAnonymously() {
     showModal(loadingModal);
     
-    auth.signInAnonymously()
-        .then(() => {
-            console.log('Authenticated anonymously');
-            isAuthenticated = true;
-            hideModal(loadingModal);
-            
-            // Set user info in the header
-            if (userInfoEl) {
-                userInfoEl.textContent = `Login: ${currentUser.login}`;
-            }
-            
-            // Now that we're authenticated, load data
-            loadDataFromFirebase();
-        })
-        .catch((error) => {
-            hideModal(loadingModal);
-            showErrorModal(`Gagal autentikasi: ${error.message}. Silakan muat ulang halaman.`);
-            console.error('Authentication Error:', error);
-        });
+    // Make sure firebase.auth is available before calling
+    if (typeof firebase.auth === 'function') {
+        firebase.auth().signInAnonymously()
+            .then(() => {
+                console.log('Authenticated anonymously');
+                isAuthenticated = true;
+                hideModal(loadingModal);
+                
+                // Set user info in the header
+                if (userInfoEl) {
+                    userInfoEl.textContent = `Login: ${currentUser.login}`;
+                }
+                
+                // Now that we're authenticated, load data
+                loadDataFromFirebase();
+            })
+            .catch((error) => {
+                hideModal(loadingModal);
+                showErrorModal(`Gagal autentikasi: ${error.message}. Silakan muat ulang halaman.`);
+                console.error('Authentication Error:', error);
+            });
+    } else {
+        hideModal(loadingModal);
+        showErrorModal('Firebase Authentication tidak tersedia. Pastikan library Firebase Auth dimuat dengan benar.');
+        console.error('Firebase Auth not available');
+    }
 }
 
-// Listen for auth state changes
-auth.onAuthStateChanged((user) => {
-    if (user) {
-        isAuthenticated = true;
-    } else {
-        isAuthenticated = false;
-    }
-});
+// Listen for auth state changes if auth is available
+if (typeof firebase.auth === 'function') {
+    firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+            isAuthenticated = true;
+        } else {
+            isAuthenticated = false;
+        }
+    });
+}
 
 // Update date and time
 function updateDateTime() {
     const now = new Date();
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    currentDateEl.textContent = now.toLocaleDateString('id-ID', options);
+    if (currentDateEl) {
+        currentDateEl.textContent = now.toLocaleDateString('id-ID', options);
+    }
     
     const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-    currentTimeEl.textContent = now.toLocaleTimeString('id-ID', timeOptions);
+    if (currentTimeEl) {
+        currentTimeEl.textContent = now.toLocaleTimeString('id-ID', timeOptions);
+    }
 }
 
 // Initialize date and time, then update every second
@@ -102,48 +114,61 @@ updateDateTime();
 setInterval(updateDateTime, 1000);
 
 // File input change handler
-csvFileInput.addEventListener('change', function(e) {
-    if (this.files.length > 0) {
-        const file = this.files[0];
-        fileNameSpan.textContent = file.name;
-        uploadBtn.disabled = false;
-    } else {
-        fileNameSpan.textContent = 'Belum ada file yang dipilih';
-        uploadBtn.disabled = true;
-    }
-});
+if (csvFileInput) {
+    csvFileInput.addEventListener('change', function(e) {
+        if (this.files.length > 0) {
+            const file = this.files[0];
+            if (fileNameSpan) {
+                fileNameSpan.textContent = file.name;
+            }
+            if (uploadBtn) {
+                uploadBtn.disabled = false;
+            }
+            console.log('File selected:', file.name);
+        } else {
+            if (fileNameSpan) {
+                fileNameSpan.textContent = 'Belum ada file yang dipilih';
+            }
+            if (uploadBtn) {
+                uploadBtn.disabled = true;
+            }
+        }
+    });
+}
 
 // Upload button click handler
-uploadBtn.addEventListener('click', function() {
-    if (!isAuthenticated) {
-        showErrorModal('Anda belum terautentikasi. Silakan muat ulang halaman.');
-        return;
-    }
-    
-    const file = csvFileInput.files[0];
-    if (!file) return;
-    
-    showModal(loadingModal);
-    
-    const reader = new FileReader();
-    
-    reader.onload = function(e) {
-        try {
-            const data = e.target.result;
-            processData(data, file.name);
-        } catch (error) {
-            hideModal(loadingModal);
-            showErrorModal('Terjadi kesalahan saat membaca file: ' + error.message);
+if (uploadBtn) {
+    uploadBtn.addEventListener('click', function() {
+        if (!isAuthenticated && typeof firebase.auth === 'function') {
+            showErrorModal('Anda belum terautentikasi. Silakan muat ulang halaman.');
+            return;
         }
-    };
-    
-    reader.onerror = function() {
-        hideModal(loadingModal);
-        showErrorModal('Terjadi kesalahan saat membaca file.');
-    };
-    
-    reader.readAsBinaryString(file);
-});
+        
+        const file = csvFileInput ? csvFileInput.files[0] : null;
+        if (!file) return;
+        
+        showModal(loadingModal);
+        
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            try {
+                const data = e.target.result;
+                processData(data, file.name);
+            } catch (error) {
+                hideModal(loadingModal);
+                showErrorModal('Terjadi kesalahan saat membaca file: ' + error.message);
+            }
+        };
+        
+        reader.onerror = function() {
+            hideModal(loadingModal);
+            showErrorModal('Terjadi kesalahan saat membaca file.');
+        };
+        
+        reader.readAsBinaryString(file);
+    });
+}
 
 // Process the Excel/CSV data
 function processData(data, fileName) {
@@ -640,22 +665,48 @@ exportBtn.addEventListener('click', function() {
     XLSX.writeFile(wb, fileName);
 });
 
-// Modal functions
+// Initialize the page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, checking authentication capabilities...');
+    
+    // Check if Firebase Auth is available
+    if (typeof firebase.auth === 'function') {
+        console.log('Firebase Auth is available, authenticating...');
+        authenticateAnonymously();
+    } else {
+        console.error('Firebase Auth is not available');
+        showErrorModal('Firebase Authentication tidak tersedia. Pastikan library Firebase Auth dimuat dengan benar.');
+    }
+});
+
+// Helper functions for modals
 function showModal(modal) {
-    modal.style.display = 'flex';
+    if (modal) {
+        modal.style.display = 'flex';
+    } else {
+        console.error('Modal element not found');
+    }
 }
 
 function hideModal(modal) {
-    modal.style.display = 'none';
+    if (modal) {
+        modal.style.display = 'none';
+    } else {
+        console.error('Modal element not found');
+    }
 }
 
 function showSuccessModal(message) {
-    successMessage.textContent = message;
+    if (successMessage) {
+        successMessage.textContent = message;
+    }
     showModal(successModal);
 }
 
 function showErrorModal(message) {
-    errorMessage.textContent = message;
+    if (errorMessage) {
+        errorMessage.textContent = message;
+    }
     showModal(errorModal);
 }
 
