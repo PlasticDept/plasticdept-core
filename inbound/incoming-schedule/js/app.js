@@ -12,6 +12,13 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
+const auth = firebase.auth();
+
+// User info
+const currentUser = {
+    login: 'PlasticDept',
+    timestamp: '2025-07-17 13:52:22'
+};
 
 // DOM Elements
 const csvFileInput = document.getElementById('csvFileInput');
@@ -36,6 +43,7 @@ const successModal = document.getElementById('successModal');
 const errorModal = document.getElementById('errorModal');
 const successMessage = document.getElementById('successMessage');
 const errorMessage = document.getElementById('errorMessage');
+const userInfoEl = document.getElementById('userInfo');
 
 // Variables
 let inboundData = [];
@@ -43,6 +51,41 @@ let filteredData = [];
 let currentPage = 1;
 const rowsPerPage = 10;
 let currentSort = { column: null, direction: 'asc' };
+let isAuthenticated = false;
+
+// Authenticate anonymously with Firebase
+function authenticateAnonymously() {
+    showModal(loadingModal);
+    
+    auth.signInAnonymously()
+        .then(() => {
+            console.log('Authenticated anonymously');
+            isAuthenticated = true;
+            hideModal(loadingModal);
+            
+            // Set user info in the header
+            if (userInfoEl) {
+                userInfoEl.textContent = `Login: ${currentUser.login}`;
+            }
+            
+            // Now that we're authenticated, load data
+            loadDataFromFirebase();
+        })
+        .catch((error) => {
+            hideModal(loadingModal);
+            showErrorModal(`Gagal autentikasi: ${error.message}. Silakan muat ulang halaman.`);
+            console.error('Authentication Error:', error);
+        });
+}
+
+// Listen for auth state changes
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        isAuthenticated = true;
+    } else {
+        isAuthenticated = false;
+    }
+});
 
 // Update date and time
 function updateDateTime() {
@@ -72,6 +115,11 @@ csvFileInput.addEventListener('change', function(e) {
 
 // Upload button click handler
 uploadBtn.addEventListener('click', function() {
+    if (!isAuthenticated) {
+        showErrorModal('Anda belum terautentikasi. Silakan muat ulang halaman.');
+        return;
+    }
+    
     const file = csvFileInput.files[0];
     if (!file) return;
     
@@ -175,7 +223,8 @@ function processData(data, fileName) {
                 invoiceNo: row[inboundRefNoIndex] || '',
                 qty: qty || 0,
                 uid: row[uidCountIndex] || 0,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                uploadedBy: currentUser.login
             });
         }
         
@@ -196,12 +245,19 @@ function processData(data, fileName) {
 
 // Save processed data to Firebase
 function saveToFirebase(data, fileName) {
+    if (!isAuthenticated) {
+        hideModal(loadingModal);
+        showErrorModal('Anda belum terautentikasi. Silakan muat ulang halaman.');
+        return;
+    }
+    
     const uploadId = 'upload_' + new Date().getTime();
     const uploadRef = database.ref('inbDailyReport/' + uploadId);
     
     uploadRef.set({
         fileName: fileName,
         uploadDate: new Date().toISOString(),
+        uploadedBy: currentUser.login,
         data: data
     })
     .then(() => {
@@ -224,6 +280,11 @@ function saveToFirebase(data, fileName) {
 
 // Load data from Firebase
 function loadDataFromFirebase() {
+    if (!isAuthenticated) {
+        showErrorModal('Anda belum terautentikasi. Silakan muat ulang halaman.');
+        return;
+    }
+    
     showModal(loadingModal);
     
     database.ref('inbDailyReport').orderByChild('uploadDate').limitToLast(10).once('value')
@@ -236,7 +297,9 @@ function loadDataFromFirebase() {
                     upload.data.forEach(item => {
                         inboundData.push({
                             ...item,
-                            uploadId: childSnapshot.key
+                            uploadId: childSnapshot.key,
+                            uploadDate: upload.uploadDate,
+                            uploadedBy: upload.uploadedBy || 'Unknown'
                         });
                     });
                 }
@@ -633,5 +696,5 @@ function formatNumber(number) {
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
-    loadDataFromFirebase();
+    authenticateAnonymously();
 });

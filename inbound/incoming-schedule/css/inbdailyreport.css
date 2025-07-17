@@ -77,6 +77,17 @@ header {
     z-index: 100;
 }
 
+/* Tambahkan CSS berikut di bagian header CSS */
+.user-info-container {
+    text-align: right;
+}
+
+#userInfo {
+    font-weight: 500;
+    color: #f39c12;
+    margin-bottom: var(--spacing-xs);
+}
+
 .header-container {
     display: flex;
     justify-content: space-between;
