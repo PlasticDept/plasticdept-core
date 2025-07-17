@@ -379,9 +379,13 @@ tbody tr:hover {
     color: white;
 }
 
-/* Summary Section */
 .summary-section {
-    margin-top: var(--spacing-xl);
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.data-section {
+    margin-top: var(--spacing-lg);
 }
 
 .summary-cards {
