@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Harian Inbound - TTLC Warehouse</title>
+    <link rel="stylesheet" href="css/inbdailyreport.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo-container">
+                <img src="https://via.placeholder.com/80x40?text=TTLC" alt="TTLC Logo" class="logo">
+                <h1>Laporan Harian Inbound</h1>
+            </div>
+            <div class="date-container">
+                <p id="currentDate"></p>
+                <p id="currentTime"></p>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="upload-section">
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-upload"></i> Upload Data Inbound</h2>
+                </div>
+                <div class="card-body">
+                    <div class="upload-container">
+                        <div class="file-upload">
+                            <input type="file" id="csvFileInput" accept=".csv, .xlsx, .xls" hidden/>
+                            <label for="csvFileInput" class="upload-label">
+                                <i class="fas fa-file-excel"></i> Pilih File Excel/CSV
+                            </label>
+                            <span id="file-name">Belum ada file yang dipilih</span>
+                        </div>
+                        <button id="uploadBtn" class="btn btn-primary" disabled>
+                            <i class="fas fa-cloud-upload-alt"></i> Upload
+                        </button>
+                    </div>
+                    <div class="upload-status">
+                        <div id="progressBar" class="progress-bar">
+                            <div class="progress" style="width: 0%"></div>
+                        </div>
+                        <p id="statusMessage"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="data-section">
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-table"></i> Data Inbound</h2>
+                    <div class="actions">
+                        <div class="search-container">
+                            <input type="text" id="searchInput" placeholder="Cari...">
+                            <i class="fas fa-search search-icon"></i>
+                        </div>
+                        <button id="exportBtn" class="btn btn-secondary">
+                            <i class="fas fa-file-export"></i> Export
+                        </button>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary dropdown-toggle">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                            <div class="dropdown-content">
+                                <a href="#" data-filter="all">Semua Data</a>
+                                <a href="#" data-filter="today">Hari Ini</a>
+                                <a href="#" data-filter="week">Minggu Ini</a>
+                                <a href="#" data-filter="month">Bulan Ini</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="inboundTable">
+                            <thead>
+                                <tr>
+                                    <th data-sort="ownerCode">Owner Code <i class="fas fa-sort"></i></th>
+                                    <th data-sort="inboundNo">Inbound No <i class="fas fa-sort"></i></th>
+                                    <th data-sort="receivedDate">Received Date <i class="fas fa-sort"></i></th>
+                                    <th data-sort="invoiceNo">Invoice No <i class="fas fa-sort"></i></th>
+                                    <th data-sort="qty">Qty <i class="fas fa-sort"></i></th>
+                                    <th data-sort="uid">UID <i class="fas fa-sort"></i></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                <!-- Data akan diisi oleh JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination">
+                        <button id="prevPage" class="btn btn-page"><i class="fas fa-chevron-left"></i></button>
+                        <div id="pageNumbers"></div>
+                        <button id="nextPage" class="btn btn-page"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div id="summarySection" class="card summary-section">
+            <div class="card-header">
+                <h2><i class="fas fa-chart-pie"></i> Ringkasan</h2>
+            </div>
+            <div class="card-body">
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <div class="summary-content">
+                            <h3>Total Inbound</h3>
+                            <p id="totalInbound">0</p>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class="fas fa-weight-hanging"></i>
+                        </div>
+                        <div class="summary-content">
+                            <h3>Total Qty</h3>
+                            <p id="totalQty">0</p>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <div class="summary-content">
+                            <h3>Total UID</h3>
+                            <p id="totalUID">0</p>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div class="summary-content">
+                            <h3>Owner Total</h3>
+                            <p id="ownerTotal">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 TTLC Warehouse Management System. All rights reserved.</p>
+    </footer>
+
+    <!-- Modal untuk loading -->
+    <div id="loadingModal" class="modal">
+        <div class="modal-content loading-content">
+            <div class="loader"></div>
+            <p>Memproses data...</p>
+        </div>
+    </div>
+
+    <!-- Modal untuk sukses -->
+    <div id="successModal" class="modal">
+        <div class="modal-content success-content">
+            <span class="close-modal">&times;</span>
+            <i class="fas fa-check-circle modal-icon success"></i>
+            <h3>Berhasil!</h3>
+            <p id="successMessage">Data berhasil diupload.</p>
+        </div>
+    </div>
+
+    <!-- Modal untuk error -->
+    <div id="errorModal" class="modal">
+        <div class="modal-content error-content">
+            <span class="close-modal">&times;</span>
+            <i class="fas fa-exclamation-circle modal-icon error"></i>
+            <h3>Error!</h3>
+            <p id="errorMessage">Terjadi kesalahan saat memproses data.</p>
+        </div>
+    </div>
+
+    <!-- Perpustakaan yang dibutuhkan -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
