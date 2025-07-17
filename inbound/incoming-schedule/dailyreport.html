@@ -1,46 +1,99 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Harian Inbound - TTLC Warehouse</title>
+    <title>Inbound Daily Report | TTLC Warehouse</title>
     <link rel="stylesheet" href="css/inbdailyreport.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="https://via.placeholder.com/32x32?text=TTLC">
 </head>
 <body>
-    <header>
-        <div class="header-container">
-            <div class="logo-container">
-                <img src="https://via.placeholder.com/80x40?text=TTLC" alt="TTLC Logo" class="logo">
-                <h1>Laporan Harian Inbound</h1>
+    <div class="app-container">
+        <header class="header">
+            <div class="header-container">
+                <div class="logo-container">
+                    <img src="https://via.placeholder.com/80x40?text=TTLC" alt="TTLC Logo" class="logo">
+                    <div class="title-container">
+                        <h1>Inbound Daily Report</h1>
+                        <span class="subtitle">Warehouse Management System</span>
+                    </div>
+                </div>
+                <div class="user-info-container">
+                    <div class="user-profile">
+                        <span class="user-name"><i class="fas fa-user-circle"></i> Login: <strong>PlasticDept</strong></span>
+                        <span class="separator"></span>
+                        <span id="currentDate" class="date-info"></span>
+                    </div>
+                    <div id="currentTime" class="time-info"></div>
+                </div>
             </div>
-            <div class="user-info-container">
-                <p id="userInfo">Login: PlasticDept</p>
-                <p id="currentDate"></p>
-                <p id="currentTime"></p>
-            </div>
-        </div>
-    </header>
+        </header>
 
-    <main>
-        <section class="upload-section">
-            <div class="card">
+        <main>
+            <!-- Dashboard Summary - Top Row -->
+            <div class="dashboard-summary">
+                <div class="summary-card total-inbound">
+                    <div class="summary-icon">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                    <div class="summary-content">
+                        <h3>Total Inbound</h3>
+                        <p id="totalInbound">0</p>
+                    </div>
+                </div>
+                <div class="summary-card total-qty">
+                    <div class="summary-icon">
+                        <i class="fas fa-weight-hanging"></i>
+                    </div>
+                    <div class="summary-content">
+                        <h3>Total Quantity</h3>
+                        <p id="totalQty">0</p>
+                    </div>
+                </div>
+                <div class="summary-card total-uid">
+                    <div class="summary-icon">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <div class="summary-content">
+                        <h3>Total UID</h3>
+                        <p id="totalUID">0</p>
+                    </div>
+                </div>
+                <div class="summary-card total-owner">
+                    <div class="summary-icon">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <div class="summary-content">
+                        <h3>Owner Count</h3>
+                        <p id="ownerTotal">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            <section class="card upload-section">
                 <div class="card-header">
-                    <h2><i class="fas fa-upload"></i> Upload Data Inbound</h2>
+                    <h2><i class="fas fa-cloud-upload-alt"></i> Upload Inbound Data</h2>
+                    <div class="card-actions">
+                        <button class="btn btn-help" id="helpBtn" title="Help">
+                            <i class="fas fa-question-circle"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="upload-container">
                         <div class="file-upload">
-                        <input type="file" id="csvFileInput" accept=".csv, .xlsx, .xls" hidden/>
-                        <label for="csvFileInput" class="upload-label">
-                            <i class="fas fa-file-excel"></i> Pilih File Excel/CSV
-                        </label>
-                        <span id="file-name">Belum ada file yang dipilih</span>
-                    </div>
-                    <button id="uploadBtn" class="btn btn-primary" disabled>
-                        <i class="fas fa-cloud-upload-alt"></i> Upload
-                    </button>
+                            <input type="file" id="csvFileInput" accept=".csv, .xlsx, .xls" hidden/>
+                            <label for="csvFileInput" class="upload-label">
+                                <i class="fas fa-file-excel"></i> Select Excel/CSV File
+                            </label>
+                            <span id="file-name">No file selected</span>
+                        </div>
+                        <button id="uploadBtn" class="btn btn-primary" disabled>
+                            <i class="fas fa-cloud-upload-alt"></i> Upload
+                        </button>
                     </div>
                     <div class="upload-status">
                         <div id="progressBar" class="progress-bar">
@@ -49,76 +102,31 @@
                         <p id="statusMessage"></p>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <div id="summarySection" class="card summary-section">
-            <div class="card-header">
-                <h2><i class="fas fa-chart-pie"></i> Ringkasan</h2>
-            </div>
-            <div class="card-body">
-                <div class="summary-cards">
-                    <div class="summary-card">
-                        <div class="summary-icon">
-                            <i class="fas fa-boxes"></i>
-                        </div>
-                        <div class="summary-content">
-                            <h3>Total Inbound</h3>
-                            <p id="totalInbound">0</p>
-                        </div>
-                    </div>
-                    <div class="summary-card">
-                        <div class="summary-icon">
-                            <i class="fas fa-weight-hanging"></i>
-                        </div>
-                        <div class="summary-content">
-                            <h3>Total Qty</h3>
-                            <p id="totalQty">0</p>
-                        </div>
-                    </div>
-                    <div class="summary-card">
-                        <div class="summary-icon">
-                            <i class="fas fa-tags"></i>
-                        </div>
-                        <div class="summary-content">
-                            <h3>Total UID</h3>
-                            <p id="totalUID">0</p>
-                        </div>
-                    </div>
-                    <div class="summary-card">
-                        <div class="summary-icon">
-                            <i class="fas fa-building"></i>
-                        </div>
-                        <div class="summary-content">
-                            <h3>Owner Total</h3>
-                            <p id="ownerTotal">0</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <section class="data-section">
-            <div class="card">
+            <!-- Data Section -->
+            <section class="card data-section">
                 <div class="card-header">
-                    <h2><i class="fas fa-table"></i> Data Inbound</h2>
-                    <div class="actions">
+                    <h2><i class="fas fa-table"></i> Inbound Data</h2>
+                    <div class="card-actions">
                         <div class="search-container">
-                            <input type="text" id="searchInput" placeholder="Cari...">
+                            <input type="text" id="searchInput" placeholder="Search...">
                             <i class="fas fa-search search-icon"></i>
                         </div>
-                        <button id="exportBtn" class="btn btn-secondary">
-                            <i class="fas fa-file-export"></i> Export
-                        </button>
-                        <div class="dropdown">
-                            <button class="btn btn-secondary dropdown-toggle">
-                                <i class="fas fa-filter"></i> Filter
+                        <div class="actions-group">
+                            <button id="exportBtn" class="btn btn-secondary">
+                                <i class="fas fa-file-export"></i> Export
                             </button>
-                            <div class="dropdown-content">
-                                <a href="#" data-filter="all">Semua Data</a>
-                                <a href="#" data-filter="today">Hari Ini</a>
-                                <a href="#" data-filter="week">Minggu Ini</a>
-                                <a href="#" data-filter="month">Bulan Ini</a>
+                            <div class="dropdown">
+                                <button class="btn btn-secondary dropdown-toggle">
+                                    <i class="fas fa-filter"></i> Filter
+                                </button>
+                                <div class="dropdown-content">
+                                    <a href="#" data-filter="all">All Data</a>
+                                    <a href="#" data-filter="today">Today</a>
+                                    <a href="#" data-filter="week">This Week</a>
+                                    <a href="#" data-filter="month">This Month</a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -137,57 +145,103 @@
                                 </tr>
                             </thead>
                             <tbody id="tableBody">
-                                <!-- Data akan diisi oleh JavaScript -->
+                                <!-- Data will be filled by JavaScript -->
                             </tbody>
                         </table>
                     </div>
-                    <div class="pagination">
-                        <button id="prevPage" class="btn btn-page"><i class="fas fa-chevron-left"></i></button>
-                        <div id="pageNumbers"></div>
-                        <button id="nextPage" class="btn btn-page"><i class="fas fa-chevron-right"></i></button>
+                    <div class="table-footer">
+                        <div class="pagination">
+                            <button id="prevPage" class="btn btn-page"><i class="fas fa-chevron-left"></i></button>
+                            <div id="pageNumbers"></div>
+                            <button id="nextPage" class="btn btn-page"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div class="table-info">
+                            Showing <span id="currentRange">0-0</span> of <span id="totalRecords">0</span> records
+                        </div>
                     </div>
                 </div>
+            </section>
+        </main>
+
+        <footer>
+            <div class="footer-content">
+                <div class="copyright">
+                    <p>&copy; 2025 TTLC Warehouse Management System. All rights reserved.</p>
+                </div>
+                <div class="footer-links">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Support</a>
+                </div>
             </div>
-        </section>
-    </main>
+        </footer>
+    </div>
 
-    <footer>
-        <p>&copy; 2025 TTLC Warehouse Management System. All rights reserved.</p>
-    </footer>
-
-    <!-- Modal untuk loading -->
+    <!-- Modal for loading -->
     <div id="loadingModal" class="modal">
         <div class="modal-content loading-content">
-            <div class="loader"></div>
-            <p>Memproses data...</p>
+            <div class="loader-container">
+                <div class="loader"></div>
+                <p>Processing data...</p>
+            </div>
         </div>
     </div>
 
-    <!-- Modal untuk sukses -->
+    <!-- Modal for success -->
     <div id="successModal" class="modal">
         <div class="modal-content success-content">
             <span class="close-modal">&times;</span>
             <i class="fas fa-check-circle modal-icon success"></i>
-            <h3>Berhasil!</h3>
-            <p id="successMessage">Data berhasil diupload.</p>
+            <h3>Success!</h3>
+            <p id="successMessage">Data has been successfully uploaded.</p>
+            <button class="btn btn-primary modal-btn">Continue</button>
         </div>
     </div>
 
-    <!-- Modal untuk error -->
+    <!-- Modal for error -->
     <div id="errorModal" class="modal">
         <div class="modal-content error-content">
             <span class="close-modal">&times;</span>
             <i class="fas fa-exclamation-circle modal-icon error"></i>
             <h3>Error!</h3>
-            <p id="errorMessage">Terjadi kesalahan saat memproses data.</p>
+            <p id="errorMessage">An error occurred while processing data.</p>
+            <button class="btn btn-primary modal-btn">Try Again</button>
         </div>
     </div>
 
-    <!-- Sebelum tag </body>, tambahkan script berikut dalam urutan ini -->
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content help-content">
+            <span class="close-modal">&times;</span>
+            <div class="help-header">
+                <i class="fas fa-question-circle modal-icon help"></i>
+                <h3>Help & Instructions</h3>
+            </div>
+            <div class="help-body">
+                <h4>How to Upload Data</h4>
+                <ol>
+                    <li>Click "Select Excel/CSV File" to choose your inbound data file</li>
+                    <li>Ensure your file contains the required columns: Owner Code, Inbound No, Received Date, Invoice No, Qty, and UID</li>
+                    <li>Click "Upload" to process and save your data</li>
+                </ol>
+                
+                <h4>Data Management</h4>
+                <ul>
+                    <li>Use the search box to quickly find specific records</li>
+                    <li>Filter data by date ranges using the Filter dropdown</li>
+                    <li>Sort columns by clicking on column headers</li>
+                    <li>Export data to Excel using the Export button</li>
+                </ul>
+            </div>
+            <button class="btn btn-primary modal-btn">Got It</button>
+        </div>
+    </div>
+
+    <!-- Required Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

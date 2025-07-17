@@ -12,11 +12,12 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
+const auth = firebase.auth();
 
 // User info
 const currentUser = {
     login: 'PlasticDept',
-    timestamp: '2025-07-17 14:13:22'
+    timestamp: new Date().toISOString()
 };
 
 // DOM Elements
@@ -40,9 +41,13 @@ const exportBtn = document.getElementById('exportBtn');
 const loadingModal = document.getElementById('loadingModal');
 const successModal = document.getElementById('successModal');
 const errorModal = document.getElementById('errorModal');
+const helpModal = document.getElementById('helpModal');
+const helpBtn = document.getElementById('helpBtn');
 const successMessage = document.getElementById('successMessage');
 const errorMessage = document.getElementById('errorMessage');
 const userInfoEl = document.getElementById('userInfo');
+const currentRangeEl = document.getElementById('currentRange');
+const totalRecordsEl = document.getElementById('totalRecords');
 
 // Variables
 let inboundData = [];
@@ -56,7 +61,6 @@ let isAuthenticated = false;
 function authenticateAnonymously() {
     showModal(loadingModal);
     
-    // Make sure firebase.auth is available before calling
     if (typeof firebase.auth === 'function') {
         firebase.auth().signInAnonymously()
             .then(() => {
@@ -74,12 +78,12 @@ function authenticateAnonymously() {
             })
             .catch((error) => {
                 hideModal(loadingModal);
-                showErrorModal(`Gagal autentikasi: ${error.message}. Silakan muat ulang halaman.`);
+                showErrorModal(`Authentication failed: ${error.message}. Please refresh the page.`);
                 console.error('Authentication Error:', error);
             });
     } else {
         hideModal(loadingModal);
-        showErrorModal('Firebase Authentication tidak tersedia. Pastikan library Firebase Auth dimuat dengan benar.');
+        showErrorModal('Firebase Authentication is not available. Please ensure Firebase Auth library is loaded properly.');
         console.error('Firebase Auth not available');
     }
 }
@@ -100,12 +104,12 @@ function updateDateTime() {
     const now = new Date();
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     if (currentDateEl) {
-        currentDateEl.textContent = now.toLocaleDateString('id-ID', options);
+        currentDateEl.textContent = now.toLocaleDateString('en-US', options);
     }
     
-    const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+    const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
     if (currentTimeEl) {
-        currentTimeEl.textContent = now.toLocaleTimeString('id-ID', timeOptions);
+        currentTimeEl.textContent = now.toLocaleTimeString('en-US', timeOptions);
     }
 }
 
@@ -127,7 +131,7 @@ if (csvFileInput) {
             console.log('File selected:', file.name);
         } else {
             if (fileNameSpan) {
-                fileNameSpan.textContent = 'Belum ada file yang dipilih';
+                fileNameSpan.textContent = 'No file selected';
             }
             if (uploadBtn) {
                 uploadBtn.disabled = true;
@@ -140,7 +144,7 @@ if (csvFileInput) {
 if (uploadBtn) {
     uploadBtn.addEventListener('click', function() {
         if (!isAuthenticated && typeof firebase.auth === 'function') {
-            showErrorModal('Anda belum terautentikasi. Silakan muat ulang halaman.');
+            showErrorModal('You are not authenticated. Please refresh the page.');
             return;
         }
         
@@ -157,13 +161,13 @@ if (uploadBtn) {
                 processData(data, file.name);
             } catch (error) {
                 hideModal(loadingModal);
-                showErrorModal('Terjadi kesalahan saat membaca file: ' + error.message);
+                showErrorModal('Error reading file: ' + error.message);
             }
         };
         
         reader.onerror = function() {
             hideModal(loadingModal);
-            showErrorModal('Terjadi kesalahan saat membaca file.');
+            showErrorModal('Error reading file.');
         };
         
         reader.readAsBinaryString(file);
@@ -206,7 +210,7 @@ function processData(data, fileName) {
         
         if (headerRowIndex === -1) {
             hideModal(loadingModal);
-            showErrorModal('Format file tidak valid. Header yang diperlukan tidak ditemukan.');
+            showErrorModal('Invalid file format. Required headers not found.');
             return;
         }
         
@@ -255,7 +259,7 @@ function processData(data, fileName) {
         
         if (processedData.length === 0) {
             hideModal(loadingModal);
-            showErrorModal('Tidak ada data valid yang ditemukan dalam file.');
+            showErrorModal('No valid data found in the file.');
             return;
         }
         
@@ -264,7 +268,7 @@ function processData(data, fileName) {
         
     } catch (error) {
         hideModal(loadingModal);
-        showErrorModal('Terjadi kesalahan saat memproses file: ' + error.message);
+        showErrorModal('Error processing file: ' + error.message);
     }
 }
 
@@ -272,12 +276,20 @@ function processData(data, fileName) {
 function saveToFirebase(data, fileName) {
     if (!isAuthenticated) {
         hideModal(loadingModal);
-        showErrorModal('Anda belum terautentikasi. Silakan muat ulang halaman.');
+        showErrorModal('You are not authenticated. Please refresh the page.');
         return;
     }
     
     const uploadId = 'upload_' + new Date().getTime();
     const uploadRef = database.ref('inbDailyReport/' + uploadId);
+    
+    // Update progress bar
+    if (progressBar) {
+        progressBar.style.width = '50%';
+    }
+    if (statusMessage) {
+        statusMessage.textContent = 'Uploading data to database...';
+    }
     
     uploadRef.set({
         fileName: fileName,
@@ -286,27 +298,51 @@ function saveToFirebase(data, fileName) {
         data: data
     })
     .then(() => {
-        hideModal(loadingModal);
-        showSuccessModal('Data berhasil diupload ke database. Total ' + data.length + ' data.');
+        // Update progress bar to complete
+        if (progressBar) {
+            progressBar.style.width = '100%';
+        }
+        if (statusMessage) {
+            statusMessage.textContent = 'Upload complete!';
+        }
         
-        // Reset file input
-        csvFileInput.value = '';
-        fileNameSpan.textContent = 'Belum ada file yang dipilih';
-        uploadBtn.disabled = true;
-        
-        // Reload data
-        loadDataFromFirebase();
+        setTimeout(() => {
+            hideModal(loadingModal);
+            showSuccessModal(`Data successfully uploaded to database. Total ${data.length} records.`);
+            
+            // Reset file input
+            if (csvFileInput) {
+                csvFileInput.value = '';
+            }
+            if (fileNameSpan) {
+                fileNameSpan.textContent = 'No file selected';
+            }
+            if (uploadBtn) {
+                uploadBtn.disabled = true;
+            }
+            
+            // Reset progress bar
+            if (progressBar) {
+                progressBar.style.width = '0%';
+            }
+            if (statusMessage) {
+                statusMessage.textContent = '';
+            }
+            
+            // Reload data
+            loadDataFromFirebase();
+        }, 800);
     })
     .catch(error => {
         hideModal(loadingModal);
-        showErrorModal('Gagal menyimpan data ke database: ' + error.message);
+        showErrorModal('Failed to save data to database: ' + error.message);
     });
 }
 
 // Load data from Firebase
 function loadDataFromFirebase() {
     if (!isAuthenticated) {
-        showErrorModal('Anda belum terautentikasi. Silakan muat ulang halaman.');
+        showErrorModal('You are not authenticated. Please refresh the page.');
         return;
     }
     
@@ -336,11 +372,12 @@ function loadDataFromFirebase() {
             filteredData = [...inboundData];
             updateTable();
             updateSummary();
+            updateTableInfo();
             hideModal(loadingModal);
         })
         .catch(error => {
             hideModal(loadingModal);
-            showErrorModal('Gagal memuat data dari database: ' + error.message);
+            showErrorModal('Failed to load data from database: ' + error.message);
         });
 }
 
@@ -359,66 +396,93 @@ function updateTable() {
     const endIndex = Math.min(startIndex + rowsPerPage, filteredData.length);
     
     // Clear table body
-    tableBody.innerHTML = '';
-    
-    // Add data rows
-    if (filteredData.length === 0) {
-        const emptyRow = document.createElement('tr');
-        const emptyCell = document.createElement('td');
-        emptyCell.colSpan = 6;
-        emptyCell.textContent = 'Tidak ada data yang tersedia';
-        emptyCell.style.textAlign = 'center';
-        emptyRow.appendChild(emptyCell);
-        tableBody.appendChild(emptyRow);
-    } else {
-        for (let i = startIndex; i < endIndex; i++) {
-            const item = filteredData[i];
-            const row = document.createElement('tr');
-            
-            // Create cells
-            const ownerCodeCell = document.createElement('td');
-            ownerCodeCell.textContent = item.ownerCode;
-            
-            const inboundNoCell = document.createElement('td');
-            inboundNoCell.textContent = item.inboundNo;
-            
-            const receivedDateCell = document.createElement('td');
-            receivedDateCell.textContent = formatDate(item.receivedDate);
-            
-            const invoiceNoCell = document.createElement('td');
-            invoiceNoCell.textContent = item.invoiceNo;
-            
-            const qtyCell = document.createElement('td');
-            qtyCell.textContent = formatNumber(item.qty);
-            
-            const uidCell = document.createElement('td');
-            uidCell.textContent = formatNumber(item.uid);
-            
-            // Append cells to row
-            row.appendChild(ownerCodeCell);
-            row.appendChild(inboundNoCell);
-            row.appendChild(receivedDateCell);
-            row.appendChild(invoiceNoCell);
-            row.appendChild(qtyCell);
-            row.appendChild(uidCell);
-            
-            // Append row to table body
-            tableBody.appendChild(row);
+    if (tableBody) {
+        tableBody.innerHTML = '';
+        
+        // Add data rows
+        if (filteredData.length === 0) {
+            const emptyRow = document.createElement('tr');
+            const emptyCell = document.createElement('td');
+            emptyCell.colSpan = 6;
+            emptyCell.textContent = 'No data available';
+            emptyCell.style.textAlign = 'center';
+            emptyCell.style.padding = '32px';
+            emptyRow.appendChild(emptyCell);
+            tableBody.appendChild(emptyRow);
+        } else {
+            for (let i = startIndex; i < endIndex; i++) {
+                const item = filteredData[i];
+                const row = document.createElement('tr');
+                
+                // Create cells
+                const ownerCodeCell = document.createElement('td');
+                ownerCodeCell.textContent = item.ownerCode;
+                
+                const inboundNoCell = document.createElement('td');
+                inboundNoCell.textContent = item.inboundNo;
+                
+                const receivedDateCell = document.createElement('td');
+                receivedDateCell.textContent = formatDate(item.receivedDate);
+                
+                const invoiceNoCell = document.createElement('td');
+                invoiceNoCell.textContent = item.invoiceNo;
+                
+                const qtyCell = document.createElement('td');
+                qtyCell.textContent = formatNumber(item.qty);
+                
+                const uidCell = document.createElement('td');
+                uidCell.textContent = formatNumber(item.uid);
+                
+                // Append cells to row
+                row.appendChild(ownerCodeCell);
+                row.appendChild(inboundNoCell);
+                row.appendChild(receivedDateCell);
+                row.appendChild(invoiceNoCell);
+                row.appendChild(qtyCell);
+                row.appendChild(uidCell);
+                
+                // Append row to table body
+                tableBody.appendChild(row);
+            }
         }
     }
     
     // Update pagination
     updatePagination(totalPages);
+    
+    // Update table info
+    updateTableInfo();
+}
+
+// Update table information (showing x of y records)
+function updateTableInfo() {
+    const totalRecords = filteredData.length;
+    const startIndex = totalRecords === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+    const endIndex = Math.min(startIndex + rowsPerPage - 1, totalRecords);
+    
+    if (currentRangeEl) {
+        currentRangeEl.textContent = `${startIndex}-${endIndex}`;
+    }
+    
+    if (totalRecordsEl) {
+        totalRecordsEl.textContent = totalRecords;
+    }
 }
 
 // Update pagination controls
 function updatePagination(totalPages) {
     // Clear page numbers
+    if (!pageNumbersDiv) return;
+    
     pageNumbersDiv.innerHTML = '';
     
     // Disable/enable previous and next buttons
-    prevPageBtn.disabled = currentPage <= 1;
-    nextPageBtn.disabled = currentPage >= totalPages;
+    if (prevPageBtn) {
+        prevPageBtn.disabled = currentPage <= 1;
+    }
+    if (nextPageBtn) {
+        nextPageBtn.disabled = currentPage >= totalPages;
+    }
     
     // Add page numbers
     const maxVisiblePages = 5;
@@ -453,6 +517,8 @@ function updatePagination(totalPages) {
 
 // Add a page number button to pagination
 function addPageNumber(pageNum) {
+    if (!pageNumbersDiv) return;
+    
     const pageButton = document.createElement('span');
     pageButton.textContent = pageNum;
     pageButton.classList.add('page-number');
@@ -468,6 +534,8 @@ function addPageNumber(pageNum) {
 
 // Add ellipsis to pagination
 function addEllipsis() {
+    if (!pageNumbersDiv) return;
+    
     const ellipsis = document.createElement('span');
     ellipsis.textContent = '...';
     ellipsis.classList.add('page-ellipsis');
@@ -477,47 +545,57 @@ function addEllipsis() {
 // Update summary data
 function updateSummary() {
     if (filteredData.length === 0) {
-        totalInboundEl.textContent = '0';
-        totalQtyEl.textContent = '0';
-        totalUIDEl.textContent = '0';
-        ownerTotalEl.textContent = '0';
+        if (totalInboundEl) totalInboundEl.textContent = '0';
+        if (totalQtyEl) totalQtyEl.textContent = '0';
+        if (totalUIDEl) totalUIDEl.textContent = '0';
+        if (ownerTotalEl) ownerTotalEl.textContent = '0';
         return;
     }
     
     // Total inbound
-    totalInboundEl.textContent = filteredData.length;
+    if (totalInboundEl) {
+        totalInboundEl.textContent = filteredData.length;
+    }
     
     // Total quantity
     const totalQty = filteredData.reduce((sum, item) => sum + (parseFloat(item.qty) || 0), 0);
-    totalQtyEl.textContent = formatNumber(totalQty);
+    if (totalQtyEl) {
+        totalQtyEl.textContent = formatNumber(totalQty);
+    }
     
     // Total UID
     const totalUID = filteredData.reduce((sum, item) => sum + (parseInt(item.uid) || 0), 0);
-    totalUIDEl.textContent = formatNumber(totalUID);
+    if (totalUIDEl) {
+        totalUIDEl.textContent = formatNumber(totalUID);
+    }
     
     // Count unique owners
     const uniqueOwners = new Set(filteredData.map(item => item.ownerCode));
-    ownerTotalEl.textContent = uniqueOwners.size;
+    if (ownerTotalEl) {
+        ownerTotalEl.textContent = uniqueOwners.size;
+    }
 }
 
 // Search functionality
-searchInput.addEventListener('input', function() {
-    const searchTerm = this.value.toLowerCase().trim();
-    
-    if (searchTerm === '') {
-        filteredData = [...inboundData];
-    } else {
-        filteredData = inboundData.filter(item => 
-            (item.ownerCode && item.ownerCode.toLowerCase().includes(searchTerm)) ||
-            (item.inboundNo && item.inboundNo.toLowerCase().includes(searchTerm)) ||
-            (item.invoiceNo && item.invoiceNo.toLowerCase().includes(searchTerm))
-        );
-    }
-    
-    currentPage = 1;
-    updateTable();
-    updateSummary();
-});
+if (searchInput) {
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        
+        if (searchTerm === '') {
+            filteredData = [...inboundData];
+        } else {
+            filteredData = inboundData.filter(item => 
+                (item.ownerCode && item.ownerCode.toLowerCase().includes(searchTerm)) ||
+                (item.inboundNo && item.inboundNo.toLowerCase().includes(searchTerm)) ||
+                (item.invoiceNo && item.invoiceNo.toLowerCase().includes(searchTerm))
+            );
+        }
+        
+        currentPage = 1;
+        updateTable();
+        updateSummary();
+    });
+}
 
 // Filter by date
 document.querySelectorAll('.dropdown-content a').forEach(link => {
@@ -576,176 +654,4 @@ document.querySelectorAll('th[data-sort]').forEach(th => {
 
 // Sort table by column
 function sortTable(column) {
-    const direction = currentSort.column === column && currentSort.direction === 'asc' ? 'desc' : 'asc';
-    
-    // Update sort indicators in table headers
-    document.querySelectorAll('th[data-sort]').forEach(th => {
-        const sortColumn = th.getAttribute('data-sort');
-        const icon = th.querySelector('i');
-        
-        if (sortColumn === column) {
-            icon.className = direction === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
-        } else {
-            icon.className = 'fas fa-sort';
-        }
-    });
-    
-    // Sort the data
-    filteredData.sort((a, b) => {
-        let valueA = a[column];
-        let valueB = b[column];
-        
-        // Handle numeric values
-        if (column === 'qty' || column === 'uid') {
-            valueA = parseFloat(valueA) || 0;
-            valueB = parseFloat(valueB) || 0;
-        }
-        // Handle dates
-        else if (column === 'receivedDate') {
-            valueA = new Date(valueA || '1900-01-01');
-            valueB = new Date(valueB || '1900-01-01');
-        }
-        // Handle strings
-        else {
-            valueA = String(valueA || '').toLowerCase();
-            valueB = String(valueB || '').toLowerCase();
-        }
-        
-        if (valueA < valueB) return direction === 'asc' ? -1 : 1;
-        if (valueA > valueB) return direction === 'asc' ? 1 : -1;
-        return 0;
-    });
-    
-    currentSort = { column, direction };
-    currentPage = 1;
-    updateTable();
-}
-
-// Pagination buttons
-prevPageBtn.addEventListener('click', function() {
-    if (currentPage > 1) {
-        currentPage--;
-        updateTable();
-    }
-});
-
-nextPageBtn.addEventListener('click', function() {
-    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-    if (currentPage < totalPages) {
-        currentPage++;
-        updateTable();
-    }
-});
-
-// Export functionality
-exportBtn.addEventListener('click', function() {
-    if (filteredData.length === 0) {
-        showErrorModal('Tidak ada data untuk diekspor.');
-        return;
-    }
-    
-    // Create worksheet
-    const ws = XLSX.utils.json_to_sheet(filteredData.map(item => ({
-        'Owner Code': item.ownerCode,
-        'Inbound No': item.inboundNo,
-        'Received Date': item.receivedDate,
-        'Invoice No': item.invoiceNo,
-        'Qty': item.qty,
-        'UID': item.uid
-    })));
-    
-    // Create workbook
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Inbound Report');
-    
-    // Generate file name
-    const fileName = 'Inbound_Report_' + new Date().toISOString().split('T')[0] + '.xlsx';
-    
-    // Export to file
-    XLSX.writeFile(wb, fileName);
-});
-
-// Initialize the page
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, checking authentication capabilities...');
-    
-    // Check if Firebase Auth is available
-    if (typeof firebase.auth === 'function') {
-        console.log('Firebase Auth is available, authenticating...');
-        authenticateAnonymously();
-    } else {
-        console.error('Firebase Auth is not available');
-        showErrorModal('Firebase Authentication tidak tersedia. Pastikan library Firebase Auth dimuat dengan benar.');
-    }
-});
-
-// Helper functions for modals
-function showModal(modal) {
-    if (modal) {
-        modal.style.display = 'flex';
-    } else {
-        console.error('Modal element not found');
-    }
-}
-
-function hideModal(modal) {
-    if (modal) {
-        modal.style.display = 'none';
-    } else {
-        console.error('Modal element not found');
-    }
-}
-
-function showSuccessModal(message) {
-    if (successMessage) {
-        successMessage.textContent = message;
-    }
-    showModal(successModal);
-}
-
-function showErrorModal(message) {
-    if (errorMessage) {
-        errorMessage.textContent = message;
-    }
-    showModal(errorModal);
-}
-
-// Close modals when clicking on X
-document.querySelectorAll('.close-modal').forEach(closeBtn => {
-    closeBtn.addEventListener('click', function() {
-        const modal = this.closest('.modal');
-        hideModal(modal);
-    });
-});
-
-// Close modals when clicking outside of content
-window.addEventListener('click', function(event) {
-    document.querySelectorAll('.modal').forEach(modal => {
-        if (event.target === modal) {
-            hideModal(modal);
-        }
-    });
-});
-
-// Helper functions
-function formatDate(dateString) {
-    if (!dateString) return '';
-    
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return dateString;
-    
-    return date.toLocaleDateString('id-ID', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    });
-}
-
-function formatNumber(number) {
-    return new Intl.NumberFormat('id-ID').format(number);
-}
-
-// Initialize the page
-document.addEventListener('DOMContentLoaded', function() {
-    authenticateAnonymously();
-});
+    const direction = currentSort.column === column && currentSort.direction
