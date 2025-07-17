@@ -654,4 +654,198 @@ document.querySelectorAll('th[data-sort]').forEach(th => {
 
 // Sort table by column
 function sortTable(column) {
-    const direction = currentSort.column === column && currentSort.direction
+    const direction = currentSort.column === column && currentSort.direction === 'asc' ? 'desc' : 'asc';
+    
+    // Update sort indicators in table headers
+    document.querySelectorAll('th[data-sort]').forEach(th => {
+        const sortColumn = th.getAttribute('data-sort');
+        const icon = th.querySelector('i');
+        
+        if (sortColumn === column) {
+            icon.className = direction === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+        } else {
+            icon.className = 'fas fa-sort';
+        }
+    });
+    
+    // Sort the data
+    filteredData.sort((a, b) => {
+        let valueA = a[column];
+        let valueB = b[column];
+        
+        // Handle numeric values
+        if (column === 'qty' || column === 'uid') {
+            valueA = parseFloat(valueA) || 0;
+            valueB = parseFloat(valueB) || 0;
+        }
+        // Handle dates
+        else if (column === 'receivedDate') {
+            valueA = new Date(valueA || '1900-01-01');
+            valueB = new Date(valueB || '1900-01-01');
+        }
+        // Handle strings
+        else {
+            valueA = String(valueA || '').toLowerCase();
+            valueB = String(valueB || '').toLowerCase();
+        }
+        
+        if (valueA < valueB) return direction === 'asc' ? -1 : 1;
+        if (valueA > valueB) return direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+    
+    currentSort = { column, direction };
+    currentPage = 1;
+    updateTable();
+}
+
+// Pagination buttons
+if (prevPageBtn) {
+    prevPageBtn.addEventListener('click', function() {
+        if (currentPage > 1) {
+            currentPage--;
+            updateTable();
+        }
+    });
+}
+
+if (nextPageBtn) {
+    nextPageBtn.addEventListener('click', function() {
+        const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            updateTable();
+        }
+    });
+}
+
+// Export functionality
+if (exportBtn) {
+    exportBtn.addEventListener('click', function() {
+        if (filteredData.length === 0) {
+            showErrorModal('No data available for export.');
+            return;
+        }
+        
+        // Create worksheet
+        const ws = XLSX.utils.json_to_sheet(filteredData.map(item => ({
+            'Owner Code': item.ownerCode,
+            'Inbound No': item.inboundNo,
+            'Received Date': item.receivedDate,
+            'Invoice No': item.invoiceNo,
+            'Qty': item.qty,
+            'UID': item.uid
+        })));
+        
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Inbound Report');
+        
+        // Generate file name with current date
+        const fileName = `Inbound_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+        
+        // Export to file
+        XLSX.writeFile(wb, fileName);
+    });
+}
+
+// Help button
+if (helpBtn) {
+    helpBtn.addEventListener('click', function() {
+        showModal(helpModal);
+    });
+}
+
+// Modal functions
+function showModal(modal) {
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+function hideModal(modal) {
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function showSuccessModal(message) {
+    if (successMessage) {
+        successMessage.textContent = message;
+    }
+    showModal(successModal);
+}
+
+function showErrorModal(message) {
+    if (errorMessage) {
+        errorMessage.textContent = message;
+    }
+    showModal(errorModal);
+}
+
+// Close modals when clicking on X
+document.querySelectorAll('.close-modal').forEach(closeBtn => {
+    closeBtn.addEventListener('click', function() {
+        const modal = this.closest('.modal');
+        hideModal(modal);
+    });
+});
+
+// Close modals when clicking on buttons
+document.querySelectorAll('.modal-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const modal = this.closest('.modal');
+        hideModal(modal);
+    });
+});
+
+// Close modals when clicking outside of content
+window.addEventListener('click', function(event) {
+    document.querySelectorAll('.modal').forEach(modal => {
+        if (event.target === modal) {
+            hideModal(modal);
+        }
+    });
+});
+
+// Helper functions
+function formatDate(dateString) {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+}
+
+function formatNumber(number) {
+    return new Intl.NumberFormat('en-US').format(number);
+}
+
+// Initialize the page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing application...');
+    
+    // Set user info (when not using auth)
+    if (userInfoEl) {
+        userInfoEl.textContent = `Login: ${currentUser.login}`;
+    }
+    
+    // Check if Firebase Auth is available
+    if (typeof firebase.auth === 'function') {
+        console.log('Firebase Auth is available, authenticating...');
+        authenticateAnonymously();
+    } else {
+        console.error('Firebase Auth is not available');
+        showErrorModal('Firebase Authentication is not available. Please ensure Firebase Auth library is loaded properly.');
+        
+        // Try to load data anyway (for demo purposes)
+        setTimeout(() => {
+            loadDataFromFirebase();
+        }, 1000);
+    }
+});
