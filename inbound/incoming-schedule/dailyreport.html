@@ -80,18 +80,25 @@
                             <input type="text" id="searchInput" placeholder="Search...">
                             <i class="fas fa-search search-icon"></i>
                         </div>
+                        <!-- Ganti bagian tombol di card-actions -->
                         <div class="actions-group">
-                            <!-- Tombol Upload yang membuka modal -->
                             <button id="openUploadBtn" class="btn btn-primary">
                                 <i class="fas fa-cloud-upload-alt"></i> Upload
                             </button>
-                            <button id="exportBtn" class="btn btn-secondary">
+                            <button id="exportBtn" class="btn btn-white">
                                 <i class="fas fa-file-export"></i> Export
                             </button>
                             <div class="dropdown">
-                                <button class="btn btn-secondary dropdown-toggle">
+                                <button class="btn btn-white dropdown-toggle">
                                     <i class="fas fa-filter"></i> Filter
                                 </button>
+                                <div class="dropdown-content">
+                                    <a href="#" data-filter="all">All Data</a>
+                                    <a href="#" data-filter="today">Today</a>
+                                    <a href="#" data-filter="week">This Week</a>
+                                    <a href="#" data-filter="month">This Month</a>
+                                    <a href="#" data-filter="custom">Custom Date...</a>
+                                </div>
                             </div>
                         </div>
                     </div>

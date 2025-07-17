@@ -280,7 +280,7 @@ function processData(data, fileName) {
             return;
         }
         
-        // Save data to Firebase
+        // Save data to Firebase dengan struktur baru
         saveToFirebase(processedData, fileName);
         
     } catch (error) {
@@ -289,16 +289,13 @@ function processData(data, fileName) {
     }
 }
 
-// Save processed data to Firebase
+// Save processed data to Firebase dengan struktur baru
 function saveToFirebase(data, fileName) {
     if (!isAuthenticated) {
         hideModal(loadingModal);
         showErrorModal('You are not authenticated. Please refresh the page.');
         return;
     }
-    
-    const uploadId = 'upload_' + new Date().getTime();
-    const uploadRef = database.ref('inbDailyReport/' + uploadId);
     
     // Update progress bar
     if (progressBar) {
@@ -308,56 +305,93 @@ function saveToFirebase(data, fileName) {
         statusMessage.textContent = 'Uploading data to database...';
     }
     
-    uploadRef.set({
-        fileName: fileName,
-        uploadDate: new Date().toISOString(),
-        uploadedBy: currentUser.login,
-        data: data
-    })
-    .then(() => {
-        // Update progress bar to complete
-        if (progressBar) {
-            progressBar.style.width = '100%';
-        }
-        if (statusMessage) {
-            statusMessage.textContent = 'Upload complete!';
-        }
+    // Group data by receivedDate and inboundNo
+    const groupedData = {};
+    const promises = [];
+    
+    data.forEach(item => {
+        // Format tanggal untuk path database
+        const uploadDate = new Date();
+        const year = uploadDate.getFullYear();
         
-        setTimeout(() => {
-            hideModal(loadingModal);
-            showSuccessModal(`Data successfully uploaded to database. Total ${data.length} records.`);
-            
-            // Reset file input
-            if (csvFileInput) {
-                csvFileInput.value = '';
-            }
-            if (fileNameSpan) {
-                fileNameSpan.textContent = 'No file selected';
-            }
-            if (uploadBtn) {
-                uploadBtn.disabled = true;
-            }
-            
-            // Reset progress bar
+        // Format bulan dengan nama bulan (01_Jan, 02_Feb, dst)
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const month = String(uploadDate.getMonth() + 1).padStart(2, '0') + "_" + monthNames[uploadDate.getMonth()];
+        
+        const day = String(uploadDate.getDate()).padStart(2, '0');
+        
+        // Buat path untuk inbound item
+        const dbPath = `inbDailyReport/${year}/${month}/${day}/${item.inboundNo}`;
+        
+        // Set data ke Firebase dengan path baru
+        const promise = database.ref(dbPath).set({
+            inboundNo: item.inboundNo,
+            ownerCode: item.ownerCode,
+            receivedDate: item.receivedDate,
+            invoiceNo: item.invoiceNo,
+            qty: item.qty,
+            uid: item.uid,
+            timestamp: new Date().toISOString(),
+            uploadedBy: currentUser.login
+        });
+        
+        promises.push(promise);
+        
+        // Simpan referensi untuk grup data yang sama
+        if (!groupedData[year]) groupedData[year] = {};
+        if (!groupedData[year][month]) groupedData[year][month] = {};
+        if (!groupedData[year][month][day]) groupedData[year][month][day] = [];
+        
+        groupedData[year][month][day].push(item.inboundNo);
+    });
+    
+    // Tunggu semua promises selesai
+    Promise.all(promises)
+        .then(() => {
+            // Update progress bar to complete
             if (progressBar) {
-                progressBar.style.width = '0%';
+                progressBar.style.width = '100%';
             }
             if (statusMessage) {
-                statusMessage.textContent = '';
+                statusMessage.textContent = 'Upload complete!';
             }
             
-            // Reload data
-            loadDataFromFirebase();
-        }, 800);
-    })
-    .catch(error => {
-        hideModal(loadingModal);
-        showErrorModal('Failed to save data to database: ' + error.message);
-    });
+            setTimeout(() => {
+                hideModal(loadingModal);
+                hideModal(uploadModal);
+                showSuccessModal(`Data successfully uploaded to database. Total ${data.length} records.`);
+                
+                // Reset file input
+                if (csvFileInput) {
+                    csvFileInput.value = '';
+                }
+                if (fileNameSpan) {
+                    fileNameSpan.textContent = 'No file selected';
+                }
+                if (uploadBtn) {
+                    uploadBtn.disabled = true;
+                }
+                
+                // Reset progress bar
+                if (progressBar) {
+                    progressBar.style.width = '0%';
+                }
+                if (statusMessage) {
+                    statusMessage.textContent = '';
+                }
+                
+                // Reload data
+                loadDataFromFirebase();
+            }, 800);
+        })
+        .catch(error => {
+            hideModal(loadingModal);
+            showErrorModal('Failed to save data to database: ' + error.message);
+        });
 }
 
-// Load data from Firebase
-function loadDataFromFirebase() {
+// Load data from Firebase - Modified for new structure
+function loadDataFromFirebase(filterParams = {}) {
     if (!isAuthenticated) {
         showErrorModal('You are not authenticated. Please refresh the page.');
         return;
@@ -365,24 +399,71 @@ function loadDataFromFirebase() {
     
     showModal(loadingModal);
     
-    database.ref('inbDailyReport').orderByChild('uploadDate').limitToLast(10).once('value')
-        .then(snapshot => {
-            inboundData = [];
-            
-            snapshot.forEach(childSnapshot => {
-                const upload = childSnapshot.val();
-                if (upload && upload.data && Array.isArray(upload.data)) {
-                    upload.data.forEach(item => {
+    // Default: load data dari 30 hari terakhir jika tidak ada filter
+    const now = new Date();
+    let startDate = new Date();
+    startDate.setDate(now.getDate() - 30); // Default 30 hari terakhir
+    
+    // Jika ada filter khusus
+    if (filterParams.startDate) {
+        startDate = new Date(filterParams.startDate);
+    }
+    if (filterParams.endDate) {
+        now.setTime(new Date(filterParams.endDate).getTime());
+    }
+    
+    // Jika filter hanya untuk tahun/bulan/hari tertentu
+    if (filterParams.year && filterParams.month && filterParams.day) {
+        loadDataByDay(filterParams.year, filterParams.month, filterParams.day);
+        return;
+    } else if (filterParams.year && filterParams.month) {
+        loadDataByMonth(filterParams.year, filterParams.month);
+        return;
+    } else if (filterParams.year) {
+        loadDataByYear(filterParams.year);
+        return;
+    }
+    
+    // Jika tidak ada filter khusus, load data dari rentang waktu
+    inboundData = [];
+    
+    // Iterasi dari tanggal mulai hingga akhir
+    const currentDate = new Date(startDate);
+    const promises = [];
+    
+    while (currentDate <= now) {
+        const year = currentDate.getFullYear();
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0') + "_" + monthNames[currentDate.getMonth()];
+        const day = String(currentDate.getDate()).padStart(2, '0');
+        
+        // Buat path untuk tanggal ini
+        const dbPath = `inbDailyReport/${year}/${month}/${day}`;
+        
+        // Ambil data untuk tanggal ini
+        const promise = database.ref(dbPath).once('value')
+            .then(snapshot => {
+                if (snapshot.exists()) {
+                    snapshot.forEach(childSnapshot => {
+                        const inboundItem = childSnapshot.val();
                         inboundData.push({
-                            ...item,
-                            uploadId: childSnapshot.key,
-                            uploadDate: upload.uploadDate,
-                            uploadedBy: upload.uploadedBy || 'Unknown'
+                            ...inboundItem,
+                            key: childSnapshot.key
                         });
                     });
                 }
-            });
-            
+            })
+            .catch(error => console.error(`Error loading data for ${dbPath}:`, error));
+        
+        promises.push(promise);
+        
+        // Tambah 1 hari
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    // Tunggu semua promises selesai
+    Promise.all(promises)
+        .then(() => {
             // Sort by received date (newest first)
             inboundData.sort((a, b) => new Date(b.receivedDate) - new Date(a.receivedDate));
             
@@ -395,6 +476,131 @@ function loadDataFromFirebase() {
         .catch(error => {
             hideModal(loadingModal);
             showErrorModal('Failed to load data from database: ' + error.message);
+        });
+}
+
+// Fungsi untuk load data per hari
+function loadDataByDay(year, month, day) {
+    showModal(loadingModal);
+    inboundData = [];
+    
+    database.ref(`inbDailyReport/${year}/${month}/${day}`).once('value')
+        .then(snapshot => {
+            if (snapshot.exists()) {
+                // Iterate melalui inbound items
+                snapshot.forEach(itemSnapshot => {
+                    const inboundItem = itemSnapshot.val();
+                    inboundData.push({
+                        ...inboundItem,
+                        key: itemSnapshot.key
+                    });
+                });
+                
+                // Sort and update UI
+                inboundData.sort((a, b) => new Date(b.receivedDate) - new Date(a.receivedDate));
+                filteredData = [...inboundData];
+                updateTable();
+                updateSummary();
+                updateTableInfo();
+            } else {
+                filteredData = [];
+                updateTable();
+                updateSummary();
+                updateTableInfo();
+            }
+            
+            hideModal(loadingModal);
+        })
+        .catch(error => {
+            hideModal(loadingModal);
+            showErrorModal('Failed to load data: ' + error.message);
+        });
+}
+
+// Fungsi untuk load data per bulan
+function loadDataByMonth(year, month) {
+    showModal(loadingModal);
+    inboundData = [];
+    
+    database.ref(`inbDailyReport/${year}/${month}`).once('value')
+        .then(snapshot => {
+            if (snapshot.exists()) {
+                // Iterate melalui hari
+                snapshot.forEach(daySnapshot => {
+                    // Iterate melalui inbound items
+                    daySnapshot.forEach(itemSnapshot => {
+                        const inboundItem = itemSnapshot.val();
+                        inboundData.push({
+                            ...inboundItem,
+                            key: itemSnapshot.key
+                        });
+                    });
+                });
+                
+                // Sort and update UI
+                inboundData.sort((a, b) => new Date(b.receivedDate) - new Date(a.receivedDate));
+                filteredData = [...inboundData];
+                updateTable();
+                updateSummary();
+                updateTableInfo();
+            } else {
+                filteredData = [];
+                updateTable();
+                updateSummary();
+                updateTableInfo();
+            }
+            
+            hideModal(loadingModal);
+        })
+        .catch(error => {
+            hideModal(loadingModal);
+            showErrorModal('Failed to load data: ' + error.message);
+        });
+}
+
+// Fungsi untuk load data per tahun
+function loadDataByYear(year) {
+    showModal(loadingModal);
+    inboundData = [];
+    
+    database.ref(`inbDailyReport/${year}`).once('value')
+        .then(snapshot => {
+            if (snapshot.exists()) {
+                // Iterate melalui bulan
+                const monthPromises = [];
+                
+                snapshot.forEach(monthSnapshot => {
+                    // Iterate melalui hari
+                    monthSnapshot.forEach(daySnapshot => {
+                        // Iterate melalui inbound items
+                        daySnapshot.forEach(itemSnapshot => {
+                            const inboundItem = itemSnapshot.val();
+                            inboundData.push({
+                                ...inboundItem,
+                                key: itemSnapshot.key
+                            });
+                        });
+                    });
+                });
+                
+                // Sort and update UI
+                inboundData.sort((a, b) => new Date(b.receivedDate) - new Date(a.receivedDate));
+                filteredData = [...inboundData];
+                updateTable();
+                updateSummary();
+                updateTableInfo();
+            } else {
+                filteredData = [];
+                updateTable();
+                updateSummary();
+                updateTableInfo();
+            }
+            
+            hideModal(loadingModal);
+        })
+        .catch(error => {
+            hideModal(loadingModal);
+            showErrorModal('Failed to load data: ' + error.message);
         });
 }
 
@@ -619,7 +825,13 @@ document.querySelectorAll('.dropdown-content a').forEach(link => {
     link.addEventListener('click', function(e) {
         e.preventDefault();
         const filter = this.getAttribute('data-filter');
-        applyDateFilter(filter);
+        
+        // Jika filter adalah custom, tampilkan modal filter tanggal
+        if (filter === 'custom') {
+            showDateFilterModal();
+        } else {
+            applyDateFilter(filter);
+        }
     });
 });
 
@@ -628,37 +840,235 @@ function applyDateFilter(filter) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - today.getDay());
-    
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    // Format untuk database path
+    const year = today.getFullYear();
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = String(today.getMonth() + 1).padStart(2, '0') + "_" + monthNames[today.getMonth()];
+    const day = String(today.getDate()).padStart(2, '0');
     
     switch (filter) {
         case 'today':
-            filteredData = inboundData.filter(item => {
-                const itemDate = new Date(item.receivedDate);
-                return itemDate.toDateString() === today.toDateString();
-            });
+            loadDataByDay(year, month, day);
             break;
         case 'week':
-            filteredData = inboundData.filter(item => {
-                const itemDate = new Date(item.receivedDate);
-                return itemDate >= weekStart;
-            });
+            // Load data dari 7 hari terakhir
+            let filterParams = {
+                startDate: new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                endDate: today.toISOString().split('T')[0]
+            };
+            loadDataFromFirebase(filterParams);
             break;
         case 'month':
-            filteredData = inboundData.filter(item => {
-                const itemDate = new Date(item.receivedDate);
-                return itemDate >= monthStart;
-            });
+            loadDataByMonth(year, month);
+            break;
+        case 'all':
+            loadDataFromFirebase();
             break;
         default:
-            filteredData = [...inboundData];
+            loadDataFromFirebase();
+    }
+}
+
+// Tambahkan modal untuk filter tanggal kustom
+function addDateFilterModal() {
+    // Buat elemen modal
+    const modalDiv = document.createElement('div');
+    modalDiv.id = 'dateFilterModal';
+    modalDiv.className = 'modal';
+    
+    // HTML untuk modal
+    modalDiv.innerHTML = `
+        <div class="modal-content filter-modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-calendar-alt"></i> Filter by Date</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="filter-form">
+                    <div class="form-group">
+                        <label for="filterType">Filter Type</label>
+                        <select id="filterType" class="form-control">
+                            <option value="day">Specific Day</option>
+                            <option value="range">Date Range</option>
+                            <option value="month">Specific Month</option>
+                            <option value="year">Specific Year</option>
+                        </select>
+                    </div>
+                    
+                    <div id="dayFilter" class="filter-option">
+                        <div class="form-group">
+                            <label for="specificDate">Select Date</label>
+                            <input type="date" id="specificDate" class="form-control">
+                        </div>
+                    </div>
+                    
+                    <div id="rangeFilter" class="filter-option" style="display:none;">
+                        <div class="form-group">
+                            <label for="startDate">Start Date</label>
+                            <input type="date" id="startDate" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="endDate">End Date</label>
+                            <input type="date" id="endDate" class="form-control">
+                        </div>
+                    </div>
+                    
+                    <div id="monthFilter" class="filter-option" style="display:none;">
+                        <div class="form-group">
+                            <label for="monthYear">Select Month</label>
+                            <input type="month" id="monthYear" class="form-control">
+                        </div>
+                    </div>
+                    
+                    <div id="yearFilter" class="filter-option" style="display:none;">
+                        <div class="form-group">
+                            <label for="yearOnly">Select Year</label>
+                            <select id="yearOnly" class="form-control">
+                                <option value="2025">2025</option>
+                                <option value="2024">2024</option>
+                                <option value="2023">2023</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary cancel-date-filter-btn">Cancel</button>
+                <button id="applyDateFilterBtn" class="btn btn-primary">Apply Filter</button>
+            </div>
+        </div>
+    `;
+    
+    // Tambahkan ke body
+    document.body.appendChild(modalDiv);
+    
+    // Tambahkan CSS untuk form filter
+    const style = document.createElement('style');
+    style.textContent = `
+        .filter-modal-content {
+            max-width: 450px;
+        }
+        .form-group {
+            margin-bottom: var(--spacing-md);
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            font-weight: var(--font-weight-medium);
+            color: var(--text-color);
+        }
+        .form-control {
+            width: 100%;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: var(--font-size-md);
+        }
+        .filter-option {
+            margin-top: var(--spacing-md);
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Event listeners untuk modal filter tanggal
+    const dateFilterModal = document.getElementById('dateFilterModal');
+    const filterType = document.getElementById('filterType');
+    const dayFilter = document.getElementById('dayFilter');
+    const rangeFilter = document.getElementById('rangeFilter');
+    const monthFilter = document.getElementById('monthFilter');
+    const yearFilter = document.getElementById('yearFilter');
+    const applyDateFilterBtn = document.getElementById('applyDateFilterBtn');
+    const cancelDateFilterBtn = document.querySelector('.cancel-date-filter-btn');
+    const closeModalBtn = dateFilterModal.querySelector('.close-modal');
+    
+    // Show/hide appropriate filter options when filter type changes
+    filterType.addEventListener('change', function() {
+        dayFilter.style.display = 'none';
+        rangeFilter.style.display = 'none';
+        monthFilter.style.display = 'none';
+        yearFilter.style.display = 'none';
+        
+        switch(this.value) {
+            case 'day':
+                dayFilter.style.display = 'block';
+                break;
+            case 'range':
+                rangeFilter.style.display = 'block';
+                break;
+            case 'month':
+                monthFilter.style.display = 'block';
+                break;
+            case 'year':
+                yearFilter.style.display = 'block';
+                break;
+        }
+    });
+    
+    // Close modal functionality
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', () => hideModal(dateFilterModal));
+    }
+    if (cancelDateFilterBtn) {
+        cancelDateFilterBtn.addEventListener('click', () => hideModal(dateFilterModal));
     }
     
-    currentPage = 1;
-    updateTable();
-    updateSummary();
+    // Apply filter button
+    if (applyDateFilterBtn) {
+        applyDateFilterBtn.addEventListener('click', function() {
+            const filterTypeValue = filterType.value;
+            let filterParams = {};
+            
+            switch(filterTypeValue) {
+                case 'day':
+                    const specificDate = document.getElementById('specificDate').value;
+                    if (specificDate) {
+                        const date = new Date(specificDate);
+                        const year = date.getFullYear();
+                        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                        const month = String(date.getMonth() + 1).padStart(2, '0') + "_" + monthNames[date.getMonth()];
+                        const day = String(date.getDate()).padStart(2, '0');
+                        
+                        loadDataByDay(year, month, day);
+                    }
+                    break;
+                case 'range':
+                    const startDate = document.getElementById('startDate').value;
+                    const endDate = document.getElementById('endDate').value;
+                    if (startDate && endDate) {
+                        filterParams = { startDate, endDate };
+                        loadDataFromFirebase(filterParams);
+                    }
+                    break;
+                case 'month':
+                    const monthYear = document.getElementById('monthYear').value;
+                    if (monthYear) {
+                        const [year, monthNum] = monthYear.split('-');
+                        const monthIndex = parseInt(monthNum) - 1;
+                        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                        const month = monthNum + "_" + monthNames[monthIndex];
+                        
+                        loadDataByMonth(year, month);
+                    }
+                    break;
+                case 'year':
+                    const yearOnly = document.getElementById('yearOnly').value;
+                    if (yearOnly) {
+                        loadDataByYear(yearOnly);
+                    }
+                    break;
+            }
+            
+            hideModal(dateFilterModal);
+        });
+    }
+}
+
+// Tampilkan modal filter tanggal
+function showDateFilterModal() {
+    const dateFilterModal = document.getElementById('dateFilterModal');
+    if (dateFilterModal) {
+        showModal(dateFilterModal);
+    }
 }
 
 // Sorting functionality
@@ -851,6 +1261,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (userInfoEl) {
         userInfoEl.textContent = `Login: ${currentUser.login}`;
     }
+    
+    // Add date filter modal
+    addDateFilterModal();
     
     // Check if Firebase Auth is available
     if (typeof firebase.auth === 'function') {
