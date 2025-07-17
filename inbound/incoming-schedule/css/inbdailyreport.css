@@ -1077,3 +1077,166 @@ footer {
         width: 95%;
     }
 }
+
+
+/* Tambahkan kode berikut di bagian akhir file CSS Anda, setelah media queries yang ada */
+
+/* Override untuk tampilan mobile */
+@media screen and (max-width: 768px) {
+    /* Mempertahankan layout dashboard dengan 4 card dalam satu baris */
+    .dashboard-summary {
+        display: flex;
+        flex-wrap: wrap;
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--spacing-xs);
+    }
+    
+    .summary-card {
+        flex: 0 0 calc(25% - var(--spacing-xs));
+        padding: var(--spacing-xs);
+        min-width: 80px;
+    }
+    
+    .summary-icon {
+        width: 36px;
+        height: 36px;
+        font-size: var(--font-size-md);
+        margin-right: var(--spacing-xs);
+    }
+    
+    .summary-content h3 {
+        font-size: calc(var(--font-size-xs) - 1px);
+        white-space: nowrap;
+    }
+    
+    .summary-content p {
+        font-size: var(--font-size-md);
+    }
+    
+    /* Menyusun tombol action secara horizontal di bawah search */
+    .card-header {
+        flex-direction: column;
+        padding: var(--spacing-sm);
+    }
+    
+    .card-actions {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+    }
+    
+    .actions-group {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .btn {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: calc(var(--font-size-xs) + 1px);
+    }
+    
+    /* Mengatur search bar */
+    .search-container {
+        width: 100%;
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    #searchInput {
+        width: 100%;
+    }
+    
+    /* Tabel lebih compact */
+    th, td {
+        padding: var(--spacing-sm);
+        white-space: nowrap;
+    }
+    
+    /* Override footer tabel untuk tetap dalam satu baris */
+    .table-footer {
+        flex-direction: row;
+        font-size: var(--font-size-xs);
+    }
+    
+    /* Memastikan konten utama memiliki padding yang konsisten */
+    main {
+        padding: var(--spacing-sm);
+    }
+    
+    /* Membuat header tabel tetap terlihat bagus */
+    .card-body {
+        padding: var(--spacing-sm);
+        overflow-x: auto;
+    }
+    
+    /* Fix untuk pagination */
+    .pagination {
+        flex-shrink: 0;
+    }
+    
+    /* Membuat tampilan modal lebih baik di mobile */
+    .modal-content {
+        max-width: 95%;
+        width: 95%;
+    }
+    
+    /* Membuat form dalam modal lebih baik pada mobile */
+    .date-filter-options {
+        gap: var(--spacing-sm);
+    }
+    
+    .date-option {
+        padding: var(--spacing-sm);
+    }
+    
+    /* Memastikan header tidak terlalu besar pada mobile */
+    .header-container {
+        padding: var(--spacing-sm);
+        flex-direction: row;
+    }
+    
+    /* Mengurangi margin bawah dari dashboard summary */
+    .dashboard-summary {
+        margin-bottom: var(--spacing-md);
+    }
+}
+
+/* Tambahkan override khusus untuk layar sangat kecil */
+@media screen and (max-width: 480px) {
+    /* Menjaga layout 4 kartu, namun dengan penyesuaian lebih compact */
+    .dashboard-summary {
+        gap: var(--spacing-xxs);
+    }
+    
+    .summary-card {
+        flex: 0 0 calc(25% - var(--spacing-xxs));
+        padding: var(--spacing-xs) var(--spacing-xxs);
+    }
+    
+    /* Menyesuaikan ukuran font dan spacing */
+    .summary-content h3 {
+        font-size: 9px;
+        margin-bottom: 0;
+    }
+    
+    .summary-content p {
+        font-size: var(--font-size-sm);
+    }
+    
+    .summary-icon {
+        width: 28px;
+        height: 28px;
+        font-size: var(--font-size-sm);
+        margin-right: var(--spacing-xxs);
+    }
+    
+    /* Menyesuaikan tombol aksi */
+    .btn i {
+        margin-right: 2px;
+    }
+    
+    /* Memastikan tombol pagination tidak terlalu besar */
+    .pagination .btn {
+        padding: 2px 4px;
+        min-width: 24px;
+    }
+}
