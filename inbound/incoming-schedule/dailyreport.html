@@ -14,10 +14,9 @@
         <header class="header">
             <div class="header-container">
                 <div class="logo-container">
-                    <img src="https://via.placeholder.com/80x40?text=TTLC" alt="TTLC Logo" class="logo">
                     <div class="title-container">
                         <h1>Inbound Daily Report</h1>
-                        <span class="subtitle">Warehouse Management System</span>
+                        <span class="subtitle">Operational 3 Plastic Department </span>
                     </div>
                 </div>
                 <div class="user-info-container">
@@ -32,7 +31,7 @@
         </header>
 
         <main>
-            <!-- Dashboard Summary - Top Row -->
+            <!-- Dashboard Summary - Top Row dengan warna-warna yang lebih cerah -->
             <div class="dashboard-summary">
                 <div class="summary-card total-inbound">
                     <div class="summary-icon">
@@ -72,38 +71,6 @@
                 </div>
             </div>
 
-            <!-- Upload Section -->
-            <section class="card upload-section">
-                <div class="card-header">
-                    <h2><i class="fas fa-cloud-upload-alt"></i> Upload Inbound Data</h2>
-                    <div class="card-actions">
-                        <button class="btn btn-help" id="helpBtn" title="Help">
-                            <i class="fas fa-question-circle"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="upload-container">
-                        <div class="file-upload">
-                            <input type="file" id="csvFileInput" accept=".csv, .xlsx, .xls" hidden/>
-                            <label for="csvFileInput" class="upload-label">
-                                <i class="fas fa-file-excel"></i> Select Excel/CSV File
-                            </label>
-                            <span id="file-name">No file selected</span>
-                        </div>
-                        <button id="uploadBtn" class="btn btn-primary" disabled>
-                            <i class="fas fa-cloud-upload-alt"></i> Upload
-                        </button>
-                    </div>
-                    <div class="upload-status">
-                        <div id="progressBar" class="progress-bar">
-                            <div class="progress" style="width: 0%"></div>
-                        </div>
-                        <p id="statusMessage"></p>
-                    </div>
-                </div>
-            </section>
-
             <!-- Data Section -->
             <section class="card data-section">
                 <div class="card-header">
@@ -114,6 +81,10 @@
                             <i class="fas fa-search search-icon"></i>
                         </div>
                         <div class="actions-group">
+                            <!-- Tombol Upload yang membuka modal -->
+                            <button id="openUploadBtn" class="btn btn-primary">
+                                <i class="fas fa-cloud-upload-alt"></i> Upload
+                            </button>
                             <button id="exportBtn" class="btn btn-secondary">
                                 <i class="fas fa-file-export"></i> Export
                             </button>
@@ -177,6 +148,43 @@
         </footer>
     </div>
 
+    <!-- Upload Modal - Menggantikan upload section -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content upload-modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-cloud-upload-alt"></i> Upload Inbound Data</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="upload-instructions">
+                    <p>Please select an Excel or CSV file containing inbound data to upload.</p>
+                    <p class="text-muted">File must include the following columns: Owner Code, Inbound No, Received Date, Invoice No, Qty, and UID.</p>
+                </div>
+                <div class="upload-container">
+                    <div class="file-upload">
+                        <input type="file" id="csvFileInput" accept=".csv, .xlsx, .xls" hidden/>
+                        <label for="csvFileInput" class="upload-label">
+                            <i class="fas fa-file-excel"></i> Select Excel/CSV File
+                        </label>
+                        <span id="file-name">No file selected</span>
+                    </div>
+                </div>
+                <div class="upload-status">
+                    <div id="progressBar" class="progress-bar">
+                        <div class="progress" style="width: 0%"></div>
+                    </div>
+                    <p id="statusMessage"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary cancel-btn">Cancel</button>
+                <button id="uploadBtn" class="btn btn-primary" disabled>
+                    <i class="fas fa-cloud-upload-alt"></i> Upload
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal for loading -->
     <div id="loadingModal" class="modal">
         <div class="modal-content loading-content">
@@ -220,8 +228,8 @@
             <div class="help-body">
                 <h4>How to Upload Data</h4>
                 <ol>
-                    <li>Click "Select Excel/CSV File" to choose your inbound data file</li>
-                    <li>Ensure your file contains the required columns: Owner Code, Inbound No, Received Date, Invoice No, Qty, and UID</li>
+                    <li>Click the "Upload" button in the data section header</li>
+                    <li>Select your Excel/CSV file in the upload modal</li>
                     <li>Click "Upload" to process and save your data</li>
                 </ol>
                 

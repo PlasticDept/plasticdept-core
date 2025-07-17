@@ -48,6 +48,9 @@ const errorMessage = document.getElementById('errorMessage');
 const userInfoEl = document.getElementById('userInfo');
 const currentRangeEl = document.getElementById('currentRange');
 const totalRecordsEl = document.getElementById('totalRecords');
+const uploadModal = document.getElementById('uploadModal');
+const openUploadBtn = document.getElementById('openUploadBtn');
+const cancelBtn = document.querySelector('.cancel-btn');
 
 // Variables
 let inboundData = [];
@@ -171,6 +174,20 @@ if (uploadBtn) {
         };
         
         reader.readAsBinaryString(file);
+    });
+}
+
+// Open upload modal
+if (openUploadBtn) {
+    openUploadBtn.addEventListener('click', function() {
+        showModal(uploadModal);
+    });
+}
+
+// Close upload modal on cancel
+if (cancelBtn) {
+    cancelBtn.addEventListener('click', function() {
+        hideModal(uploadModal);
     });
 }
 
