@@ -80,8 +80,8 @@
                             <input type="text" id="searchInput" placeholder="Search...">
                             <i class="fas fa-search search-icon"></i>
                         </div>
-                        <!-- Ganti bagian tombol di card-actions -->
                         <div class="actions-group">
+                            <!-- Tombol Upload yang membuka modal -->
                             <button id="openUploadBtn" class="btn btn-primary">
                                 <i class="fas fa-cloud-upload-alt"></i> Upload
                             </button>
@@ -149,7 +149,7 @@
         </footer>
     </div>
 
-    <!-- Upload Modal - Menggantikan upload section -->
+    <!-- Upload Modal -->
     <div id="uploadModal" class="modal">
         <div class="modal-content upload-modal-content">
             <div class="modal-header">
@@ -186,7 +186,50 @@
         </div>
     </div>
 
-    <!-- Modal for loading -->
+    <!-- Date Filter Modal -->
+    <div id="dateFilterModal" class="modal date-filter-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-calendar"></i> Filter by Date</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="date-filter-options">
+                    <div class="date-option active" data-filter="all">
+                        <i class="fas fa-globe"></i>
+                        <span>All Data</span>
+                    </div>
+                    <div class="date-option" data-filter="today">
+                        <i class="fas fa-calendar-day"></i>
+                        <span>Today</span>
+                    </div>
+                    <div class="date-option" data-filter="week">
+                        <i class="fas fa-calendar-week"></i>
+                        <span>This Week</span>
+                    </div>
+                    <div class="date-option" data-filter="month">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>This Month</span>
+                    </div>
+                    <div class="date-option" data-filter="custom">
+                        <i class="fas fa-calendar-plus"></i>
+                        <span>Custom Date Range</span>
+                    </div>
+                    
+                    <div class="custom-date-inputs" style="display: none;">
+                        <input type="date" id="startDateFilter" placeholder="Start Date">
+                        <input type="date" id="endDateFilter" placeholder="End Date">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary cancel-date-filter-btn">Cancel</button>
+                <button id="applyDateFilterBtn" class="btn btn-primary">Apply Filter</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
     <div id="loadingModal" class="modal">
         <div class="modal-content loading-content">
             <div class="loader-container">
@@ -196,7 +239,7 @@
         </div>
     </div>
 
-    <!-- Modal for success -->
+    <!-- Success Modal -->
     <div id="successModal" class="modal">
         <div class="modal-content success-content">
             <span class="close-modal">&times;</span>
@@ -207,7 +250,7 @@
         </div>
     </div>
 
-    <!-- Modal for error -->
+    <!-- Error Modal -->
     <div id="errorModal" class="modal">
         <div class="modal-content error-content">
             <span class="close-modal">&times;</span>

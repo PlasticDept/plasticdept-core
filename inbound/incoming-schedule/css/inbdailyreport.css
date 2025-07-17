@@ -396,6 +396,18 @@ main {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
+/* White button style */
+.btn-white {
+    background-color: white;
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.btn-white:hover {
+    background-color: var(--secondary-hover);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
 .btn-page {
     padding: var(--spacing-xs) var(--spacing-sm);
     background-color: transparent;
@@ -412,6 +424,65 @@ main {
     color: var(--text-secondary);
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Dropdown Styles */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-toggle::after {
+    content: "";
+    display: inline-block;
+    margin-left: 8px;
+    vertical-align: middle;
+    border-top: 4px solid;
+    border-right: 4px solid transparent;
+    border-left: 4px solid transparent;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    min-width: 180px;
+    background-color: var(--light-color);
+    box-shadow: 0 4px 12px var(--shadow-light);
+    border-radius: var(--radius-md);
+    z-index: 50;
+    border: 1px solid var(--border-color);
+    margin-top: var(--spacing-xs);
+    overflow: hidden;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-content a {
+    color: var(--text-color);
+    padding: var(--spacing-md) var(--spacing-lg);
+    text-decoration: none;
+    display: block;
+    transition: background-color var(--transition-fast);
+    font-size: var(--font-size-sm);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dropdown-content a:last-child {
+    border-bottom: none;
+}
+
+.dropdown-content a:hover {
+    background-color: var(--secondary-hover);
 }
 
 /* Search Container */
@@ -631,11 +702,6 @@ tbody tr:hover {
     to { transform: scale(1); opacity: 1; }
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
 .loading-content {
     padding: var(--spacing-xl);
     display: flex;
@@ -764,6 +830,54 @@ tbody tr:hover {
     font-size: var(--font-size-sm);
     color: var(--text-secondary);
     margin-bottom: 0;
+}
+
+/* Date Filter Modal Styles */
+.date-filter-modal .modal-content {
+    max-width: 350px;
+}
+
+.date-filter-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.date-option {
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    display: flex;
+    align-items: center;
+}
+
+.date-option:hover {
+    background-color: var(--secondary-hover);
+}
+
+.date-option.active {
+    border-color: var(--primary-color);
+    background-color: rgba(63, 81, 181, 0.05);
+}
+
+.date-option i {
+    margin-right: var(--spacing-md);
+    color: var(--primary-color);
+}
+
+.custom-date-inputs {
+    margin-top: var(--spacing-md);
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.custom-date-inputs input {
+    flex: 1;
+    padding: var(--spacing-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
 }
 
 /* Help Modal */
@@ -932,6 +1046,10 @@ footer {
     .pagination {
         margin-bottom: var(--spacing-sm);
     }
+    
+    .custom-date-inputs {
+        flex-direction: column;
+    }
 }
 
 @media screen and (max-width: 576px) {
@@ -958,56 +1076,4 @@ footer {
     .modal-content {
         width: 95%;
     }
-}
-
-/* Tambahkan atau update style berikut */
-.btn-white {
-    background-color: #ffffff;
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-}
-
-.btn-white:hover {
-    background-color: var(--secondary-hover);
-}
-
-/* Dropdown style */
-.dropdown-toggle.btn-white::after {
-    color: var(--text-secondary);
-}
-
-/* Tambahkan styles untuk filter date modal */
-.filter-modal-content {
-    max-width: 450px;
-}
-
-.form-group {
-    margin-bottom: var(--spacing-md);
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: var(--spacing-xs);
-    font-weight: var(--font-weight-medium);
-    color: var(--text-color);
-}
-
-.form-control {
-    width: 100%;
-    padding: var(--spacing-sm) var(--spacing-md);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-md);
-}
-
-.filter-option {
-    margin-top: var(--spacing-md);
-}
-
-.dropdown-content {
-    min-width: 200px;
-}
-
-.dropdown-content a {
-    padding: var(--spacing-sm) var(--spacing-lg);
 }
