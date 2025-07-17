@@ -539,6 +539,12 @@ th, td {
     text-align: left;
 }
 
+table td:nth-child(5), 
+table td:nth-child(6) {
+    text-align: left;
+}
+
+
 th {
     background-color: var(--table-header-bg);
     color: var(--table-header-text);
