@@ -1,0 +1,219 @@
+/* ========== UNIVERSAL RESPONSIVE FIXES ========== */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ========== TABLE RESPONSIVENESS ========== */
+/* Ensure all tables can scroll horizontally on small screens */
+.table-wrapper, .content-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table {
+  min-width: 100%;
+  table-layout: auto;
+}
+
+/* Force tables to maintain their structure */
+table.dataTable {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+  width: 100% !important;
+}
+
+/* ========== OUTBOUND PAGE SPECIFIC FIXES ========== */
+/* Controls container - prevent wrapping */
+.controls-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  gap: 10px;
+  padding: 10px;
+  width: 100%;
+}
+
+/* Setting cards - prevent them from shrinking too much */
+.setting-cards {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  gap: 10px;
+  min-width: auto;
+  flex: 0 0 auto;
+}
+
+.setting-card {
+  min-width: 200px;
+  flex: 0 0 auto;
+}
+
+/* MP PIC section - allow it to scroll */
+.mp-pic-section {
+  min-width: 300px;
+  flex: 1 0 auto;
+  overflow-x: auto;
+}
+
+/* Action toolbar - make it scrollable horizontally */
+.action-toolbar {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px 0;
+  width: 100%;
+}
+
+.toolbar-left, .toolbar-right {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 5px;
+  flex: 0 0 auto;
+}
+
+/* Secondary navigation - make it scrollable */
+.secondary-nav {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
+.tab-container {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  flex: 1 0 auto;
+}
+
+/* Header nav - make it scrollable */
+.main-nav ul {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 10px;
+}
+
+/* ========== INBOUND PAGE SPECIFIC FIXES ========== */
+/* Summary cards - prevent wrapping and make it scrollable */
+.summary-cards-container {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 5px 10px;
+  width: calc(100% - 20px);
+  max-width: none;
+  margin: 0 auto 16px auto;
+}
+
+.summary-card {
+  flex: 0 0 auto;
+}
+
+/* ========== MEDIA QUERIES ========== */
+/* Small screens */
+@media (max-width: 768px) {
+  /* Ensure buttons don't shrink too much */
+  button, .btn {
+    min-width: auto;
+    white-space: nowrap;
+    padding: 8px 12px;
+  }
+  
+  /* Reduce some padding and margins for small screens */
+  .setting-card, .mp-pic-section {
+    padding: 10px;
+  }
+  
+  /* Make dropdowns work better on mobile */
+  .dropdown-menu {
+    min-width: 160px;
+    max-width: 90vw;
+  }
+  
+  /* Fix main header layout on very small screens */
+  @media (max-width: 576px) {
+    .main-header {
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 10px;
+    }
+    
+    .logo-container {
+      margin-bottom: 10px;
+    }
+    
+    .user-section {
+      align-self: flex-end;
+    }
+  }
+}
+
+/* ========== ENHANCED TABLE RESPONSIVENESS ========== */
+/* Make sure table headers stay fixed while scrolling */
+table.dataTable thead th,
+table.enterprise-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Ensure checkbox columns don't shrink too much */
+table th:first-child,
+table td:first-child {
+  min-width: 30px;
+}
+
+/* ========== FIXED NAVIGATION OVERLAY FIXES ========== */
+/* Fix z-index issues with dropdowns */
+.nav-dropdown-content, .tab-dropdown-content {
+  z-index: 9999 !important;
+}
+
+/* Ensure modal appears above all other elements */
+.modal {
+  z-index: 10000;
+}
+
+/* Force horizontal scrolling instead of wrapping */
+.form-row {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ========== POLISHED TOUCH INTERACTIONS ========== */
+/* Add momentum scrolling for iOS devices */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Add clear visual indication for scrollable areas */
+.controls-container::-webkit-scrollbar,
+.action-toolbar::-webkit-scrollbar,
+.summary-cards-container::-webkit-scrollbar,
+.secondary-nav::-webkit-scrollbar,
+.table-wrapper::-webkit-scrollbar {
+  height: 4px;
+}
+
+.controls-container::-webkit-scrollbar-thumb,
+.action-toolbar::-webkit-scrollbar-thumb,
+.summary-cards-container::-webkit-scrollbar-thumb,
+.secondary-nav::-webkit-scrollbar-thumb,
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
