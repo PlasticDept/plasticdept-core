@@ -15,7 +15,7 @@ const db = firebase.firestore();
 const storage = firebase.storage();
 
 // Global variables
-const LOCATIONS_PER_PAGE = 13; // Number of rack columns per page
+const BLOCKS_PER_PAGE = 13; // Number of rack columns to display per page
 let allLocations = []; // Store all master locations
 let currentPage = 1; // Current page for pagination
 let currentArea = "highRackArea"; // Current selected area
@@ -52,11 +52,11 @@ function initializeApp() {
     loadMasterLocations().then(() => {
         // After loading master locations, initialize rack sections
         analyzeLocationStructure();
-        generateRackNavigation();
+        generateRackAreaButtons();
         
-        // Show the first rack prefix by default
+        // Show the first rack prefix by default if available
         if (allRackPrefixes.length > 0) {
-            showRackSection(allRackPrefixes[0]);
+            displayRackArea(allRackPrefixes[0]);
         }
         
         // Update statistics
@@ -124,137 +124,274 @@ function analyzeLocationStructure() {
     };
 }
 
-// Generate Rack Navigation based on Analysis
-function generateRackNavigation() {
-    const highRackNav = document.getElementById('highRackNavigation');
-    const floorNav = document.getElementById('floorNavigation');
+// Generate Rack Area Buttons
+function generateRackAreaButtons() {
+    const rackAreaButtonsContainer = document.getElementById('rackAreaButtons');
+    rackAreaButtonsContainer.innerHTML = '';
     
-    // Clear existing navigation
-    highRackNav.innerHTML = '';
-    floorNav.innerHTML = '';
-    
-    // Generate high rack navigation
+    // Create buttons for all rack prefixes
     window.rackPrefixes.highRack.forEach(prefix => {
-        const navBtn = document.createElement('button');
-        navBtn.className = 'btn btn-outline-secondary me-2 mb-2';
-        navBtn.textContent = prefix;
-        navBtn.addEventListener('click', () => showRackSection(prefix));
-        highRackNav.appendChild(navBtn);
+        const button = document.createElement('button');
+        button.className = 'rack-area-btn';
+        button.textContent = prefix;
+        button.addEventListener('click', () => {
+            // Deactivate all buttons
+            document.querySelectorAll('.rack-area-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            // Activate this button
+            button.classList.add('active');
+            // Display the selected rack area
+            displayRackArea(prefix);
+        });
+        rackAreaButtonsContainer.appendChild(button);
     });
     
-    // Generate floor navigation
+    // Create buttons for floor areas
     window.rackPrefixes.floor.forEach(prefix => {
-        const navBtn = document.createElement('button');
-        navBtn.className = 'btn btn-outline-secondary me-2 mb-2';
-        navBtn.textContent = prefix;
-        navBtn.addEventListener('click', () => showFloorSection(prefix));
-        floorNav.appendChild(navBtn);
+        const button = document.createElement('button');
+        button.className = 'rack-area-btn';
+        button.textContent = prefix;
+        button.addEventListener('click', () => {
+            // Deactivate all buttons
+            document.querySelectorAll('.rack-area-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            // Activate this button
+            button.classList.add('active');
+            // Display the selected floor area
+            displayFloorArea(prefix);
+        });
+        rackAreaButtonsContainer.appendChild(button);
     });
     
-    // Show pagination controls if there are rack sections
-    if (window.rackPrefixes.highRack.length > 0 || window.rackPrefixes.floor.length > 0) {
-        document.getElementById('paginationControls').style.display = 'flex';
+    // Activate the first button by default
+    if (rackAreaButtonsContainer.children.length > 0) {
+        rackAreaButtonsContainer.children[0].classList.add('active');
     }
 }
 
-// Show High Rack Section
-function showRackSection(rackPrefix) {
+// Display Rack Area
+function displayRackArea(rackPrefix) {
     currentRackPrefix = rackPrefix;
     currentPage = 1; // Reset to first page
-    
-    // Highlight the selected rack button
-    const rackButtons = document.querySelectorAll('#highRackNavigation button');
-    rackButtons.forEach(btn => {
-        if (btn.textContent === rackPrefix) {
-            btn.classList.add('active');
-            btn.classList.remove('btn-outline-secondary');
-            btn.classList.add('btn-secondary');
-        } else {
-            btn.classList.remove('active');
-            btn.classList.remove('btn-secondary');
-            btn.classList.add('btn-outline-secondary');
-        }
-    });
     
     // Get all blocks for this rack prefix
     const blocks = getBlocksForRackPrefix(rackPrefix);
     
-    // Clear existing sections
-    const container = document.getElementById('highRackContainer');
-    container.innerHTML = '';
-    
-    // Create section title
-    const sectionTitle = document.createElement('h5');
-    sectionTitle.className = 'mb-3';
-    sectionTitle.textContent = `Rack Area ${rackPrefix}`;
-    container.appendChild(sectionTitle);
-    
     // Determine block range for current page
-    const startIndex = (currentPage - 1) * LOCATIONS_PER_PAGE;
-    const endIndex = Math.min(startIndex + LOCATIONS_PER_PAGE, blocks.length);
+    const startIndex = (currentPage - 1) * BLOCKS_PER_PAGE;
+    const endIndex = Math.min(startIndex + BLOCKS_PER_PAGE, blocks.length);
     const currentBlocks = blocks.slice(startIndex, endIndex);
     
-    // Generate grid for current blocks
-    const rackGrid = document.createElement('div');
-    rackGrid.className = 'rack-grid';
-    rackGrid.id = `section-${rackPrefix}`;
-    container.appendChild(rackGrid);
+    // Update the rack area title
+    document.getElementById('rackAreaTitle').textContent = `Rack Area ${rackPrefix}`;
     
-    // Generate high rack grid
-    generateGrid(rackGrid, rackPrefix, currentBlocks);
+    // Clear the rack display container
+    const rackContainer = document.getElementById('rackDisplayContainer');
+    rackContainer.innerHTML = '';
+    
+    // Create the table structure
+    const table = document.createElement('table');
+    table.className = 'rack-table';
+    
+    // Create header row with block numbers
+    const headerRow1 = document.createElement('tr');
+    const rackHeaderCell = document.createElement('th');
+    rackHeaderCell.textContent = 'RACK';
+    rackHeaderCell.rowSpan = 1;
+    headerRow1.appendChild(rackHeaderCell);
+    
+    // Add block number headers
+    currentBlocks.forEach(block => {
+        const blockHeaderCell = document.createElement('th');
+        blockHeaderCell.colSpan = 2;
+        blockHeaderCell.textContent = block;
+        headerRow1.appendChild(blockHeaderCell);
+    });
+    
+    // Add sub-header row with column numbers (1 and 2)
+    const headerRow2 = document.createElement('tr');
+    const rackLabel = document.createElement('th');
+    rackLabel.textContent = rackPrefix;
+    headerRow2.appendChild(rackLabel);
+    
+    currentBlocks.forEach(() => {
+        const col1 = document.createElement('th');
+        col1.textContent = '1';
+        headerRow2.appendChild(col1);
+        
+        const col2 = document.createElement('th');
+        col2.textContent = '2';
+        headerRow2.appendChild(col2);
+    });
+    
+    // Create the table head and append header rows
+    const thead = document.createElement('thead');
+    thead.appendChild(headerRow1);
+    thead.appendChild(headerRow2);
+    table.appendChild(thead);
+    
+    // Create table body
+    const tbody = document.createElement('tbody');
+    
+    // Generate rows for levels 4 down to 1
+    for (let level = 4; level >= 1; level--) {
+        const row = document.createElement('tr');
+        
+        // Add level number
+        const levelCell = document.createElement('td');
+        levelCell.className = 'level-cell';
+        levelCell.textContent = level;
+        row.appendChild(levelCell);
+        
+        // Add cells for each block's positions
+        currentBlocks.forEach(block => {
+            // Position 1
+            const pos1Code = `${rackPrefix}-${block}-1-${level}`;
+            const pos1Cell = document.createElement('td');
+            pos1Cell.className = 'location-cell';
+            pos1Cell.setAttribute('data-location', pos1Code);
+            pos1Cell.addEventListener('click', () => showLocationDetails(pos1Code));
+            
+            // Update cell appearance based on occupancy
+            if (locationCache[pos1Code] && locationCache[pos1Code].isOccupied) {
+                pos1Cell.classList.add('occupied');
+                if (locationCache[pos1Code].status) {
+                    pos1Cell.classList.add(`status-${locationCache[pos1Code].status}`);
+                }
+            } else {
+                pos1Cell.classList.add('available');
+            }
+            
+            row.appendChild(pos1Cell);
+            
+            // Position 2
+            const pos2Code = `${rackPrefix}-${block}-2-${level}`;
+            const pos2Cell = document.createElement('td');
+            pos2Cell.className = 'location-cell';
+            pos2Cell.setAttribute('data-location', pos2Code);
+            pos2Cell.addEventListener('click', () => showLocationDetails(pos2Code));
+            
+            // Update cell appearance based on occupancy
+            if (locationCache[pos2Code] && locationCache[pos2Code].isOccupied) {
+                pos2Cell.classList.add('occupied');
+                if (locationCache[pos2Code].status) {
+                    pos2Cell.classList.add(`status-${locationCache[pos2Code].status}`);
+                }
+            } else {
+                pos2Cell.classList.add('available');
+            }
+            
+            row.appendChild(pos2Cell);
+        });
+        
+        tbody.appendChild(row);
+    }
+    
+    table.appendChild(tbody);
+    rackContainer.appendChild(table);
     
     // Update pagination info
-    updatePaginationInfo(currentPage, Math.ceil(blocks.length / LOCATIONS_PER_PAGE));
+    const totalPages = Math.ceil(blocks.length / BLOCKS_PER_PAGE);
+    updatePaginationInfo(currentPage, totalPages);
+    
+    // Show high rack area, hide floor area
+    document.getElementById('highRackArea').style.display = 'block';
+    document.getElementById('floorArea').style.display = 'none';
 }
 
-// Show Floor Section
-function showFloorSection(floorPrefix) {
+// Display Floor Area
+function displayFloorArea(floorPrefix) {
     currentRackPrefix = floorPrefix;
     currentPage = 1; // Reset to first page
-    
-    // Highlight the selected floor button
-    const floorButtons = document.querySelectorAll('#floorNavigation button');
-    floorButtons.forEach(btn => {
-        if (btn.textContent === floorPrefix) {
-            btn.classList.add('active');
-            btn.classList.remove('btn-outline-secondary');
-            btn.classList.add('btn-secondary');
-        } else {
-            btn.classList.remove('active');
-            btn.classList.remove('btn-secondary');
-            btn.classList.add('btn-outline-secondary');
-        }
-    });
     
     // Get all blocks for this floor prefix
     const blocks = getBlocksForFloorPrefix(floorPrefix);
     
-    // Clear existing sections
-    const container = document.getElementById('floorContainer');
-    container.innerHTML = '';
+    // Update the rack area title
+    document.getElementById('floorAreaTitle').textContent = `Floor Area ${floorPrefix}`;
     
-    // Create section title
-    const sectionTitle = document.createElement('h5');
-    sectionTitle.className = 'mb-3';
-    sectionTitle.textContent = `Floor Area ${floorPrefix}`;
-    container.appendChild(sectionTitle);
+    // Clear the floor display container
+    const floorContainer = document.getElementById('floorDisplayContainer');
+    floorContainer.innerHTML = '';
     
     // Determine block range for current page
-    const startIndex = (currentPage - 1) * LOCATIONS_PER_PAGE;
-    const endIndex = Math.min(startIndex + LOCATIONS_PER_PAGE, blocks.length);
+    const startIndex = (currentPage - 1) * 10; // Show fewer blocks per page for floor area
+    const endIndex = Math.min(startIndex + 10, blocks.length);
     const currentBlocks = blocks.slice(startIndex, endIndex);
     
-    // Generate grid for current blocks
-    const floorGrid = document.createElement('div');
-    floorGrid.className = 'rack-grid';
-    floorGrid.id = `section-${floorPrefix}`;
-    container.appendChild(floorGrid);
+    // Create the table structure
+    const table = document.createElement('table');
+    table.className = 'floor-table';
     
-    // Generate floor grid
-    generateFloorGrid(floorGrid, floorPrefix, currentBlocks);
+    // Create header row with position numbers
+    const headerRow = document.createElement('tr');
+    const floorHeaderCell = document.createElement('th');
+    floorHeaderCell.textContent = floorPrefix;
+    headerRow.appendChild(floorHeaderCell);
+    
+    // Add position numbers 01-21
+    for (let i = 1; i <= 21; i++) {
+        const posHeaderCell = document.createElement('th');
+        posHeaderCell.textContent = i.toString().padStart(2, '0');
+        headerRow.appendChild(posHeaderCell);
+    }
+    
+    // Create the table head
+    const thead = document.createElement('thead');
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+    
+    // Create table body
+    const tbody = document.createElement('tbody');
+    
+    // Create row for each block
+    currentBlocks.forEach(block => {
+        const row = document.createElement('tr');
+        
+        // Add block number
+        const blockCell = document.createElement('td');
+        blockCell.className = 'block-cell';
+        blockCell.textContent = block;
+        row.appendChild(blockCell);
+        
+        // Add cells for each position
+        for (let pos = 1; pos <= 21; pos++) {
+            const posFormatted = pos.toString().padStart(2, '0');
+            const locationCode = `${floorPrefix}-${block}-${posFormatted}`;
+            
+            const locationCell = document.createElement('td');
+            locationCell.className = 'location-cell';
+            locationCell.setAttribute('data-location', locationCode);
+            locationCell.addEventListener('click', () => showLocationDetails(locationCode));
+            
+            // Update cell appearance based on occupancy
+            if (locationCache[locationCode] && locationCache[locationCode].isOccupied) {
+                locationCell.classList.add('occupied');
+                if (locationCache[locationCode].status) {
+                    locationCell.classList.add(`status-${locationCache[locationCode].status}`);
+                }
+            } else {
+                locationCell.classList.add('available');
+            }
+            
+            row.appendChild(locationCell);
+        }
+        
+        tbody.appendChild(row);
+    });
+    
+    table.appendChild(tbody);
+    floorContainer.appendChild(table);
     
     // Update pagination info
-    updatePaginationInfo(currentPage, Math.ceil(blocks.length / LOCATIONS_PER_PAGE));
+    const totalPages = Math.ceil(blocks.length / 10);
+    updatePaginationInfo(currentPage, totalPages);
+    
+    // Show floor area, hide high rack area
+    document.getElementById('highRackArea').style.display = 'none';
+    document.getElementById('floorArea').style.display = 'block';
 }
 
 // Get Blocks for Rack Prefix
@@ -299,156 +436,6 @@ function getBlocksForFloorPrefix(floorPrefix) {
     return Array.from(blockSet).sort((a, b) => parseInt(a) - parseInt(b));
 }
 
-// Generate High Rack Grid
-function generateGrid(container, rackPrefix, blocks) {
-    // Clear container
-    container.innerHTML = '';
-    
-    // Create grid header
-    const headerRow = document.createElement('div');
-    headerRow.className = 'rack-header-row';
-    container.appendChild(headerRow);
-    
-    // Add rack label
-    const rackLabel = document.createElement('div');
-    rackLabel.className = 'rack-label';
-    rackLabel.textContent = 'RACK';
-    headerRow.appendChild(rackLabel);
-    
-    // Add column headers
-    blocks.forEach(block => {
-        const blockHeader = document.createElement('div');
-        blockHeader.className = 'block-header';
-        blockHeader.textContent = block;
-        headerRow.appendChild(blockHeader);
-        
-        // Add sub-column headers (1, 2)
-        const subHeader = document.createElement('div');
-        subHeader.className = 'sub-header-row';
-        container.appendChild(subHeader);
-        
-        // Add empty rack label for alignment
-        const emptyLabel = document.createElement('div');
-        emptyLabel.className = 'rack-label';
-        emptyLabel.textContent = rackPrefix;
-        subHeader.appendChild(emptyLabel);
-        
-        // Create sub-columns (1, 2)
-        const subColumns = document.createElement('div');
-        subColumns.className = 'sub-columns';
-        subHeader.appendChild(subColumns);
-        
-        const subCol1 = document.createElement('div');
-        subCol1.className = 'sub-col';
-        subCol1.textContent = '1';
-        subColumns.appendChild(subCol1);
-        
-        const subCol2 = document.createElement('div');
-        subCol2.className = 'sub-col';
-        subCol2.textContent = '2';
-        subColumns.appendChild(subCol2);
-    });
-    
-    // Generate rows for levels (4 down to 1)
-    for (let level = 4; level >= 1; level--) {
-        const levelRow = document.createElement('div');
-        levelRow.className = 'rack-row';
-        container.appendChild(levelRow);
-        
-        // Add row label
-        const levelLabel = document.createElement('div');
-        levelLabel.className = 'rack-level';
-        levelLabel.textContent = level;
-        levelRow.appendChild(levelLabel);
-        
-        // Add cells for each block and column
-        blocks.forEach(block => {
-            const blockCell = document.createElement('div');
-            blockCell.className = 'block-cell';
-            levelRow.appendChild(blockCell);
-            
-            // Column 1
-            const col1Code = `${rackPrefix}-${block}-1-${level}`;
-            const location1 = document.createElement('div');
-            location1.className = 'rack-location available';
-            location1.setAttribute('data-location', col1Code);
-            location1.addEventListener('click', () => showLocationDetails(col1Code));
-            blockCell.appendChild(location1);
-            
-            // Column 2
-            const col2Code = `${rackPrefix}-${block}-2-${level}`;
-            const location2 = document.createElement('div');
-            location2.className = 'rack-location available';
-            location2.setAttribute('data-location', col2Code);
-            location2.addEventListener('click', () => showLocationDetails(col2Code));
-            blockCell.appendChild(location2);
-            
-            // Update location UI if we have data
-            if (locationCache[col1Code]) {
-                updateLocationUI(locationCache[col1Code]);
-            }
-            if (locationCache[col2Code]) {
-                updateLocationUI(locationCache[col2Code]);
-            }
-        });
-    }
-}
-
-// Generate Floor Area Grid
-function generateFloorGrid(container, floorPrefix, blocks) {
-    // Clear container
-    container.innerHTML = '';
-    
-    // Create grid header
-    const headerRow = document.createElement('div');
-    headerRow.className = 'floor-header-row';
-    container.appendChild(headerRow);
-    
-    // Add rack label
-    const rackLabel = document.createElement('div');
-    rackLabel.className = 'floor-label';
-    rackLabel.textContent = floorPrefix;
-    headerRow.appendChild(rackLabel);
-    
-    // Add column headers (1 to 21)
-    for (let i = 1; i <= 21; i++) {
-        const colHeader = document.createElement('div');
-        colHeader.className = 'floor-col-header';
-        colHeader.textContent = i.toString().padStart(2, '0');
-        headerRow.appendChild(colHeader);
-    }
-    
-    // Generate rows for each block
-    blocks.forEach(block => {
-        const blockRow = document.createElement('div');
-        blockRow.className = 'floor-row';
-        container.appendChild(blockRow);
-        
-        // Add row label
-        const blockLabel = document.createElement('div');
-        blockLabel.className = 'floor-block';
-        blockLabel.textContent = block;
-        blockRow.appendChild(blockLabel);
-        
-        // Add locations for positions 01-21
-        for (let pos = 1; pos <= 21; pos++) {
-            const posFormatted = pos.toString().padStart(2, '0');
-            const locationCode = `${floorPrefix}-${block}-${posFormatted}`;
-            
-            const locationCell = document.createElement('div');
-            locationCell.className = 'floor-location available';
-            locationCell.setAttribute('data-location', locationCode);
-            locationCell.addEventListener('click', () => showLocationDetails(locationCode));
-            blockRow.appendChild(locationCell);
-            
-            // Update location UI if we have data
-            if (locationCache[locationCode]) {
-                updateLocationUI(locationCache[locationCode]);
-            }
-        }
-    });
-}
-
 // Update Pagination Information
 function updatePaginationInfo(current, total) {
     document.getElementById('currentPage').textContent = current;
@@ -461,43 +448,18 @@ function updatePaginationInfo(current, total) {
 
 // Change Page
 function changePage(direction) {
-    const area = currentArea;
     const newPage = currentPage + direction;
     
     if (newPage < 1) return;
     
     currentPage = newPage;
     
-    // Re-render current section with new page
-    if (area === 'highRackArea') {
-        showRackSection(currentRackPrefix);
+    // Re-render current view
+    if (document.getElementById('highRackArea').style.display !== 'none') {
+        displayRackArea(currentRackPrefix);
     } else {
-        showFloorSection(currentRackPrefix);
+        displayFloorArea(currentRackPrefix);
     }
-}
-
-// Update Location UI Based on Data
-function updateLocationUI(locationData) {
-    if (!locationData || !locationData.locationCode) return;
-    
-    const locationElements = document.querySelectorAll(`.rack-location[data-location="${locationData.locationCode}"], .floor-location[data-location="${locationData.locationCode}"]`);
-    
-    locationElements.forEach(element => {
-        if (locationData.isOccupied) {
-            element.classList.remove('available');
-            element.classList.add('occupied');
-            
-            // Add status indicator if available
-            if (locationData.status) {
-                element.classList.remove('status-putaway', 'status-allocated', 'status-hold');
-                element.classList.add(`status-${locationData.status.toLowerCase()}`);
-            }
-        } else {
-            element.classList.remove('occupied');
-            element.classList.add('available');
-            element.classList.remove('status-putaway', 'status-allocated', 'status-hold');
-        }
-    });
 }
 
 // Show Location Details in Modal
@@ -623,9 +585,6 @@ function toggleAreaView(areaToShow, buttons) {
         }
     });
     
-    // Update current area
-    currentArea = areaToShow;
-    
     // Show selected area, hide others
     const areas = ['highRackArea', 'floorArea'];
     areas.forEach(area => {
@@ -637,24 +596,35 @@ function toggleAreaView(areaToShow, buttons) {
         }
     });
     
-    // Reset to first page and show first rack type
-    currentPage = 1;
-    
-    if (areaToShow === 'highRackArea' && window.rackPrefixes && window.rackPrefixes.highRack.length > 0) {
-        // Select the first rack if none is selected
-        if (!currentRackPrefix || !window.rackPrefixes.highRack.includes(currentRackPrefix)) {
-            showRackSection(window.rackPrefixes.highRack[0]);
+    // Re-display current rack/floor based on the active rack-area-btn
+    const activeAreaBtn = document.querySelector('.rack-area-btn.active');
+    if (activeAreaBtn) {
+        const prefix = activeAreaBtn.textContent;
+        if (areaToShow === 'highRackArea' && window.rackPrefixes.highRack.includes(prefix)) {
+            displayRackArea(prefix);
+        } else if (areaToShow === 'floorArea' && window.rackPrefixes.floor.includes(prefix)) {
+            displayFloorArea(prefix);
         } else {
-            // Re-render the current rack to ensure data is visible
-            showRackSection(currentRackPrefix);
-        }
-    } else if (areaToShow === 'floorArea' && window.rackPrefixes && window.rackPrefixes.floor.length > 0) {
-        // Select the first floor if none is selected
-        if (!currentRackPrefix || !window.rackPrefixes.floor.includes(currentRackPrefix)) {
-            showFloorSection(window.rackPrefixes.floor[0]);
-        } else {
-            // Re-render the current floor to ensure data is visible
-            showFloorSection(currentRackPrefix);
+            // Default to first available prefix if current is not valid for this area
+            if (areaToShow === 'highRackArea' && window.rackPrefixes.highRack.length > 0) {
+                displayRackArea(window.rackPrefixes.highRack[0]);
+                document.querySelectorAll('.rack-area-btn').forEach(btn => {
+                    if (btn.textContent === window.rackPrefixes.highRack[0]) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            } else if (areaToShow === 'floorArea' && window.rackPrefixes.floor.length > 0) {
+                displayFloorArea(window.rackPrefixes.floor[0]);
+                document.querySelectorAll('.rack-area-btn').forEach(btn => {
+                    if (btn.textContent === window.rackPrefixes.floor[0]) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
         }
     }
 }
@@ -665,10 +635,15 @@ function handleSearch() {
     
     if (searchTerm === '') {
         // If search is cleared, revert to normal view
-        if (currentArea === 'highRackArea') {
-            showRackSection(currentRackPrefix);
-        } else {
-            showFloorSection(currentRackPrefix);
+        const activeAreaBtn = document.querySelector('.rack-area-btn.active');
+        if (activeAreaBtn) {
+            const prefix = activeAreaBtn.textContent;
+            if (document.getElementById('highRackArea').style.display !== 'none' && 
+                window.rackPrefixes.highRack.includes(prefix)) {
+                displayRackArea(prefix);
+            } else if (window.rackPrefixes.floor.includes(prefix)) {
+                displayFloorArea(prefix);
+            }
         }
         return;
     }
@@ -687,14 +662,14 @@ function handleSearch() {
 
 // Display Search Results
 function displaySearchResults(results) {
-    // Clear both containers
-    const highRackContainer = document.getElementById('highRackContainer');
-    const floorContainer = document.getElementById('floorContainer');
-    highRackContainer.innerHTML = '';
-    floorContainer.innerHTML = '';
+    // Determine which container to use based on current view
+    const isHighRackVisible = document.getElementById('highRackArea').style.display !== 'none';
+    const container = isHighRackVisible ? 
+        document.getElementById('rackDisplayContainer') : 
+        document.getElementById('floorDisplayContainer');
     
-    // Create results container
-    const container = currentArea === 'highRackArea' ? highRackContainer : floorContainer;
+    // Clear container
+    container.innerHTML = '';
     
     // Create results header
     const header = document.createElement('h5');
@@ -789,10 +764,15 @@ function handleFileUpload() {
                 alert('Data occupancy berhasil diupload dan diproses!');
                 loadMasterLocations().then(() => {
                     // Re-render current view
-                    if (currentArea === 'highRackArea') {
-                        showRackSection(currentRackPrefix);
-                    } else {
-                        showFloorSection(currentRackPrefix);
+                    const activeAreaBtn = document.querySelector('.rack-area-btn.active');
+                    if (activeAreaBtn) {
+                        const prefix = activeAreaBtn.textContent;
+                        if (document.getElementById('highRackArea').style.display !== 'none' && 
+                            window.rackPrefixes.highRack.includes(prefix)) {
+                            displayRackArea(prefix);
+                        } else if (window.rackPrefixes.floor.includes(prefix)) {
+                            displayFloorArea(prefix);
+                        }
                     }
                     updateStatistics();
                 });
@@ -937,10 +917,15 @@ function refreshData() {
     loadMasterLocations()
         .then(() => {
             // Re-render current view
-            if (currentArea === 'highRackArea') {
-                showRackSection(currentRackPrefix);
-            } else {
-                showFloorSection(currentRackPrefix);
+            const activeAreaBtn = document.querySelector('.rack-area-btn.active');
+            if (activeAreaBtn) {
+                const prefix = activeAreaBtn.textContent;
+                if (document.getElementById('highRackArea').style.display !== 'none' && 
+                    window.rackPrefixes.highRack.includes(prefix)) {
+                    displayRackArea(prefix);
+                } else if (window.rackPrefixes.floor.includes(prefix)) {
+                    displayFloorArea(prefix);
+                }
             }
             updateStatistics();
         })

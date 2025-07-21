@@ -20,196 +20,95 @@ body {
     max-width: 400px;
 }
 
-/* Rack Navigation Styles */
-.rack-navigation {
+/* Rack Area Button Styles */
+.rack-area-buttons {
     display: flex;
     flex-wrap: wrap;
     gap: 5px;
     margin-bottom: 15px;
 }
 
-/* New Grid Styles for High Rack Areas */
-.rack-header-row {
-    display: grid;
-    grid-template-columns: 80px repeat(var(--num-blocks, 13), 1fr);
-    gap: 5px;
-    margin-bottom: 5px;
-    font-weight: bold;
-    text-align: center;
-}
-
-.rack-label {
-    font-weight: 600;
-    text-align: center;
-    padding: 5px;
+.rack-area-btn {
+    padding: 6px 12px;
     background-color: #f8f9fa;
     border: 1px solid #dee2e6;
     border-radius: 4px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
-.block-header {
-    text-align: center;
-    padding: 5px;
+.rack-area-btn:hover {
     background-color: #e9ecef;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    grid-column: span 2;
+    border-color: #ced4da;
 }
 
-.sub-header-row {
-    display: grid;
-    grid-template-columns: 80px repeat(var(--num-blocks, 13), 1fr);
-    gap: 5px;
-    margin-bottom: 5px;
+.rack-area-btn.active {
+    background-color: #6c757d;
+    color: white;
+    border-color: #6c757d;
 }
 
-.sub-columns {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 5px;
-}
-
-.sub-col {
-    text-align: center;
-    padding: 5px;
-    background-color: #f1f3f5;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
+/* Table Styles for Rack Visualization */
+.rack-table, .floor-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
     font-size: 0.85rem;
+    margin-bottom: 20px;
+    table-layout: fixed;
 }
 
-.rack-row {
-    display: grid;
-    grid-template-columns: 80px repeat(var(--num-blocks, 13), 1fr);
-    gap: 5px;
-    margin-bottom: 5px;
-}
-
-.rack-level {
-    font-weight: 600;
-    text-align: center;
-    padding: 10px 5px;
-    background-color: #f8f9fa;
+.rack-table th, .floor-table th,
+.rack-table td, .floor-table td {
     border: 1px solid #dee2e6;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.block-cell {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2px;
-}
-
-.rack-location {
-    padding: 10px 3px;
     text-align: center;
-    font-size: 0.75rem;
-    background-color: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    padding: 6px 2px;
 }
 
-/* New Grid Styles for Floor Areas */
-.floor-header-row {
-    display: grid;
-    grid-template-columns: 80px repeat(21, 1fr);
-    gap: 3px;
-    margin-bottom: 5px;
-    font-weight: bold;
-    text-align: center;
-}
-
-.floor-label {
-    font-weight: 600;
-    text-align: center;
-    padding: 5px;
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-}
-
-.floor-col-header {
-    text-align: center;
-    padding: 5px;
+.rack-table th, .floor-table th {
     background-color: #e9ecef;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    font-size: 0.75rem;
-}
-
-.floor-row {
-    display: grid;
-    grid-template-columns: 80px repeat(21, 1fr);
-    gap: 3px;
-    margin-bottom: 3px;
-}
-
-.floor-block {
     font-weight: 600;
-    text-align: center;
-    padding: 5px 2px;
+}
+
+/* Level and Block Cell Styles */
+.level-cell, .block-cell {
     background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-weight: 600;
 }
 
-.floor-location {
-    padding: 5px 2px;
-    text-align: center;
-    font-size: 0.7rem;
-    background-color: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
+/* Location Cell Styles */
+.location-cell {
     cursor: pointer;
-    transition: all 0.2s ease;
+    height: 28px;
+    transition: all 0.2s;
 }
 
-/* Status Styles */
-.rack-location.occupied, .floor-location.occupied {
-    background-color: #f8d7da;
-    border-color: #f5c2c7;
-    color: #842029;
-}
-
-.rack-location.available, .floor-location.available {
-    background-color: #fff;
-    border-color: #dee2e6;
-    color: #495057;
-}
-
-.rack-location.status-putaway, .floor-location.status-putaway {
-    background-color: #cfe2ff;
-    border-color: #9ec5fe;
-    color: #0a58ca;
-}
-
-.rack-location.status-allocated, .floor-location.status-allocated {
-    background-color: #fff3cd;
-    border-color: #ffecb5;
-    color: #664d03;
-}
-
-.rack-location.status-hold, .floor-location.status-hold {
-    background-color: #f8d7da;
-    border-color: #f5c2c7;
-    color: #842029;
-}
-
-.rack-location:hover, .floor-location:hover {
+.location-cell:hover {
     transform: scale(1.05);
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
     z-index: 1;
+    position: relative;
+}
+
+.location-cell.available {
+    background-color: #fff;
+}
+
+.location-cell.occupied {
+    background-color: #f8d7da;
+}
+
+.location-cell.status-putaway {
+    background-color: #cfe2ff;
+}
+
+.location-cell.status-allocated {
+    background-color: #fff3cd;
+}
+
+.location-cell.status-hold {
+    background-color: #f8d7da;
 }
 
 /* Legend Styles */
@@ -263,7 +162,7 @@ body {
 /* Search Results Styles */
 .search-results-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 10px;
     margin-top: 15px;
 }
@@ -341,4 +240,54 @@ body {
     font-size: 1.5rem;
     font-weight: 600;
     color: #2c3e50;
+}
+
+/* Detail Modal Styles */
+.location-details {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.detail-item {
+    display: flex;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 8px;
+}
+
+.detail-label {
+    font-weight: 600;
+    width: 130px;
+    color: #495057;
+}
+
+.detail-value {
+    flex: 1;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 991px) {
+    .rack-table, .floor-table {
+        font-size: 0.75rem;
+    }
+    
+    .rack-area-btn {
+        padding: 4px 8px;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 767px) {
+    .search-results-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .legend-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .legend-item {
+        margin-top: 3px;
+    }
 }
