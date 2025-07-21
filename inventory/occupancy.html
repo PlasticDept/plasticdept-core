@@ -6,10 +6,6 @@
     <title>Sistem Manajemen Occupancy Area dan High Rack</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/occupancy.css">
-    <!-- Supabase JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- XLSX JS untuk parsing Excel -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -21,8 +17,8 @@
                 </div>
                 <div class="user-section">
                     <div class="user-info">
-                        <div class="datetime" id="currentDate"></div>
-                        <div class="username" id="currentUser"></div>
+                        <div class="datetime" id="currentDate">2025-07-11 10:05:09</div>
+                        <div class="username" id="currentUser">Login: PlasticDept</div>
                     </div>
                     <div class="search-container">
                         <input type="text" id="searchInput" placeholder="Cari lokasi atau customer...">
@@ -34,53 +30,26 @@
             </div>
         </header>
 
-        <!-- Upload Section -->
-        <div class="upload-section">
-            <div class="upload-container">
-                <h3>Upload Data Lokasi</h3>
-                <div class="file-input-wrapper">
-                    <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv">
-                    <label for="excelFileInput" class="file-input-label">
-                        <i class="fas fa-file-excel"></i> Pilih File Excel/CSV
-                    </label>
-                    <span class="file-name" id="fileName">Belum ada file dipilih</span>
-                </div>
-                <button id="uploadButton" class="upload-btn" disabled>
-                    <i class="fas fa-cloud-upload-alt"></i> Upload Data
-                </button>
-                <div class="upload-progress" id="uploadProgress">
-                    <div class="progress-bar" id="progressBar"></div>
-                </div>
-                <p class="upload-help">Format: Location, Status, Flag, Part No, Received Date, Invoice No, Total</p>
-            </div>
-        </div>
-
         <div class="main-content">
-            <!-- Loading Spinner -->
-            <div id="loadingSpinner" class="loading-spinner">
-                <div class="spinner"></div>
-                <p>Memuat data...</p>
-            </div>
-            
             <div class="legend-container">
                 <div class="legend">
                     <div class="legend-title">Keterangan:</div>
                     <div class="legend-items">
                         <div class="legend-item">
-                            <div class="color-box customer-available"></div>
-                            <span>Available</span>
+                            <div class="color-box customer-abc"></div>
+                            <span>Customer ABC</span>
                         </div>
                         <div class="legend-item">
-                            <div class="color-box customer-allocated"></div>
-                            <span>Allocated</span>
+                            <div class="color-box customer-def"></div>
+                            <span>Customer DEF</span>
                         </div>
                         <div class="legend-item">
-                            <div class="color-box customer-putaway"></div>
-                            <span>Putaway</span>
+                            <div class="color-box customer-ghi"></div>
+                            <span>Customer GHI</span>
                         </div>
                         <div class="legend-item">
-                            <div class="color-box customer-reserved"></div>
-                            <span>Reserved</span>
+                            <div class="color-box customer-jkl"></div>
+                            <span>Customer JKL</span>
                         </div>
                         <div class="legend-item">
                             <div class="color-box empty-box"></div>
@@ -91,19 +60,19 @@
             </div>
 
             <div class="area-tabs">
-                <button class="area-tab active" data-area="A">Area A</button>
                 <button class="area-tab" data-area="DA">Area DA</button>
                 <button class="area-tab" data-area="DB">Area DB</button>
                 <button class="area-tab" data-area="DC">Area DC</button>
-                <button class="area-tab" data-area="DD">Area DD</button>
+                <button class="area-tab active" data-area="DD">Area DD</button>
+                <button class="area-tab" data-area="DE">Area DE</button>
             </div>
 
             <div class="area-content">
-                <div class="area-view" id="areaA"></div>
                 <div class="area-view" id="areaDA" style="display: none;"></div>
                 <div class="area-view" id="areaDB" style="display: none;"></div>
                 <div class="area-view" id="areaDC" style="display: none;"></div>
-                <div class="area-view" id="areaDD" style="display: none;"></div>
+                <div class="area-view" id="areaDD"></div>
+                <div class="area-view" id="areaDE" style="display: none;"></div>
             </div>
         </div>
 
@@ -125,30 +94,27 @@
                         <span class="detail-value" id="locationStatus"></span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">Flag:</span>
-                        <span class="detail-value" id="locationFlag"></span>
+                        <span class="detail-label">Customer:</span>
+                        <span class="detail-value" id="customerName"></span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">Part No:</span>
-                        <span class="detail-value" id="partNo"></span>
+                        <span class="detail-label">Material:</span>
+                        <span class="detail-value" id="materialName"></span>
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">Quantity:</span>
                         <span class="detail-value" id="materialQty"></span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">Invoice No:</span>
-                        <span class="detail-value" id="invoiceNo"></span>
-                    </div>
-                    <div class="detail-item">
                         <span class="detail-label">Tanggal Masuk:</span>
-                        <span class="detail-value" id="receivedDate"></span>
+                        <span class="detail-value" id="dateIn"></span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <script src="data.js"></script>
     <script src="js/occupancy.js"></script>
 </body>
 </html>
