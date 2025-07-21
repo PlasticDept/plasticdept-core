@@ -37,17 +37,23 @@
 
         <div class="content-container my-3">
             <div class="row mb-4">
-                <div class="col-md-8">
+                <div class="col-md-6">
                     <h2 class="page-title">Monitoring Occupancy Rack</h2>
                     <p class="text-muted">Visualisasi status occupancy rack area dan floor area</p>
                 </div>
-                <div class="col-md-4 text-end">
-                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">
-                        <i class="bi bi-upload me-2"></i> Upload Data
-                    </button>
-                    <button type="button" class="btn btn-outline-primary ms-2" id="refreshBtn">
-                        <i class="bi bi-arrow-clockwise me-2"></i> Refresh
-                    </button>
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-end">
+                        <div class="input-group me-2 search-container">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" id="searchInput" class="form-control" placeholder="Cari lokasi, part no, dsb...">
+                        </div>
+                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                            <i class="bi bi-upload me-2"></i> Upload
+                        </button>
+                        <button type="button" class="btn btn-outline-primary ms-2" id="refreshBtn">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -56,52 +62,61 @@
                     <h5 class="mb-0">Status Occupancy</h5>
                     <div class="legend-container">
                         <span class="legend-item">
+                            <span class="legend-color available"></span> Tersedia
+                        </span>
+                        <span class="legend-item ms-3">
                             <span class="legend-color occupied"></span> Terisi
                         </span>
                         <span class="legend-item ms-3">
-                            <span class="legend-color available"></span> Tersedia
+                            <span class="legend-color status-putaway"></span> Putaway
+                        </span>
+                        <span class="legend-item ms-3">
+                            <span class="legend-color status-allocated"></span> Allocated
+                        </span>
+                        <span class="legend-item ms-3">
+                            <span class="legend-color status-hold"></span> Hold
                         </span>
                     </div>
                 </div>
                 <div class="card-body">
                     <div class="rack-selector mb-3">
                         <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-outline-primary active" data-area="highRack">High Rack Area</button>
+                            <button type="button" class="btn btn-outline-primary active" data-area="highRackArea">High Rack Area</button>
                             <button type="button" class="btn btn-outline-primary" data-area="floorArea">Floor Area</button>
                         </div>
                     </div>
 
-                    <div class="rack-container" id="highRackArea">
-                        <div class="rack-section mb-4">
-                            <h6 class="section-title">Area DA (01-05)</h6>
-                            <div class="rack-grid" id="section-DA-01-05"></div>
+                    <!-- High Rack Area Navigation -->
+                    <div id="highRackArea" class="rack-container">
+                        <div class="rack-navigation mb-3" id="highRackNavigation">
+                            <!-- Dynamically generated rack buttons -->
                         </div>
-                        
-                        <div class="rack-section mb-4">
-                            <h6 class="section-title">Area DA (06-10)</h6>
-                            <div class="rack-grid" id="section-DA-06-10"></div>
+                        <div id="highRackContainer">
+                            <!-- Dynamically generated rack sections -->
                         </div>
-
-                        <div class="rack-section mb-4">
-                            <h6 class="section-title">Area DB (01-05)</h6>
-                            <div class="rack-grid" id="section-DB-01-05"></div>
-                        </div>
-
-                        <!-- Tambahkan section lainnya di sini -->
                     </div>
 
-                    <div class="rack-container" id="floorArea" style="display: none;">
-                        <div class="rack-section mb-4">
-                            <h6 class="section-title">Area A (01-10)</h6>
-                            <div class="rack-grid" id="section-A-01-10"></div>
+                    <!-- Floor Area Navigation -->
+                    <div id="floorArea" class="rack-container" style="display: none;">
+                        <div class="rack-navigation mb-3" id="floorNavigation">
+                            <!-- Dynamically generated floor buttons -->
                         </div>
-                        
-                        <div class="rack-section mb-4">
-                            <h6 class="section-title">Area A (11-20)</h6>
-                            <div class="rack-grid" id="section-A-11-20"></div>
+                        <div id="floorContainer">
+                            <!-- Dynamically generated floor sections -->
                         </div>
+                    </div>
 
-                        <!-- Tambahkan section lainnya di sini -->
+                    <!-- Pagination Controls -->
+                    <div class="pagination-controls mt-4" id="paginationControls" style="display: none;">
+                        <button id="prevPage" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-chevron-left"></i> Prev
+                        </button>
+                        <div class="pagination-info mx-3">
+                            Page <span id="currentPage">1</span> of <span id="totalPages">1</span>
+                        </div>
+                        <button id="nextPage" class="btn btn-sm btn-outline-secondary">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -121,19 +136,19 @@
                         <div class="col-md-3">
                             <div class="stat-card">
                                 <div class="stat-title">Lokasi Terpakai</div>
-                                <div class="stat-value" id="occupiedLocations">-</div>
+                                <div class="stat-value text-danger" id="occupiedLocations">-</div>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="stat-card">
                                 <div class="stat-title">Lokasi Tersedia</div>
-                                <div class="stat-value" id="availableLocations">-</div>
+                                <div class="stat-value text-success" id="availableLocations">-</div>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="stat-card">
                                 <div class="stat-title">Persentase Occupancy</div>
-                                <div class="stat-value" id="occupancyPercentage">-</div>
+                                <div class="stat-value text-primary" id="occupancyPercentage">-</div>
                             </div>
                         </div>
                     </div>
