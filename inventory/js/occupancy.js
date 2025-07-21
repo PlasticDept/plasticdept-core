@@ -490,6 +490,9 @@ function showLocationDetails(locationCode) {
             // Format part number
             document.getElementById('partNo').textContent = data.partNo || '-';
             
+            // Format product description (new field)
+            document.getElementById('productDescription').textContent = data.productDescription || '-';
+            
             // Format invoice number
             document.getElementById('invoiceNo').textContent = data.invoiceNo || '-';
             
@@ -530,7 +533,7 @@ function showLocationDetails(locationCode) {
             document.getElementById('locationStatus').className = 'detail-value text-success';
             
             // Reset other fields
-            ['partNo', 'invoiceNo', 'lotNo', 'receiveDate', 'quantity', 
+            ['partNo', 'productDescription', 'invoiceNo', 'lotNo', 'receiveDate', 'quantity', 
              'customerCode', 'uidCount'].forEach(id => {
                 document.getElementById(id).textContent = '-';
             });
@@ -547,6 +550,27 @@ function showLocationDetails(locationCode) {
 
 // Format Excel Date Number to DD-MMM-YYYY
 function formatExcelDate(excelDate) {
+    // Check if the date is already in a formatted string
+    if (typeof excelDate === 'string' && excelDate.includes('/')) {
+        // Parse date in MM/DD/YYYY format
+        const parts = excelDate.split('/');
+        if (parts.length === 3) {
+            const month = parseInt(parts[0]) - 1; // JavaScript months are 0-based
+            const day = parseInt(parts[1]);
+            const year = parseInt(parts[2]);
+            
+            const date = new Date(year, month, day);
+            
+            // Format to DD-MMM-YYYY
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const formattedDay = day.toString().padStart(2, '0');
+            const formattedMonth = months[month];
+            
+            return `${formattedDay}-${formattedMonth}-${year}`;
+        }
+        return excelDate;
+    }
+    
     // Excel's epoch starts on 1899-12-30
     const excelEpoch = new Date(1899, 11, 30);
     const days = parseInt(excelDate, 10);
@@ -652,6 +676,7 @@ function handleSearch() {
     const results = allLocations.filter(loc => 
         loc.locationCode.toUpperCase().includes(searchTerm) ||
         (loc.partNo && loc.partNo.toUpperCase().includes(searchTerm)) ||
+        (loc.productDescription && loc.productDescription.toUpperCase().includes(searchTerm)) ||
         (loc.invoiceNo && loc.invoiceNo.toUpperCase().includes(searchTerm)) ||
         (loc.customerCode && loc.customerCode.toUpperCase().includes(searchTerm))
     );
@@ -882,8 +907,9 @@ async function processUploadedData(data) {
                 isOccupied: true,
                 lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
                 partNo: row.PartNo || row.partNo || row['Part No'] || '',
+                productDescription: row.ProductDescription || row['Product Description'] || row.Description || '',
                 invoiceNo: row.InvoiceNo || row.invoiceNo || row['Invoice No'] || '',
-                lotNo: row.LotNo || row.lotNo || row['Lot No'] || '',
+                lotNo: row.LotNo || row.lotNo || row['Lot No'] || row['Lot No.'] || '', // Added "Lot No." with period
                 receiveDate: row.ReceiveDate || row.receiveDate || row['Receive Date'] || row['Received Date'] || '',
                 status: row.Status || row.status || 'putaway',
                 quantity: parseInt(row.Quantity || row.quantity || row.QTY || row.Qty || '0', 10),

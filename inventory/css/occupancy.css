@@ -257,7 +257,7 @@ body {
 
 .detail-label {
     font-weight: 600;
-    width: 130px;
+    width: 150px;
     color: #495057;
 }
 
@@ -289,5 +289,9 @@ body {
     
     .legend-item {
         margin-top: 3px;
+    }
+    
+    .detail-label {
+        width: 130px;
     }
 }
