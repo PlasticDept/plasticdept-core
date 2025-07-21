@@ -15,7 +15,7 @@ const db = firebase.firestore();
 const storage = firebase.storage();
 
 // Global variables
-const BLOCKS_PER_PAGE = 13; // Number of rack columns to display per page
+const BLOCKS_PER_PAGE = 15; // Number of rack columns to display per page
 let allLocations = []; // Store all master locations
 let currentPage = 1; // Current page for pagination
 let currentArea = "highRackArea"; // Current selected area
