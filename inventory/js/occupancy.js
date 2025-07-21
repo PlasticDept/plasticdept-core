@@ -1,11 +1,12 @@
 // Firebase Configuration
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "your-project-id.firebaseapp.com",
-    projectId: "your-project-id",
-    storageBucket: "your-project-id.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDDw17I5NwibE9BXl0YoILPQqoPQfCKH4Q",
+  authDomain: "inbound-d8267.firebaseapp.com",
+  databaseURL: "https://inbound-d8267-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "inbound-d8267",
+  storageBucket: "inbound-d8267.firebasestorage.app",
+  messagingSenderId: "852665126418",
+  appId: "1:852665126418:web:e4f029b83995e29f3052cb"
 };
 
 // Initialize Firebase
@@ -19,7 +20,8 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     
     // Event listeners
-    document.getElementById('uploadBtn').addEventListener('click', handleFileUpload);
+    document.getElementById('uploadMasterBtn').addEventListener('click', handleMasterLocationUpload);
+    document.getElementById('uploadOccupancyBtn').addEventListener('click', handleFileUpload);
     document.getElementById('refreshBtn').addEventListener('click', refreshData);
     
     // Setup area selector buttons
@@ -252,54 +254,106 @@ function toggleAreaView(areaToShow, buttons) {
 function handleFileUpload() {
     const fileInput = document.getElementById('fileUpload');
     const file = fileInput.files[0];
-    
+
     if (!file) {
-        alert('Silakan pilih file terlebih dahulu.');
+        alert('Silakan pilih file occupancy terlebih dahulu.');
         return;
     }
-    
-    // Show loading state
-    const uploadBtn = document.getElementById('uploadBtn');
-    const originalText = uploadBtn.textContent;
+
+    const uploadBtn = document.getElementById('uploadOccupancyBtn');
+    const originalText = uploadBtn.innerHTML;
     uploadBtn.disabled = true;
     uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...';
-    
-    // Read Excel file
+
     const reader = new FileReader();
     reader.onload = function(e) {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, {type: 'array'});
-        
-        // Get first worksheet
         const worksheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[worksheetName];
-        
-        // Convert to JSON
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
-        
-        // Process data
+
         processUploadedData(jsonData)
             .then(() => {
-                // Close modal and reset
                 bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
                 fileInput.value = '';
-                alert('Data berhasil diupload dan diproses!');
-                
-                // Refresh displayed data
+                alert('Data occupancy berhasil diupload dan diproses!');
                 loadLocationsData();
             })
             .catch(error => {
                 console.error("Error processing uploaded data:", error);
-                alert('Terjadi kesalahan saat memproses data. Silakan coba lagi.');
+                alert('Terjadi kesalahan saat memproses data occupancy. Silakan coba lagi.');
             })
             .finally(() => {
-                // Reset button state
                 uploadBtn.disabled = false;
-                uploadBtn.textContent = originalText;
+                uploadBtn.innerHTML = originalText;
             });
     };
-    
     reader.readAsArrayBuffer(file);
+}
+
+// Fungsi Upload Master Lokasi CSV
+function handleMasterLocationUpload() {
+    const fileInput = document.getElementById('fileUpload');
+    const file = fileInput.files[0];
+    if (!file) {
+        alert('Silakan pilih file master lokasi CSV terlebih dahulu.');
+        return;
+    }
+
+    const uploadBtn = document.getElementById('uploadMasterBtn');
+    const originalText = uploadBtn.innerHTML;
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...';
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        let csv = e.target.result;
+        // Normalize line endings
+        csv = csv.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+        const lines = csv.split('\n').map(l => l.trim()).filter(Boolean);
+
+        // Ambil index kolom "Location" dari header
+        const header = lines[0].split(',');
+        const locationIdx = header.findIndex(h => h.trim().toLowerCase() === 'location');
+        if (locationIdx === -1) {
+            alert('File CSV tidak valid! Pastikan ada header "Location"');
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = originalText;
+            return;
+        }
+
+        // Batch Firestore untuk efisiensi
+        const batch = db.batch();
+        let count = 0;
+        for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split(',');
+            const locationCode = cols[locationIdx]?.replace(/['"]+/g, '').trim();
+            if (locationCode) {
+                const docRef = db.collection('locations').doc(locationCode);
+                batch.set(docRef, {
+                    locationCode,
+                    isOccupied: false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                count++;
+            }
+        }
+
+        batch.commit().then(() => {
+            alert(`Master lokasi berhasil diupload! Total lokasi: ${count}`);
+            fileInput.value = '';
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = originalText;
+            bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
+            loadLocationsData();
+        }).catch(err => {
+            alert('Upload gagal: ' + err.message);
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = originalText;
+        });
+    };
+    reader.readAsText(file);
 }
 
 // Process Uploaded Data

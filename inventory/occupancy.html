@@ -204,19 +204,26 @@
                 <div class="modal-body">
                     <form id="uploadForm">
                         <div class="mb-3">
-                            <label for="fileUpload" class="form-label">Pilih File Excel</label>
-                            <input class="form-control" type="file" id="fileUpload" accept=".xlsx, .xls">
-                            <div class="form-text">Format file: Excel (.xlsx, .xls)</div>
+                            <label for="fileUpload" class="form-label">Pilih File (Excel/CSV)</label>
+                            <input class="form-control" type="file" id="fileUpload" accept=".xlsx, .xls, .csv">
+                            <div class="form-text">Format file: Excel (.xlsx, .xls) atau CSV</div>
                         </div>
                     </form>
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle me-2"></i>
-                        Data akan dicocokkan dengan master lokasi yang sudah ada
+                        <b>Pilih jenis upload:</b><br>
+                        <span class="text-primary">Upload Master Lokasi:</span> untuk file CSV berisi daftar lokasi.<br>
+                        <span class="text-success">Upload Data Occupancy:</span> untuk data detail lokasi (part/invoice/status, dsb).
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-primary" id="uploadBtn">Upload</button>
+                    <button type="button" class="btn btn-primary" id="uploadMasterBtn">
+                        <i class="bi bi-cloud-upload"></i> Upload Master Lokasi
+                    </button>
+                    <button type="button" class="btn btn-success" id="uploadOccupancyBtn">
+                        <i class="bi bi-upload"></i> Upload Data Occupancy
+                    </button>
                 </div>
             </div>
         </div>
