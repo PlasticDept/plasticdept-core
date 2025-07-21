@@ -385,9 +385,9 @@ async function processUploadedData(data) {
                 partNo: row.PartNo || row.partNo || row['Part No'] || '',
                 invoiceNo: row.InvoiceNo || row.invoiceNo || row['Invoice No'] || '',
                 lotNo: row.LotNo || row.lotNo || row['Lot No'] || '',
-                receiveDate: row.ReceiveDate || row.receiveDate || row['Receive Date'] || '',
+                receiveDate: row.ReceiveDate || row.receiveDate || row['Receive Date'] || row['Received Date'] || '',
                 status: row.Status || row.status || 'putaway',
-                quantity: parseInt(row.Quantity || row.quantity || row.QTY || '0', 10),
+                quantity: parseInt(row.Quantity || row.quantity || row.QTY || row.Qty || '0', 10),
                 customerCode: row.CustomerCode || row.customerCode || row['Customer Code'] || '',
                 uidCount: parseInt(row.UIDCount || row.uidCount || row.UID || '0', 10)
             };
