@@ -178,14 +178,16 @@ function showLocationDetails(locationCode) {
                 
                 // Populate modal with data
                 document.getElementById('locationCode').textContent = locationCode;
+                document.getElementById('locationDisplay').textContent = locationCode;
+                document.getElementById('partNo').textContent = data.partNo || '-';
+                document.getElementById('productDescription').textContent = data.productDescription || '-';
+                document.getElementById('receiveDate').textContent = data.receiveDate || '-';
                 document.getElementById('locationStatus').textContent = data.isOccupied ? 
                     data.status || 'Occupied' : 'Available';
-                document.getElementById('partNo').textContent = data.partNo || '-';
-                document.getElementById('invoiceNo').textContent = data.invoiceNo || '-';
-                document.getElementById('lotNo').textContent = data.lotNo || '-';
-                document.getElementById('receiveDate').textContent = data.receiveDate || '-';
-                document.getElementById('quantity').textContent = data.quantity || '0';
                 document.getElementById('customerCode').textContent = data.customerCode || '-';
+                document.getElementById('lotNo').textContent = data.lotNo || '-';
+                document.getElementById('invoiceNo').textContent = data.invoiceNo || '-';
+                document.getElementById('quantity').textContent = data.quantity || '0';
                 document.getElementById('uidCount').textContent = data.uidCount || '0';
                 
                 // Style the status based on its value
@@ -207,12 +209,13 @@ function showLocationDetails(locationCode) {
             } else {
                 // If no detailed data exists, show basic info
                 document.getElementById('locationCode').textContent = locationCode;
+                document.getElementById('locationDisplay').textContent = locationCode;
                 document.getElementById('locationStatus').textContent = 'Available';
                 document.getElementById('locationStatus').className = 'detail-value text-success';
                 
                 // Reset other fields
-                ['partNo', 'invoiceNo', 'lotNo', 'receiveDate', 'quantity', 
-                 'customerCode', 'uidCount'].forEach(id => {
+                ['partNo', 'productDescription', 'receiveDate', 'customerCode', 
+                 'lotNo', 'invoiceNo', 'quantity', 'uidCount'].forEach(id => {
                     document.getElementById(id).textContent = '-';
                 });
             }
@@ -377,19 +380,20 @@ async function processUploadedData(data) {
         if (locationCode && masterLocations[locationCode]) {
             const locationRef = db.collection('locations').doc(locationCode);
             
-            // Prepare location data
+            // Prepare location data with CSV field mapping
             const locationData = {
                 locationCode: locationCode,
                 isOccupied: true,
                 lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-                partNo: row.PartNo || row.partNo || row['Part No'] || '',
-                invoiceNo: row.InvoiceNo || row.invoiceNo || row['Invoice No'] || '',
-                lotNo: row.LotNo || row.lotNo || row['Lot No'] || '',
-                receiveDate: row.ReceiveDate || row.receiveDate || row['Receive Date'] || '',
+                partNo: row['Part No'] || row.partNo || row.PartNo || '',
+                productDescription: row['Product Description'] || row.productDescription || row.ProductDescription || '',
+                receiveDate: row['Received Date'] || row.receivedDate || row.ReceivedDate || row.receiveDate || row.ReceiveDate || '',
                 status: row.Status || row.status || 'putaway',
-                quantity: parseInt(row.Quantity || row.quantity || row.QTY || '0', 10),
-                customerCode: row.CustomerCode || row.customerCode || row['Customer Code'] || '',
-                uidCount: parseInt(row.UIDCount || row.uidCount || row.UID || '0', 10)
+                customerCode: row['Customer Code'] || row.customerCode || row.CustomerCode || '',
+                lotNo: row['Lot No.'] || row['Lot No'] || row.lotNo || row.LotNo || '',
+                invoiceNo: row['Invoice No'] || row.invoiceNo || row.InvoiceNo || '',
+                quantity: parseInt(row.Qty || row.qty || row.QTY || row.Quantity || row.quantity || '0', 10),
+                uidCount: parseInt(row.UID || row.uid || row.UIDCount || row.uidCount || '0', 10)
             };
             
             batch.set(locationRef, locationData, { merge: true });
