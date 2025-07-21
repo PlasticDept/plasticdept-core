@@ -3,118 +3,234 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Manajemen Occupancy Area dan High Rack</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Sistem Manajemen Occupancy Rack</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="css/occupancy.css">
 </head>
 <body>
-    <div class="app-container">
-        <header class="main-header">
-            <div class="header-content">
-                <div class="logo-title">
-                    <i class="fas fa-warehouse"></i>
-                    <h1>Sistem Manajemen Occupancy Area dan High Rack</h1>
-                </div>
-                <div class="user-section">
-                    <div class="user-info">
-                        <div class="datetime" id="currentDate">2025-07-11 10:05:09</div>
-                        <div class="username" id="currentUser">Login: PlasticDept</div>
-                    </div>
-                    <div class="search-container">
-                        <input type="text" id="searchInput" placeholder="Cari lokasi atau customer...">
-                        <button id="searchButton" class="search-btn">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
+    <div class="container-fluid">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">
+                    <i class="bi bi-box-seam me-2"></i>
+                    Warehouse Management System
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Laporan</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Pengaturan</a>
+                        </li>
+                    </ul>
                 </div>
             </div>
-        </header>
+        </nav>
 
-        <div class="main-content">
-            <div class="legend-container">
-                <div class="legend">
-                    <div class="legend-title">Keterangan:</div>
-                    <div class="legend-items">
-                        <div class="legend-item">
-                            <div class="color-box customer-abc"></div>
-                            <span>Customer ABC</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="color-box customer-def"></div>
-                            <span>Customer DEF</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="color-box customer-ghi"></div>
-                            <span>Customer GHI</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="color-box customer-jkl"></div>
-                            <span>Customer JKL</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="color-box empty-box"></div>
-                            <span>Kosong</span>
-                        </div>
-                    </div>
+        <div class="content-container my-3">
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <h2 class="page-title">Monitoring Occupancy Rack</h2>
+                    <p class="text-muted">Visualisasi status occupancy rack area dan floor area</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                        <i class="bi bi-upload me-2"></i> Upload Data
+                    </button>
+                    <button type="button" class="btn btn-outline-primary ms-2" id="refreshBtn">
+                        <i class="bi bi-arrow-clockwise me-2"></i> Refresh
+                    </button>
                 </div>
             </div>
 
-            <div class="area-tabs">
-                <button class="area-tab" data-area="DA">Area DA</button>
-                <button class="area-tab" data-area="DB">Area DB</button>
-                <button class="area-tab" data-area="DC">Area DC</button>
-                <button class="area-tab active" data-area="DD">Area DD</button>
-                <button class="area-tab" data-area="DE">Area DE</button>
-            </div>
-
-            <div class="area-content">
-                <div class="area-view" id="areaDA" style="display: none;"></div>
-                <div class="area-view" id="areaDB" style="display: none;"></div>
-                <div class="area-view" id="areaDC" style="display: none;"></div>
-                <div class="area-view" id="areaDD"></div>
-                <div class="area-view" id="areaDE" style="display: none;"></div>
-            </div>
-        </div>
-
-        <div id="detailModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 id="locationTitle">Detail Lokasi</h2>
-                    <span class="close-button">
-                        <i class="fas fa-times"></i>
-                    </span>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Status Occupancy</h5>
+                    <div class="legend-container">
+                        <span class="legend-item">
+                            <span class="legend-color occupied"></span> Terisi
+                        </span>
+                        <span class="legend-item ms-3">
+                            <span class="legend-color available"></span> Tersedia
+                        </span>
+                    </div>
                 </div>
-                <div class="modal-body">
-                    <div class="detail-item">
-                        <span class="detail-label">Lokasi:</span>
-                        <span class="detail-value" id="locationCode"></span>
+                <div class="card-body">
+                    <div class="rack-selector mb-3">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-primary active" data-area="highRack">High Rack Area</button>
+                            <button type="button" class="btn btn-outline-primary" data-area="floorArea">Floor Area</button>
+                        </div>
                     </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Status:</span>
-                        <span class="detail-value" id="locationStatus"></span>
+
+                    <div class="rack-container" id="highRackArea">
+                        <div class="rack-section mb-4">
+                            <h6 class="section-title">Area DA (01-05)</h6>
+                            <div class="rack-grid" id="section-DA-01-05"></div>
+                        </div>
+                        
+                        <div class="rack-section mb-4">
+                            <h6 class="section-title">Area DA (06-10)</h6>
+                            <div class="rack-grid" id="section-DA-06-10"></div>
+                        </div>
+
+                        <div class="rack-section mb-4">
+                            <h6 class="section-title">Area DB (01-05)</h6>
+                            <div class="rack-grid" id="section-DB-01-05"></div>
+                        </div>
+
+                        <!-- Tambahkan section lainnya di sini -->
                     </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Customer:</span>
-                        <span class="detail-value" id="customerName"></span>
+
+                    <div class="rack-container" id="floorArea" style="display: none;">
+                        <div class="rack-section mb-4">
+                            <h6 class="section-title">Area A (01-10)</h6>
+                            <div class="rack-grid" id="section-A-01-10"></div>
+                        </div>
+                        
+                        <div class="rack-section mb-4">
+                            <h6 class="section-title">Area A (11-20)</h6>
+                            <div class="rack-grid" id="section-A-11-20"></div>
+                        </div>
+
+                        <!-- Tambahkan section lainnya di sini -->
                     </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Material:</span>
-                        <span class="detail-value" id="materialName"></span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Quantity:</span>
-                        <span class="detail-value" id="materialQty"></span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Tanggal Masuk:</span>
-                        <span class="detail-value" id="dateIn"></span>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Statistik Occupancy</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="stat-title">Total Lokasi</div>
+                                <div class="stat-value" id="totalLocations">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="stat-title">Lokasi Terpakai</div>
+                                <div class="stat-value" id="occupiedLocations">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="stat-title">Lokasi Tersedia</div>
+                                <div class="stat-value" id="availableLocations">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="stat-title">Persentase Occupancy</div>
+                                <div class="stat-value" id="occupancyPercentage">-</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="data.js"></script>
+    <!-- Modal Detail Lokasi -->
+    <div class="modal fade" id="locationModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Detail Lokasi: <span id="locationCode"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="location-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Status:</div>
+                            <div class="detail-value" id="locationStatus">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Part No:</div>
+                            <div class="detail-value" id="partNo">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Invoice No:</div>
+                            <div class="detail-value" id="invoiceNo">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Lot No:</div>
+                            <div class="detail-value" id="lotNo">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Receive Date:</div>
+                            <div class="detail-value" id="receiveDate">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Quantity:</div>
+                            <div class="detail-value" id="quantity">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Customer Code:</div>
+                            <div class="detail-value" id="customerCode">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">UID Count:</div>
+                            <div class="detail-value" id="uidCount">-</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Upload -->
+    <div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload Data Occupancy</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="uploadForm">
+                        <div class="mb-3">
+                            <label for="fileUpload" class="form-label">Pilih File Excel</label>
+                            <input class="form-control" type="file" id="fileUpload" accept=".xlsx, .xls">
+                            <div class="form-text">Format file: Excel (.xlsx, .xls)</div>
+                        </div>
+                    </form>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Data akan dicocokkan dengan master lokasi yang sudah ada
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" id="uploadBtn">Upload</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    
     <script src="js/occupancy.js"></script>
 </body>
 </html>
