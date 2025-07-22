@@ -292,28 +292,9 @@ function applyShiftLogicPerTeam() {
 const centerLabelPlugin = {
   id: 'centerLabelPlugin',
   afterDraw: function(chart) {
-    if (chart.config.type !== 'doughnut') return;
-    const {ctx, chartArea: {left, right, top, bottom}} = chart;
-    ctx.save();
-    const achieved = chart.data.datasets[0].data[0];
-    let planTarget =
-      chart.options.plugins &&
-      chart.options.plugins.customPercentTarget &&
-      typeof chart.options.plugins.customPercentTarget.planTarget === 'number'
-        ? chart.options.plugins.customPercentTarget.planTarget
-        : achieved + chart.data.datasets[0].data[1];
-    const percent = planTarget > 0 ? (achieved / planTarget * 100) : 0;
-    
-    // Gaya font yang lebih besar dan tebal
-    ctx.font = 'bold 24px Poppins, sans-serif';
-    ctx.fillStyle = '#2563eb';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    
-    const centerX = (left + right) / 2;
-    const centerY = (top + bottom) / 2;
-    ctx.fillText(percent.toFixed(0) + '%', centerX, centerY);
-    ctx.restore();
+    // Tidak perlu menggambar persentase di sini karena kita menggunakan animateCountUp
+    // pada elemen donutCenterText yang terpisah
+    return;
   }
 };
 
