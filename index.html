@@ -14,20 +14,36 @@
       flex: 1;
       border: none;
       height: 100vh;
-      /* Tambahan style untuk shadow dan border jika ingin lebih rapi */
+      box-shadow: 0 0 8px #ccc;
+      background: #fff;
+    }
+    .outbound-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      transform: scale(0.95);
+      transform-origin: 0 0;
+      overflow: hidden;
+    }
+    .outbound-container {
+      flex: 1;
+      overflow: hidden;
+      height: 100vh;
       box-shadow: 0 0 8px #ccc;
       background: #fff;
     }
     /* Responsive untuk mobile, jika dibuka di layar kecil */
     @media (max-width: 800px) {
       body { flex-direction: column; }
-      .frame { height: 50vh; }
+      .frame, .outbound-container { height: 50vh; }
     }
   </style>
 </head>
 <body>
-  <!-- Kiri: Outbound Dashboard -->
-  <iframe class="frame" src="https://plasticdept.github.io/plasticdept-core/outbound/monitoring-control/dashboard-outbound.html"></iframe>
+  <!-- Kiri: Outbound Dashboard dengan container khusus -->
+  <div class="outbound-container">
+    <iframe class="outbound-frame" src="https://plasticdept.github.io/plasticdept-core/outbound/monitoring-control/dashboard.html" scrolling="no"></iframe>
+  </div>
   
   <!-- Kanan: Incoming Schedule -->
   <iframe class="frame" src="https://plasticdept.github.io/plasticdept-core/inbound/incoming-schedule/display.html"></iframe>
