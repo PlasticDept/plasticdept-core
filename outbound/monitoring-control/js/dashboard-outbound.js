@@ -303,10 +303,13 @@ const centerLabelPlugin = {
         ? chart.options.plugins.customPercentTarget.planTarget
         : achieved + chart.data.datasets[0].data[1];
     const percent = planTarget > 0 ? (achieved / planTarget * 100) : 0;
-    ctx.font = 'bold 18px Poppins, sans-serif';
+    
+    // Gaya font yang lebih besar dan tebal
+    ctx.font = 'bold 24px Poppins, sans-serif';
     ctx.fillStyle = '#2563eb';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    
     const centerX = (left + right) / 2;
     const centerY = (top + bottom) / 2;
     ctx.fillText(percent.toFixed(0) + '%', centerX, centerY);

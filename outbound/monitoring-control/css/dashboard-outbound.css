@@ -337,7 +337,8 @@ a:hover {
   flex-direction: column;
   gap: var(--space-3);
   transition: all var(--transition);
-  border-left: 4px solid transparent;
+  border-top: 4px solid transparent;
+  border-left: none;
   cursor: pointer;
   position: relative;
   overflow: hidden;
