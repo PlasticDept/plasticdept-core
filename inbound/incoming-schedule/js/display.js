@@ -141,6 +141,21 @@ function updateSummaryCards(data) {
   $("#totalReschedule").text(reschedule);
 }
 
+function renderNoteMarquee(data) {
+  const notes = [];
+  for (const id in data) {
+    const row = data[id];
+    if (row && row["NOTE"] && row["NOTE"].trim()) {
+      const cno = row["NO CONTAINER"] || row["Container No"] || "No Number";
+      notes.push(`[${cno}] - ${row["NOTE"].trim()}`);
+    }
+  }
+  const marquee = document.getElementById("noteMarquee");
+  if (marquee) {
+    marquee.textContent = notes.length ? notes.join(" | ") : "No notes";
+  }
+}
+
 function loadFirebaseData(db) {
   const dbRef = ref(db, "incoming_schedule");
   onValue(dbRef, snapshot => {
@@ -162,6 +177,7 @@ function loadFirebaseData(db) {
     }).draw();
 
     updateSummaryCards(data);
+    renderNoteMarquee(data);
   }, error => {
     console.error("❌ Gagal ambil data realtime dari Firebase:", error);
   });
