@@ -262,7 +262,13 @@ authPromise.then(async () => {
 
                 orderH1Val = Object.values(jobs || {}).reduce((sum, job) => {
                     const deliveryDate = job.deliveryDate || "";
-                    return (deliveryDate !== todayStr && deliveryDate !== yesterdayStr)
+                    const status = (job.status || "").toLowerCase();
+                    const remark = (job.remark || "").toUpperCase();
+                    
+                    return (deliveryDate !== todayStr && 
+                            deliveryDate !== yesterdayStr && 
+                            status === "pending pick" &&
+                            remark !== "CANCEL")
                         ? sum + (parseInt(job.qty, 10) || 0)
                         : sum;
                 }, 0);
