@@ -45,10 +45,25 @@
             <th>Time In</th>
             <th>Unloading Time</th>
             <th>Finish</th>
+            <th>Note</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- Modal Note -->
+  <div id="noteModal" class="modal-note">
+    <div class="modal-note-content">
+      <span class="modal-note-close" id="closeNoteModal">&times;</span>
+      <h2>Edit Note</h2>
+      <div><strong id="noteModalContainerNo"></strong></div>
+      <textarea id="noteInput" placeholder="Enter note here..."></textarea>
+      <div class="modal-note-actions">
+        <button id="saveNoteBtn">Save</button>
+        <button id="deleteNoteBtn" style="background:#f44336;color:#fff;">Delete</button>
+      </div>
     </div>
   </div>
 

@@ -10,6 +10,17 @@ const uploadStatus = document.getElementById("uploadStatus");
 const dataType = document.getElementById("dataType");
 let selectedFile = null;
 
+// Modal Note Elements
+const noteModal = document.getElementById("noteModal");
+const noteInput = document.getElementById("noteInput");
+const noteModalContainerNo = document.getElementById("noteModalContainerNo");
+const closeNoteModal = document.getElementById("closeNoteModal");
+const saveNoteBtn = document.getElementById("saveNoteBtn");
+const deleteNoteBtn = document.getElementById("deleteNoteBtn");
+
+let currentNoteRecordId = null;
+let currentNoteContainerNo = null;
+
 // Tunggu sampai login anonymous berhasil
 authPromise.then(({ db: database }) => {
   db = database;
@@ -42,6 +53,7 @@ function initTable() {
       { title: "Time In" },
       { title: "Unloading Time" },
       { title: "Finish" },
+      { title: "Note" },
     ]
   });
 }
@@ -122,6 +134,14 @@ function renderRowArray(row, index, id) {
   const containerType = getContainerType(row);
   const status = getStatusProgress(timeIn, unloadingTime, finish);
 
+  const note = row["NOTE"] || "";
+  const noteBtn = `
+    <button class="note-btn" data-container-no="${containerNo}" data-record-id="${id}" title="Edit Note">
+      📝
+    </button>
+    <div class="note-preview">${note ? (note.length > 16 ? note.slice(0,16)+'…' : note) : ''}</div>
+  `;
+
   return [
     "", // No (autonumber)
     containerNo,
@@ -133,7 +153,8 @@ function renderRowArray(row, index, id) {
     `<span class="label label-${status.toLowerCase()}">${status}</span>`,
     `<span contenteditable class="editable time-in">${timeIn}</span>`,
     `<span contenteditable class="editable unloading-time">${unloadingTime}</span>`,
-    `<span contenteditable class="editable finish">${finish}</span>`
+    `<span contenteditable class="editable finish">${finish}</span>`,
+    noteBtn // <--- ini kolom note baru!
   ];
 }
 
@@ -413,3 +434,66 @@ $('#containerTable tbody').on('keydown', '.editable', function (e) {
     $(this).blur();     // trigger blur = keluar mode edit & update firebase
   }
 });
+
+// ==== NOTE FUNCTIONALITY ====
+
+// Show modal note
+function openNoteModal(recordId, containerNo) {
+  currentNoteRecordId = recordId;
+  currentNoteContainerNo = containerNo;
+  noteModal.style.display = "block";
+  noteModalContainerNo.textContent = containerNo ? `[${containerNo}]` : "";
+  // Isi note yang sudah ada
+  const record = firebaseRecords[recordId];
+  noteInput.value = (record && record["NOTE"]) ? record["NOTE"] : "";
+  deleteNoteBtn.style.display = noteInput.value.trim() ? "inline-block" : "none";
+  noteInput.focus();
+}
+
+// Hide modal note
+function closeModalNote() {
+  noteModal.style.display = "none";
+  currentNoteRecordId = null;
+  currentNoteContainerNo = null;
+  noteInput.value = "";
+}
+
+// Save note to Firebase
+function saveNoteToFirebase() {
+  if (!currentNoteRecordId) return;
+  const dbRef = ref(db, `incoming_schedule/${currentNoteRecordId}`);
+  update(dbRef, { "NOTE": noteInput.value.trim() });
+  closeModalNote();
+}
+
+// Delete note from Firebase
+function deleteNoteFromFirebase() {
+  if (!currentNoteRecordId) return;
+  const dbRef = ref(db, `incoming_schedule/${currentNoteRecordId}`);
+  update(dbRef, { "NOTE": "" });
+  closeModalNote();
+}
+
+// Table event: open modal note
+$(document).on('click', '.note-btn', function () {
+  const recordId = $(this).data('record-id');
+  const containerNo = $(this).data('container-no');
+  openNoteModal(recordId, containerNo);
+});
+
+// Modal events
+closeNoteModal.onclick = closeModalNote;
+saveNoteBtn.onclick = saveNoteToFirebase;
+deleteNoteBtn.onclick = deleteNoteFromFirebase;
+
+// Hide modal when click outside
+window.onclick = function(event) {
+  if (event.target === noteModal) {
+    closeModalNote();
+  }
+};
+
+noteInput.oninput = function() {
+  // show delete button only if note not empty
+  deleteNoteBtn.style.display = noteInput.value.trim() ? "inline-block" : "none";
+};
