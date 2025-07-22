@@ -151,8 +151,14 @@ function renderNoteMarquee(data) {
     }
   }
   const marquee = document.getElementById("noteMarquee");
-  if (marquee) {
-    marquee.textContent = notes.length ? notes.join(" | ") : "No notes";
+  const marqueeContainer = document.getElementById("noteMarqueeContainer");
+  if (marquee && marqueeContainer) {
+    if (notes.length) {
+      marquee.textContent = notes.join(" | ");
+      marqueeContainer.style.display = ""; // tampilkan
+    } else {
+      marqueeContainer.style.display = "none"; // sembunyikan
+    }
   }
 }
 
