@@ -152,9 +152,9 @@ async function loadDashboardData() {
     const job = outboundJobs[jobNo];
     const qty = parseInt(job.qty) || 0;
     const status = (job.status || '').toLowerCase();
-    const team = (job.team || '').trim();
-    if (status === "pending pick" && (!team || team === "")) {
-      outstandingQty += qty;
+    // Hapus filter team untuk menyamakan dengan perhitungan report
+    if (status === "pending pick") {
+        outstandingQty += qty;
     }
   }
   if (outstandingJobValue) outstandingJobValue.textContent = formatNumber(outstandingQty) + " kg";
