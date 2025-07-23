@@ -267,15 +267,14 @@ authPromise.then(async () => {
                     
                     return (deliveryDate !== todayStr && 
                             deliveryDate !== yesterdayStr && 
-                            status === "pending pick" &&
+                            (status === "pending pick" || status === "packed") &&
                             remark !== "CANCEL")
                         ? sum + (parseInt(job.qty, 10) || 0)
                         : sum;
                 }, 0);
 
-                // remOrder-actual: totalOrder - totalCap
-                // Akan di-update setelah totalOrder dihitung
-                remOrderVal = null;
+            // ...kode lainnya tetap sama...
+            remOrderVal = null;
 
             } else {
                 // remOrder-actual: jumlah qty semua status pending pick (tanpa filter tanggal)
