@@ -122,15 +122,21 @@ function updateSummaryCards(data) {
     const timeIn = row["TIME IN"] === "-" ? "" : (row["TIME IN"] || "");
     const unloadingTime = row["UNLOADING TIME"] === "-" ? "" : (row["UNLOADING TIME"] || "");
     const finish = row["FINISH"] === "-" ? "" : (row["FINISH"] || "");
-
+    
+    const status = getStatusProgress(timeIn, unloadingTime, finish);
+    
+    // Tambahkan perhitungan container yang di-reschedule
+    if (status === "Reschedule") {
+      reschedule += 1;
+      continue; // Skip perhitungan lain untuk container yang di-reschedule
+    }
+    
+    // Hanya hitung container yang tidak di-reschedule
     if (timeIn) sudahDatang += 1;
     else belumDatang += 1;
 
-    const status = getStatusProgress(timeIn, unloadingTime, finish);
     if (status === "Finish") sudahDiproses += 1;
-    else belumDiproses += 1;
-
-    if (status === "Reschedule") reschedule += 1;
+    else if (status !== "Waiting") belumDiproses += 1; // Hitung hanya yang sedang diproses
   }
 
   $("#totalKedatangan").text(total);
