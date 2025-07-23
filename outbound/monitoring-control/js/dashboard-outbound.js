@@ -45,6 +45,32 @@ function formatNumber(num) {
 }
 
 /**
+ * Memeriksa apakah delivery date bukan hari ini atau kemarin
+ * @param {string} deliveryDate - Format tanggal dari Firebase (YYYY-MM-DD)
+ * @returns {boolean} - true jika bukan hari ini/kemarin, false jika hari ini/kemarin
+ */
+function checkDeliveryDateNotTodayYesterday(deliveryDate) {
+  // Jika tidak ada delivery date, anggap valid (ikut aturan sebelumnya)
+  if (!deliveryDate) return true;
+  
+  // Buat objek Date untuk hari ini dan kemarin
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset jam ke awal hari
+  
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  yesterday.setHours(0, 0, 0, 0);
+  
+  // Parse tanggal delivery dari format YYYY-MM-DD
+  const delivery = new Date(deliveryDate);
+  delivery.setHours(0, 0, 0, 0);
+  
+  // Kembalikan true jika delivery date BUKAN hari ini dan BUKAN kemarin
+  return delivery.getTime() !== today.getTime() && 
+         delivery.getTime() !== yesterday.getTime();
+}
+
+/**
  * Update label outstanding job sesuai shift
  */
 async function updateOutstandingJobLabel() {
@@ -152,9 +178,14 @@ async function loadDashboardData() {
     const job = outboundJobs[jobNo];
     const qty = parseInt(job.qty) || 0;
     const status = (job.status || '').toLowerCase();
-    // Hapus filter team untuk menyamakan dengan perhitungan report
-    if (status === "pending pick") {
-        outstandingQty += qty;
+    const deliveryDate = job.deliveryDate; // Ambil delivery date dari job
+
+    // Cek delivery date bukan hari ini dan kemarin
+    const isValidDeliveryDate = checkDeliveryDateNotTodayYesterday(deliveryDate);
+    
+    // Filter berdasarkan status "pending pick" DAN delivery date bukan hari ini/kemarin
+    if (status === "pending pick" && isValidDeliveryDate) {
+      outstandingQty += qty;
     }
   }
   if (outstandingJobValue) outstandingJobValue.textContent = formatNumber(outstandingQty) + " kg";
