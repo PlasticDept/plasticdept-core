@@ -47,8 +47,19 @@
 
       <nav class="main-nav">
         <ul>
-          <li>
-            <a href="#" class="nav-link active"><i class="fas fa-box"></i> Outbound</a>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link active"><i class="fas fa-box"></i> Outbound <i class="fas fa-chevron-down"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="#" class="dropdown-item"><i class="fas fa-tasks"></i> Outbound Job Assignment</a>
+              <a href="dashboard-outbound.html" class="dropdown-item"><i class="fas fa-chart-line"></i> Outbound Dashboard</a>
+            </div>
+          </li>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link"><i class="fas fa-users"></i> Team Monitoring <i class="fas fa-chevron-down"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="team-sugity.html" class="dropdown-item"><i class="fas fa-user-friends"></i> Team Sugity</a>
+              <a href="team-reguler.html" class="dropdown-item"><i class="fas fa-user-friends"></i> Team Reguler</a>
+            </div>
           </li>
           <li class="nav-dropdown">
             <a href="#" class="nav-link"><i class="fas fa-truck-loading"></i> Inbound <i class="fas fa-chevron-down"></i> <i class="fa-container-storage"></i></a>
@@ -89,17 +100,9 @@
     <div class="secondary-nav">
       <div class="tab-container">
         <a href="#" class="tab active">Outbound Job Assignment</a>
-        <a href="dashboard-outbound.html" class="tab">Outbound Dashboard</a>
-        <div class="tab-dropdown">
-          <a href="#" class="tab">Team Monitoring <i class="fas fa-chevron-down"></i></a>
-          <div class="tab-dropdown-content">
-            <a href="team-sugity.html" class="dropdown-item">Team Sugity</a>
-            <a href="team-reguler.html" class="dropdown-item">Team Reguler</a>
-          </div>
-        </div>
       </div>
       
-      <!-- Shift Selector dipindahkan ke sini -->
+      <!-- Shift Selector tetap di sini -->
       <div class="shift-selector">
         <label class="radio-container">
           <input type="radio" name="shiftType" id="shiftDay" value="Day">
@@ -180,6 +183,12 @@
           <!-- Will be populated by JS -->
         </div>
       </div>
+    </div>
+
+    <!-- Search Box -->
+    <div class="search-container">
+      <input type="text" id="searchInput" placeholder="Search for jobs..." class="search-input">
+      <i class="fas fa-search search-icon"></i>
     </div>
 
     <!-- ACTION TOOLBAR -->

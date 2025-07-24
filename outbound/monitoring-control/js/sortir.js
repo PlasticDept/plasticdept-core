@@ -29,6 +29,78 @@ function showNotification(message, isError = false) {
   }, 4000);
 }
 
+/**
+ * Setup fungsi pencarian untuk tabel job
+ */
+function setupSearchFunctionality() {
+  const searchInput = document.getElementById('searchInput');
+  if (!searchInput) return;
+  
+  searchInput.addEventListener('input', function() {
+    const searchValue = this.value.toLowerCase();
+    
+    // Jika searchValue kosong, tampilkan semua data
+    if (!searchValue.trim()) {
+      if (filteredJobs.length > 0) {
+        renderTableData(filteredJobs);
+      } else {
+        renderTableData(allJobsData);
+      }
+      return;
+    }
+    
+    // Lakukan pencarian pada data yang saat ini ditampilkan (filtered atau all)
+    const dataToSearch = filteredJobs.length > 0 ? filteredJobs : allJobsData;
+    
+    const searchResults = dataToSearch.filter(job => {
+      // Cari di semua kolom yang relevan
+      return (
+        (job.jobNo && job.jobNo.toLowerCase().includes(searchValue)) ||
+        (job.deliveryDate && job.deliveryDate.toLowerCase().includes(searchValue)) ||
+        (job.deliveryNote && job.deliveryNote.toLowerCase().includes(searchValue)) ||
+        (job.remark && job.remark.toLowerCase().includes(searchValue)) ||
+        (job.status && job.status.toLowerCase().includes(searchValue)) ||
+        (job.team && job.team.toLowerCase().includes(searchValue)) ||
+        // Tambahkan pencarian untuk qty jika diperlukan
+        (job.qty && job.qty.toString().includes(searchValue))
+      );
+    });
+    
+    // Render hasil pencarian
+    renderTableData(searchResults);
+    
+    // Update indikator filter jika pencarian aktif
+    updateSearchIndicator(searchValue);
+  });
+}
+
+/**
+ * Update indikator pencarian aktif
+ */
+function updateSearchIndicator(searchValue) {
+  const filterIndicator = document.getElementById("filterIndicator");
+  if (!filterIndicator) return;
+  
+  // Ambil filter yang sudah aktif
+  const status = document.getElementById("statusOptions")?.value || "all";
+  const date = document.getElementById("dateOptions")?.value || "all";
+  const team = document.getElementById("teamOptions")?.value || "all";
+  
+  const filters = [];
+  if (status !== "all") filters.push(`Status: ${status}`);
+  if (date !== "all") filters.push(`Date: ${date}`);
+  if (team !== "all") filters.push(`Team: ${team === "none" ? "None/blank" : team}`);
+  
+  // Tambahkan filter pencarian
+  if (searchValue) filters.push(`Search: "${searchValue}"`);
+  
+  if (filters.length > 0) {
+    filterIndicator.textContent = "Filtered by: " + filters.join(" | ");
+  } else {
+    filterIndicator.textContent = "";
+  }
+}
+
 function formatNumericValue(value) {
   if (!value || value === "" || value === undefined || value === null || isNaN(value)) {
     return "";
@@ -812,10 +884,14 @@ function refreshDataWithoutReset() {
 /**
  * Filter multi (status, tanggal, team) pada tabel assignment.
  */
+/**
+ * Filter multi (status, tanggal, team) pada tabel assignment.
+ */
 function applyMultiFilter() {
   const selectedStatus = statusOptions.value;
   const selectedDate = dateOptions.value;
   const selectedTeam = teamOptions.value;
+  const searchValue = document.getElementById('searchInput')?.value.toLowerCase() || '';
   
   filteredJobs = [];
   
@@ -825,15 +901,31 @@ function applyMultiFilter() {
     const isBlankTeam = !job.team || job.team.toLowerCase() === "none";
     const matchTeam = selectedTeam === "all" || (selectedTeam === "none" && isBlankTeam) || job.team === selectedTeam;
     
-    if (matchStatus && matchDate && matchTeam) {
+    // Pencarian jika ada nilai pencarian
+    let matchSearch = true;
+    if (searchValue) {
+      matchSearch = (
+        (job.jobNo && job.jobNo.toLowerCase().includes(searchValue)) ||
+        (job.deliveryDate && job.deliveryDate.toLowerCase().includes(searchValue)) ||
+        (job.deliveryNote && job.deliveryNote.toLowerCase().includes(searchValue)) ||
+        (job.remark && job.remark.toLowerCase().includes(searchValue)) ||
+        (job.status && job.status.toLowerCase().includes(searchValue)) ||
+        (job.team && job.team.toLowerCase().includes(searchValue)) ||
+        (job.qty && job.qty.toString().includes(searchValue))
+      );
+    }
+    
+    if (matchStatus && matchDate && matchTeam && matchSearch) {
       filteredJobs.push(job);
     }
   });
   
   // Render filtered data
   renderTableData(filteredJobs);
+  
+  // Update filter indicator
+  updateFilterIndicator();
 }
-
 /**
  * Update indikator filter aktif di halaman.
  */
@@ -841,10 +933,14 @@ function updateFilterIndicator() {
   const status = statusOptions.value;
   const date = dateOptions.value;
   const team = teamOptions.value;
+  const searchValue = document.getElementById('searchInput')?.value || '';
+  
   const filters = [];
   if (status !== "all") filters.push(`Status: ${status}`);
   if (date !== "all") filters.push(`Date: ${date}`);
   if (team !== "all") filters.push(`Team: ${team === "none" ? "None/blank" : team}`);
+  if (searchValue.trim()) filters.push(`Search: "${searchValue}"`);
+  
   const filterIndicator = document.getElementById("filterIndicator");
   if (filters.length > 0) {
     filterIndicator.textContent = "Filtered by: " + filters.join(" | ");
@@ -1360,6 +1456,9 @@ if (position === "Asst. Manager" || position === "Manager") {
 // Inisialisasi pada DOMContentLoaded
 document.addEventListener("DOMContentLoaded", () => {
   console.log('DOM Content Loaded');
+  
+  // Setup search functionality
+  setupSearchFunctionality();
   
   // Tambahkan panggilan ke fungsi populasi data user
   populateUserProfileData();
