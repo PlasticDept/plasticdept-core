@@ -184,7 +184,12 @@ async function loadDashboardData() {
     const isValidDeliveryDate = checkDeliveryDateNotTodayYesterday(deliveryDate);
     
     // Filter berdasarkan status "pending pick" DAN delivery date bukan hari ini/kemarin
-    if (status === "pending pick" && isValidDeliveryDate) {
+    //if (status === "pending pick" && isValidDeliveryDate) {
+    //  outstandingQty += qty;
+
+
+    // Filter berdasarkan status "pending pick" only
+    if (status === "pending pick") {
       outstandingQty += qty;
     }
   }
