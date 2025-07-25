@@ -1099,7 +1099,7 @@ authPromise.then(() => {
       <div class="loading-logo">
         <img src="img/reverse-logistic.png" alt="PlasticDept Logo">
       </div>
-      <h2>Enterprise Dashboard</h2>
+      <h2>Outbound Dashboard</h2>
       <div class="loading-spinner-large"></div>
       <p>Memuat data dashboard...</p>
     </div>
