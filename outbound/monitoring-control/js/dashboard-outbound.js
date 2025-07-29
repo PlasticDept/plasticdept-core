@@ -178,18 +178,11 @@ async function loadDashboardData() {
     const job = outboundJobs[jobNo];
     const qty = parseInt(job.qty) || 0;
     const status = (job.status || '').toLowerCase();
-    const deliveryDate = job.deliveryDate; // Ambil delivery date dari job
+    // shift dianggap kosong jika undefined, null, atau string kosong setelah trim
+    const hasShift = typeof job.shift !== 'undefined' && job.shift !== null && String(job.shift).trim() !== '';
 
-    // Cek delivery date bukan hari ini dan kemarin
-    const isValidDeliveryDate = checkDeliveryDateNotTodayYesterday(deliveryDate);
-    
-    // Filter berdasarkan status "pending pick" DAN delivery date bukan hari ini/kemarin
-    //if (status === "pending pick" && isValidDeliveryDate) {
-    //  outstandingQty += qty;
-
-
-    // Filter berdasarkan status "pending pick" only
-    if (status === "pending pick") {
+    // Jumlahkan qty jika status 'pending pick' dan shift benar-benar tidak ada atau kosong
+    if (status === "pending pick" && !hasShift) {
       outstandingQty += qty;
     }
   }
