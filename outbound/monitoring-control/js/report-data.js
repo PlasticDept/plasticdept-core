@@ -228,11 +228,19 @@ authPromise.then(async () => {
             const shiftMode = (dayToggle && dayToggle.checked) ? "day" : "night";
 
             // --- Perhitungan capDayShiftActual dan capNightShiftActual ---
+            // Jumlahkan qty semua job dengan shift 'Day Shift' (tanpa filter team)
+            let capDayShiftActual = 0;
+            if (jobs) {
+                Object.values(jobs).forEach(job => {
+                    if (job.shift === "Day Shift") {
+                        capDayShiftActual += parseInt(job.qty, 10) || 0;
+                    }
+                });
+            }
             const capDayShiftOt = calculateCapShiftOT(jobs, "Day Shift");
             const hasManPowerOvertimeDay = await fetchMpOvertimeQty("Day Shift");
-            let capDayShiftActual = capDayShift;
             if (hasManPowerOvertimeDay) {
-                capDayShiftActual = capDayShift - capDayShiftOt;
+                capDayShiftActual = capDayShiftActual - capDayShiftOt;
             }
 
             const capNightShiftOt = calculateCapShiftOT(jobs, "Night Shift");
