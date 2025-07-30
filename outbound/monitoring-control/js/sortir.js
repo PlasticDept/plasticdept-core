@@ -263,119 +263,27 @@ function handleSelectAllChange() {
 }
 
 /**
- * Fungsi untuk sorting tabel berdasarkan kolom
- */
-function sortTable(columnIndex, columnKey) {
-  // Determine sort direction
-  if (currentSortColumn === columnIndex) {
-    currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
-  } else {
-    currentSortDirection = 'asc';
-  }
-  
-  currentSortColumn = columnIndex;
-  
-  // Get data to sort (use filtered data if exists, otherwise all data)
-  const dataToSort = filteredJobs.length > 0 ? filteredJobs : allJobsData;
-  
-  // Sort the data
-  const sortedData = [...dataToSort].sort((a, b) => {
-    let aValue = a[columnKey];
-    let bValue = b[columnKey];
-    
-    // Handle different data types
-    if (columnKey === 'qty') {
-      aValue = parseFloat(aValue) || 0;
-      bValue = parseFloat(bValue) || 0;
-    } else if (columnKey === 'deliveryDate') {
-      aValue = new Date(aValue);
-      bValue = new Date(bValue);
-    } else {
-      // String comparison
-      aValue = String(aValue || '').toLowerCase();
-      bValue = String(bValue || '').toLowerCase();
-    }
-    
-    if (aValue < bValue) return currentSortDirection === 'asc' ? -1 : 1;
-    if (aValue > bValue) return currentSortDirection === 'asc' ? 1 : -1;
-    return 0;
-  });
-  
-  // Update filtered data or all data based on what was sorted
-  if (filteredJobs.length > 0) {
-    filteredJobs = sortedData;
-  } else {
-    allJobsData = sortedData;
-  }
-  
-  // Re-render table
-  renderTableData(sortedData);
-  
-  // Update header visual indicators
-  updateSortHeaders(columnIndex);
-}
-
-/**
- * Update visual indicators for sorted headers
- */
-function updateSortHeaders(activeColumnIndex) {
-  const headers = document.querySelectorAll('#jobTable thead th');
-  
-  headers.forEach((th, index) => {
-    th.classList.remove('sort-asc', 'sort-desc');
-    
-    if (index === activeColumnIndex) {
-      th.classList.add(currentSortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
-    }
-  });
-}
-
-/**
  * Render table data to tbody
  */
 function renderTableData(data) {
   const tbody = document.querySelector('#jobTable tbody');
   if (!tbody) return;
-  
+
+  // Sort data by remark (ascending, case-insensitive)
+  const sortedData = [...data].sort((a, b) => {
+    const aRemark = String(a.remark || '').toLowerCase();
+    const bRemark = String(b.remark || '').toLowerCase();
+    return aRemark.localeCompare(bRemark, 'id', { sensitivity: 'base' });
+  });
+
   tbody.innerHTML = '';
-  
-  data.forEach(job => {
+  sortedData.forEach(job => {
     const row = createTableRow(job);
     tbody.appendChild(row);
   });
-  
-  // Re-attach event listeners
+
   attachTableEventListeners();
   updateSelectAllCheckbox();
-}
-
-/**
- * Initialize table headers with sorting capability
- */
-function initializeTableHeaders() {
-  const headers = document.querySelectorAll('#jobTable thead th');
-  const columnMappings = [
-    { key: null, sortable: false }, // Checkbox column
-    { key: 'jobNo', sortable: true },
-    { key: 'deliveryDate', sortable: true },
-    { key: 'deliveryNote', sortable: true },
-    { key: 'remark', sortable: true },
-    { key: 'status', sortable: true },
-    { key: 'qty', sortable: true },
-    { key: 'team', sortable: true },
-    { key: null, sortable: false } // Action column
-  ];
-  
-  headers.forEach((th, index) => {
-    const mapping = columnMappings[index];
-    
-    if (mapping && mapping.sortable) {
-      th.classList.add('sortable');
-      th.addEventListener('click', () => {
-        sortTable(index, mapping.key);
-      });
-    }
-  });
 }
 
 /**
@@ -757,10 +665,6 @@ function loadJobsFromFirebase() {
         
         // Render table data
         renderTableData(allJobsData);
-        
-        // Initialize table headers for sorting
-        initializeTableHeaders();
-        
         populateDateOptions(uniqueDates);
         populateTeamOptions(uniqueTeams);
       } else {
@@ -904,8 +808,6 @@ let allJobsData = [];
 let filteredJobs = [];
 let currentSort = { key: null, asc: true };
 let currentMode = "phoenix"; // default
-let currentSortColumn = null;
-let currentSortDirection = 'asc';
 
 // Status options untuk Phoenix
 const STATUS_OPTIONS = [
@@ -1378,9 +1280,6 @@ document.addEventListener("DOMContentLoaded", () => {
   populateMpPicSelector();
   renderMpPicListTable();
   attachTableEventListeners();
-
-  // Load jobs, then remove spinner after data benar-benar siap
-  loadJobsFromFirebase();
 
   // Remove spinner setelah data table sudah dirender (gunakan MutationObserver untuk tbody)
   const tbody = document.querySelector('#jobTable tbody');
