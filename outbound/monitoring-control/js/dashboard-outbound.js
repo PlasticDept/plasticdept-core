@@ -277,7 +277,7 @@ async function loadDashboardData() {
   
   // Update UI element to show last update time
   const now = new Date();
-  const timeString = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   const refreshText = document.querySelector('.refresh-text');
   if (refreshText) {
     refreshText.textContent = `Updated at ${timeString}`;
