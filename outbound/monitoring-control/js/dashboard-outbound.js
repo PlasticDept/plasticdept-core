@@ -282,6 +282,18 @@ async function loadDashboardData() {
   if (refreshText) {
     refreshText.textContent = `Updated at ${timeString}`;
   }
+
+  // Update dashboard date to English format
+  const dashboardDate = document.querySelector('.dashboard-date');
+  if (dashboardDate) {
+    const dateString = now.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    dashboardDate.textContent = dateString;
+  }
 }
 
 // --- Shift Logic Title ---
