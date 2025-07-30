@@ -103,7 +103,7 @@ body {
 /* NOTIFICATION */
 .notification-bar {
   position: fixed;
-  top: 35px;
+  top: 68px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10000;
@@ -560,7 +560,6 @@ thead th {
   border-bottom: 2px solid #c9e2f5;
   text-align: center;
   user-select: none;
-  cursor: pointer;
 }
 th, td {
   border-right: 1px solid #ccc;
