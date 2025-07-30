@@ -1357,19 +1357,60 @@ if (position === "Asst. Manager" || position === "Manager") {
   if (deleteDataBtn) deleteDataBtn.style.display = "none";
 }
 
-// Inisialisasi pada DOMContentLoaded
 document.addEventListener("DOMContentLoaded", () => {
-  console.log('DOM Content Loaded');
-  
-  // Tambahkan panggilan ke fungsi populasi data user
+  // Show loading spinner overlay before anything else
+  const loadingScreen = document.createElement('div');
+  loadingScreen.className = 'fullscreen-loading';
+  loadingScreen.innerHTML = `
+    <div class="loading-content">
+      <div class="loading-logo">
+        <img src="img/reverse-logistic.png" alt="PlasticDept Logo">
+      </div>
+      <h2>Plastic Job Assignment</h2>
+      <div class="loading-spinner-large"></div>
+      <p>Memuat data halaman plastic...</p>
+    </div>
+  `;
+  document.body.appendChild(loadingScreen);
+
+  // Lanjutkan inisialisasi
   populateUserProfileData();
-  
-  // Setup other components first
   populateMpPicSelector();
   renderMpPicListTable();
-  
-  // Setup basic event listeners for table (fallback)
   attachTableEventListeners();
+
+  // Load jobs, then remove spinner after data benar-benar siap
+  loadJobsFromFirebase();
+
+  // Remove spinner setelah data table sudah dirender (gunakan MutationObserver untuk tbody)
+  const tbody = document.querySelector('#jobTable tbody');
+  if (tbody) {
+    const observer = new MutationObserver(() => {
+      // Tunggu minimal 1 data atau table sudah diisi
+      if (tbody.children.length > 0 || tbody.innerHTML.trim() !== '') {
+        loadingScreen.classList.add('fade-out');
+        setTimeout(() => loadingScreen.remove(), 500);
+        observer.disconnect();
+      }
+    });
+    observer.observe(tbody, { childList: true, subtree: false });
+    // Fallback: jika data kosong, tetap hilangkan spinner setelah 2 detik
+    setTimeout(() => {
+      if (document.body.contains(loadingScreen)) {
+        loadingScreen.classList.add('fade-out');
+        setTimeout(() => loadingScreen.remove(), 500);
+        observer.disconnect();
+      }
+    }, 2000);
+  } else {
+    // Fallback jika tbody tidak ditemukan
+    setTimeout(() => {
+      if (document.body.contains(loadingScreen)) {
+        loadingScreen.classList.add('fade-out');
+        setTimeout(() => loadingScreen.remove(), 500);
+      }
+    }, 1500);
+  }
 });
 
 // Kumpulkan mapping nama ke userID (ambil dari key node, bukan isi objek)==================================================================================
