@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Part Master Data Viewer</title>
+  <link rel="stylesheet" href="css/part-master.css">
+  <!-- Material Icons for search/upload -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Part Master Data Viewer</h1>
+      <div class="upload-section">
+        <label for="file-upload" class="custom-file-upload">
+          <span class="material-icons">upload_file</span>
+          Upload Excel/CSV
+        </label>
+        <input id="file-upload" type="file" accept=".csv,.xlsx,.xls" />
+      </div>
+      <div class="search-section">
+        <input type="text" id="search-box" placeholder="Search part master data..." autocomplete="off"/>
+        <button id="search-btn"><span class="material-icons">search</span></button>
+      </div>
+    </header>
+    <main>
+      <div class="table-responsive">
+        <table id="part-table">
+          <thead>
+            <tr>
+              <th>Supplier Part No</th>
+              <th>Local Part No</th>
+              <th>Material Code</th>
+              <th>Description</th>
+              <th>UOM</th>
+              <th>Pack Code</th>
+              <th>SPQ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Table content rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+      <div id="loading" class="loading" style="display:none;">Loading data...</div>
+      <div id="nodata" class="nodata" style="display:none;">No data found.</div>
+    </main>
+  </div>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="js/part-master.js"></script>
+</body>
+</html>
