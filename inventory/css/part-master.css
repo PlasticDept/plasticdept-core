@@ -6,7 +6,7 @@ body {
 }
 
 .container {
-  max-width: 1100px;
+  max-width: 80%;
   margin: 40px auto;
   background: #fff;
   border-radius: 10px;
@@ -103,6 +103,8 @@ header h1 {
 
 .table-responsive {
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 1800px; /* tambahkan ini */
   margin-top: 16px;
 }
 
@@ -124,6 +126,9 @@ th {
   font-weight: 600;
   font-size: 1rem;
   border-bottom: 2px solid #174b7d;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 tr {
