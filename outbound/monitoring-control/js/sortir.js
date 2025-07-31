@@ -9,6 +9,31 @@ import { ref, set, get, update, remove } from "https://www.gstatic.com/firebasej
     UTILITY / HELPER FUNCTIONS
 ========================= */
 
+function updateUserShiftColor() {
+  const userShiftSpan = document.getElementById('userShift');
+  if (userShiftSpan) {
+    const value = userShiftSpan.textContent.trim();
+    userShiftSpan.style.background = '';
+    userShiftSpan.style.color = '';
+    userShiftSpan.style.borderRadius = '6px';
+    userShiftSpan.style.padding = '2px 8px';
+    userShiftSpan.style.fontWeight = 'bold';
+    if (value === 'Non Shift') {
+      userShiftSpan.style.background = '#ffe066'; // yellow
+      userShiftSpan.style.color = '#7a5c00';
+    } else if (value === 'Blue Team') {
+      userShiftSpan.style.background = '#339af0'; // blue
+      userShiftSpan.style.color = '#fff';
+    } else if (value === 'Green Team') {
+      userShiftSpan.style.background = '#51cf66'; // green
+      userShiftSpan.style.color = '#fff';
+    } else {
+      userShiftSpan.style.background = '';
+      userShiftSpan.style.color = '';
+    }
+  }
+}
+
 /**
  * Menampilkan notifikasi pada halaman.
  * @param {string} message - Pesan yang akan ditampilkan.
@@ -1238,6 +1263,7 @@ const userShiftSpan = document.getElementById("userShift");
 
 if (shiftValue && userShiftSpan) {
   userShiftSpan.textContent = shiftValue;
+  updateUserShiftColor();
 }
 
 // (Opsional) Ganti huruf avatar jadi huruf awal shift
@@ -1245,6 +1271,16 @@ const userInitialSpan = document.getElementById("userInitial");
 if (shiftValue && userInitialSpan) {
   userInitialSpan.textContent = shiftValue.charAt(0).toUpperCase();
 }
+
+// Observe userShift changes (if changed dynamically)
+document.addEventListener('DOMContentLoaded', function() {
+  updateUserShiftColor();
+  const userShiftSpan = document.getElementById('userShift');
+  if (userShiftSpan) {
+    const observer = new MutationObserver(updateUserShiftColor);
+    observer.observe(userShiftSpan, { childList: true, subtree: true });
+  }
+});
 
 // 🔐 Role-based UI protection
 const position = localStorage.getItem("position");
