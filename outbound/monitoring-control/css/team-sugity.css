@@ -161,20 +161,7 @@ h1 {
   transition: none !important;
 }
 
-/* ===== Back Button ===== */
-#backToSortirBtn {
-  margin-bottom: 20px;
-  padding: 8px 16px;
-  background-color: #2980b9;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-}
-#backToSortirBtn:hover {
-  background-color: #2471a3;
-}
+
 
 /* ===== Hover Effect Metrics ===== */
 .metric-box:hover {
