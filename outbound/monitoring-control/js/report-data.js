@@ -275,7 +275,7 @@ authPromise.then(async () => {
                     
                     return (deliveryDate !== todayStr && 
                             deliveryDate !== yesterdayStr && 
-                            (status === "pending pick" || status === "packed") &&
+                            (status === "pending pick" || status === "packed" || status === "completed") &&
                             remark !== "CANCEL")
                         ? sum + (parseInt(job.qty, 10) || 0)
                         : sum;
