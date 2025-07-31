@@ -18,6 +18,7 @@ function updateUserShiftColor() {
     userShiftSpan.style.borderRadius = '6px';
     userShiftSpan.style.padding = '2px 8px';
     userShiftSpan.style.fontWeight = 'bold';
+    userShiftSpan.style.display = 'inline-block';
     if (value === 'Non Shift') {
       userShiftSpan.style.background = '#ffe066'; // yellow
       userShiftSpan.style.color = '#7a5c00';
