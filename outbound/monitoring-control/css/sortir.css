@@ -109,6 +109,8 @@ body {
   z-index: 10000;
   min-width: 80%;
   max-width: 90vw;
+  height: 35px;
+  overflow: auto;
   background: #ffebeb;
   color: #e74c3c;
   border: 1.5px solid #e74c3c;
