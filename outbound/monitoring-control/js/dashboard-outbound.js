@@ -743,9 +743,12 @@ function renderLineChartOutbound(jobs, shiftType, manPowerTotal) {
   } 
 
   // --- Visible Plan Chart Array ---
-  let visiblePlanChartArr = planTargetArr.map((row, idx) => {
+  let visiblePlanChartArr = planTargetArr.map((row, idx, arr) => {
     if (idx === 0) return 0;
-    if (row.target === 0) return 0;
+    if (row.target === 0) {
+      // Jam istirahat: gunakan nilai jam sebelumnya agar line tetap datar
+      return arr[idx - 1] ? arr[idx - 1].target : 0;
+    }
     if (row.target === null || typeof row.target === "undefined") return null;
     return row.target;
   });
@@ -794,23 +797,13 @@ function renderLineChartOutbound(jobs, shiftType, manPowerTotal) {
   // --- Akumulasi (untuk line grafik dan datalabel) ---
   let actualCumulative = [];
   let sum = 0;
-  let lastSumBeforeBreak = 0; // Tambah variable untuk menyimpan akumulasi sebelum istirahat
-
   for (let i = 0; i < actualPerJamArr.length; i++) {
-    if (planTargetArr[i].target === 0) { // Jam istirahat (13:00)
-      lastSumBeforeBreak = sum; // Simpan akumulasi sebelum istirahat
-      actualCumulative.push(0); // Push 0 untuk jam istirahat
-    } else if (planTargetArr[i].target === null) { // Jam pertama (8:00)
-      actualCumulative.push(0);
-      sum = 0;
+    if (planTargetArr[i].target === 0) {
+      // Jam istirahat: gunakan nilai sebelumnya agar line tetap datar
+      actualCumulative[i] = i > 0 ? actualCumulative[i - 1] : 0;
     } else {
-      // Untuk jam setelah istirahat (14:00 dst), tambahkan lastSumBeforeBreak
-      if (i > 0 && planTargetArr[i-1].target === 0) {
-        sum = lastSumBeforeBreak + actualPerJamArr[i];
-      } else {
-        sum += actualPerJamArr[i];
-      }
-      actualCumulative.push(sum);
+      sum += actualPerJamArr[i];
+      actualCumulative[i] = sum;
     }
   }
 
