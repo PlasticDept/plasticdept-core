@@ -1,4 +1,5 @@
 /* === Global Body === */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap');
 body {
   min-height: 100vh;
   margin: 0;
@@ -8,15 +9,18 @@ body {
   justify-content: center;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #1e3c72, #2a5298);
-  background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
-  background-size: 35px 35px;
-  background-repeat: repeat;
+  background-image: url('monitoring-control/img/login_bg.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
   background-attachment: fixed;
 }
 
 /* === Login Box Container === */
 .login-container {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.85);
+  border: 2px solid #e3eafc;
+  transition: box-shadow 0.3s, background 0.3s, border 0.3s, transform 0.2s;
   padding: 2.5rem 2.2rem 2rem;
   border-radius: 16px;
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
@@ -26,11 +30,14 @@ body {
   min-width: 350px;
   width: 100%;
   max-width: 400px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   animation: fadeSlideIn 0.8s ease forwards;
   opacity: 0;
   transform: translateY(30px);
+  box-shadow: 0 18px 45px rgba(33,118,174,0.18);
+  transform: scale(1.025);
+  border-color: #b6d0f7;
 }
 
 /* === Animation on load === */
@@ -53,8 +60,10 @@ body {
   color: #2176ae;
   font-size: 2rem;
   margin-bottom: 1.5rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 1px;
+  text-align: center;
+  font-family: 'Montserrat', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* === Form === */
@@ -78,7 +87,7 @@ input[type="text"],
 input[type="password"],
 select {
   width: 100%;
-  padding: 0.65rem 1rem;
+  padding: 0.65rem 0rem;
   margin-bottom: 15px;
   border: 1.5px solid #d6eaff;
   border-radius: 8px;
@@ -122,8 +131,8 @@ button[type="submit"]:hover,
 /* === Responsive === */
 @media (max-width: 480px) {
   .login-container {
-    padding: 1.2rem .7rem 1.5rem .7rem;
-    min-width: 90vw;
+    padding: 2rem 0.5rem 2rem 0.5rem;
+    min-width: 95vw;
   }
   .login-container h2 {
     font-size: 1.2rem;
@@ -141,6 +150,8 @@ button[type="submit"]:hover,
   animation: spin 0.8s linear infinite;
   margin-left: 10px;
   vertical-align: middle;
+  box-shadow: 0 0 8px #2176ae33;
+  background: linear-gradient(135deg, #e3eafc 0%, #f6fbff 100%);
 }
 
 @keyframes spin {
