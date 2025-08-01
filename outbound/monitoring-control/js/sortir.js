@@ -6,9 +6,10 @@ import { db, authPromise } from "./config.js";
 import { ref, set, get, update, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 /* =========================
-    UTILITY / HELPER FUNCTIONS
-========================= */
-
+/**
+ * Update color of userShift label based on its value.
+ * Yellow for Non Shift, Blue for Blue Team, Green for Green Team.
+ */
 function updateUserShiftColor() {
   const userShiftSpan = document.getElementById('userShift');
   if (userShiftSpan) {
@@ -18,7 +19,7 @@ function updateUserShiftColor() {
     userShiftSpan.style.borderRadius = '6px';
     userShiftSpan.style.padding = '2px 8px';
     userShiftSpan.style.fontWeight = 'bold';
-    userShiftSpan.style.display = 'inline-block';
+    userShiftSpan.style.display = 'inline-block'; // label width auto fit to text
     if (value === 'Non Shift') {
       userShiftSpan.style.background = '#ffe066'; // yellow
       userShiftSpan.style.color = '#7a5c00';
@@ -34,6 +35,10 @@ function updateUserShiftColor() {
     }
   }
 }
+
+/**
+ * UTILITY / HELPER FUNCTIONS
+========================= */
 
 /**
  * Menampilkan notifikasi pada halaman.
@@ -511,33 +516,35 @@ function hideModal() { modal.style.display = "none"; }
  */
 function clearAllJobs() {
   showConfirmModal({
-    title: "Konfirmasi Hapus Semua",
-    message: "Apakah Anda yakin ingin <b>MENGHAPUS SEMUA</b> job dan plan target dari database?",
+    title: "Konfirmasi Hapus Data",
+    message: "Hanya job dengan status <b>Packed</b> dan <b>Completed</b> yang akan dihapus dari database. Lanjutkan?",
     okText: "Hapus",
     okClass: "logout",
-    onConfirm: () => {
-      const outboundRef = ref(db, "PhxOutboundJobs");
-      const manPowerRef = ref(db, "ManPower");
-      const manPowerOvertimeRef = ref(db, "ManPowerOvertime");
-      const planTargetRef = ref(db, "PlanTarget");
-      const dataStock = ref(db, "stock-material");
-
-      // Jalankan penghapusan paralel
-      Promise.all([
-        remove(outboundRef),
-        remove(manPowerRef),
-        remove(manPowerOvertimeRef),
-        remove(planTargetRef),
-        remove(dataStock)
-      ])
-        .then(() => {
-          showNotification("✅ Semua job, plan target, man power, dan overtime berhasil dihapus.");
-          loadJobsFromFirebase(); // Pastikan fungsi ini tidak tergantung PlanTarget
-        })
-        .catch((err) => {
-          console.error(err);
-          showNotification("❌ Gagal menghapus data!", true);
-        });
+    onConfirm: async () => {
+      try {
+        // Ambil semua job dari node PhxOutboundJobs
+        const jobsSnap = await get(ref(db, "PhxOutboundJobs"));
+        if (!jobsSnap.exists()) {
+          showNotification("Tidak ada data job yang ditemukan.", true);
+          return;
+        }
+        const jobs = jobsSnap.val();
+        let deletedCount = 0;
+        // Loop dan hapus job dengan status Packed/Completed
+        for (const jobNo in jobs) {
+          const status = (jobs[jobNo].status || "").toLowerCase();
+          if (status === "packed" || status === "completed") {
+            await set(ref(db, `PhxOutboundJobs/${jobNo}`), null);
+            deletedCount++;
+          }
+        }
+        showNotification(`${deletedCount} job dengan status Packed/Completed berhasil dihapus.`);
+        // Refresh data di halaman
+        loadJobsFromFirebase();
+      } catch (err) {
+        showNotification("Gagal menghapus data job.", true);
+        console.error(err);
+      }
     }
   });
 }
