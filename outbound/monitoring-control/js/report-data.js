@@ -275,19 +275,35 @@ authPromise.then(async () => {
                     
                     return (deliveryDate !== todayStr && 
                             deliveryDate !== yesterdayStr && 
-                            (status === "pending pick" || status === "packed" || status === "completed") &&
+                            (status === "pending pick" || status === "packed") &&
                             remark !== "CANCEL")
                         ? sum + (parseInt(job.qty, 10) || 0)
                         : sum;
                 }, 0);
 
-            // ...kode lainnya tetap sama...
-            remOrderVal = null;
+                // remOrder-actual: hitung dengan logika yang sama seperti outstandingJobValue di dashboard
+                // jumlah qty semua status "pending pick" dan tidak memiliki shift yang ditetapkan
+                remOrderVal = Object.values(jobs || {}).reduce((sum, job) => {
+                    const status = (job.status || "").toLowerCase();
+                    // Periksa apakah shift kosong (undefined, null, atau string kosong setelah trim)
+                    const hasShift = typeof job.shift !== 'undefined' && job.shift !== null && String(job.shift).trim() !== '';
+                    
+                    // Jumlahkan qty jika status 'pending pick' dan shift benar-benar tidak ada atau kosong
+                    return (status === "pending pick" && !hasShift)
+                        ? sum + (parseInt(job.qty, 10) || 0)
+                        : sum;
+                }, 0);
 
             } else {
-                // remOrder-actual: jumlah qty semua status pending pick (tanpa filter tanggal)
+                // remOrder-actual: jumlah qty semua status pending pick (tanpa filter tanggal) 
+                // dan tidak memiliki shift yang ditetapkan (sama dengan logika outstandingJobValue)
                 remOrderVal = Object.values(jobs || {}).reduce((sum, job) => {
-                    return (String(job.status).toLowerCase() === "pending pick")
+                    const status = (job.status || "").toLowerCase();
+                    // Periksa apakah shift kosong (undefined, null, atau string kosong setelah trim)
+                    const hasShift = typeof job.shift !== 'undefined' && job.shift !== null && String(job.shift).trim() !== '';
+                    
+                    // Jumlahkan qty jika status 'pending pick' dan shift benar-benar tidak ada atau kosong
+                    return (status === "pending pick" && !hasShift)
                         ? sum + (parseInt(job.qty, 10) || 0)
                         : sum;
                 }, 0);
@@ -303,17 +319,8 @@ authPromise.then(async () => {
 
             // remOrder-actual
             const remainingOrderCell = document.getElementById('remOrder-actual');
-            if (shiftMode === "day") {
-                // Ambil nilai remOrderDayH-actual dan addDayH-actual dari HTML
-                const remOrderDayHVal = Number((document.getElementById('remOrderDayH-actual')?.textContent || "0").replace(/,/g, "")) || 0;
-                const addDayHVal = Number((document.getElementById('addDayH-actual')?.textContent || "0").replace(/,/g, "")) || 0;
-                // remOrder-actual: (remOrderDayH-actual + addDayH-actual + orderH1-actual) - totalCap
-                const totalOrderVal = remOrderDayHVal + addDayHVal + orderH1Val;
-                const totalCapVal = Number((document.getElementById('totalCap-actual')?.textContent || "0").replace(/,/g, "")) || 0;
-                remOrderVal = totalOrderVal - totalCapVal;
-                if (remainingOrderCell) remainingOrderCell.textContent = !isNaN(remOrderVal) ? formatNumber(remOrderVal) : "-";
-            } else {
-                if (remainingOrderCell) remainingOrderCell.textContent = remOrderVal > 0 ? formatNumber(remOrderVal) : "-";
+            if (remainingOrderCell) {
+                remainingOrderCell.textContent = remOrderVal > 0 ? formatNumber(remOrderVal) : "-";
             }
 
             // --- totalOrder-actual: remOrderDayH-actual + addDayH-actual + orderH1-actual ---
