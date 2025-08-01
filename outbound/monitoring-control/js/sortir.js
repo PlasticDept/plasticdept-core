@@ -180,28 +180,57 @@ function sanitizeValue(value) {
 }
 
 /**
- * Format tanggal menjadi dd-MMM-yyyy.
+ * Format tanggal menjadi dd-MMM-yyyy tanpa komponen waktu.
  */
 function formatToCustomDate(date) {
-  const day = String(date.getUTCDate()).padStart(2, "0");
-  const month = date.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
-  const year = date.getUTCFullYear();
+  // Memastikan kita hanya menggunakan komponen tanggal, bukan waktu
+  const dateOnly = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  
+  const day = String(dateOnly.getUTCDate()).padStart(2, "0");
+  const month = dateOnly.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
+  const year = dateOnly.getUTCFullYear();
   return `${day}-${month}-${year}`;
 }
 
 /**
  * Format tanggal dari input berbagai tipe ke custom format.
+ * Memastikan semua tanggal dalam format DD-MMM-YYYY tanpa komponen waktu.
  */
 function formatDate(input) {
   if (!input) return "";
+  
+  // Handle Excel number format (days since 1900-01-01)
   if (typeof input === "number") {
     const date = new Date(Math.round((input - 25569) * 86400 * 1000));
     return formatToCustomDate(date);
   }
+  
+  // Handle date string with time component
+  if (typeof input === "string" && input.includes(" ")) {
+    // Strip any time component if present
+    input = input.split(" ")[0];
+  }
+  
+  // Try parsing as date string (handles ISO format, MM/DD/YYYY, DD/MM/YYYY, etc)
   const parsed = new Date(input);
   if (!isNaN(parsed)) {
     return formatToCustomDate(parsed);
   }
+  
+  // Handle DD-MM-YYYY or MM-DD-YYYY format
+  if (typeof input === "string" && input.includes("-")) {
+    const parts = input.split("-");
+    if (parts.length === 3) {
+      // Try both date formats
+      const date1 = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`); // DD-MM-YYYY
+      const date2 = new Date(`${parts[2]}-${parts[0]}-${parts[1]}`); // MM-DD-YYYY
+      
+      if (!isNaN(date1)) return formatToCustomDate(date1);
+      if (!isNaN(date2)) return formatToCustomDate(date2);
+    }
+  }
+  
+  // Return original if parsing fails
   return input;
 }
 
@@ -516,35 +545,33 @@ function hideModal() { modal.style.display = "none"; }
  */
 function clearAllJobs() {
   showConfirmModal({
-    title: "Konfirmasi Hapus Data",
-    message: "Hanya job dengan status <b>Packed</b> dan <b>Completed</b> yang akan dihapus dari database. Lanjutkan?",
+    title: "Konfirmasi Hapus Semua",
+    message: "Apakah Anda yakin ingin <b>MENGHAPUS SEMUA</b> job dan plan target dari database?",
     okText: "Hapus",
     okClass: "logout",
-    onConfirm: async () => {
-      try {
-        // Ambil semua job dari node PhxOutboundJobs
-        const jobsSnap = await get(ref(db, "PhxOutboundJobs"));
-        if (!jobsSnap.exists()) {
-          showNotification("Tidak ada data job yang ditemukan.", true);
-          return;
-        }
-        const jobs = jobsSnap.val();
-        let deletedCount = 0;
-        // Loop dan hapus job dengan status Packed/Completed
-        for (const jobNo in jobs) {
-          const status = (jobs[jobNo].status || "").toLowerCase();
-          if (status === "packed" || status === "completed") {
-            await set(ref(db, `PhxOutboundJobs/${jobNo}`), null);
-            deletedCount++;
-          }
-        }
-        showNotification(`${deletedCount} job dengan status Packed/Completed berhasil dihapus.`);
-        // Refresh data di halaman
-        loadJobsFromFirebase();
-      } catch (err) {
-        showNotification("Gagal menghapus data job.", true);
-        console.error(err);
-      }
+    onConfirm: () => {
+      const outboundRef = ref(db, "PhxOutboundJobs");
+      const manPowerRef = ref(db, "ManPower");
+      const manPowerOvertimeRef = ref(db, "ManPowerOvertime");
+      const planTargetRef = ref(db, "PlanTarget");
+      const dataStock = ref(db, "stock-material");
+
+      // Jalankan penghapusan paralel
+      Promise.all([
+        remove(outboundRef),
+        remove(manPowerRef),
+        remove(manPowerOvertimeRef),
+        remove(planTargetRef),
+        remove(dataStock)
+      ])
+        .then(() => {
+          showNotification("✅ Semua job, plan target, man power, dan overtime berhasil dihapus.");
+          loadJobsFromFirebase(); // Pastikan fungsi ini tidak tergantung PlanTarget
+        })
+        .catch((err) => {
+          console.error(err);
+          showNotification("❌ Gagal menghapus data!", true);
+        });
     }
   });
 }
@@ -618,6 +645,11 @@ function parseExcel(file) {
 /**
  * Simpan data hasil parsing ke PhxOutboundJobs di Firebase.
  * Jika ada job di database yang tidak ada di data baru, status-nya diubah menjadi "Completed".
+ * Digunakan oleh fungsi parseExcel asli (format lama).
+ * 
+ * PENTING: Implementasi ini berbeda dengan syncUploadedJobsToFirebase.
+ * - Fungsi ini menggunakan job.JobNo (huruf besar)
+ * - Menggunakan update individual per job
  */
 function syncJobsToFirebase(jobs) {
   // 1. Ambil semua jobNo dari data baru
@@ -841,6 +873,7 @@ let allJobsData = [];
 let filteredJobs = [];
 let currentSort = { key: null, asc: true };
 let currentMode = "phoenix"; // default
+let isPhoenixFormat = false; // Track if Phoenix format is being used
 
 // Status options untuk Phoenix
 const STATUS_OPTIONS = [
@@ -930,6 +963,717 @@ function handleSetMpOvertime() {
   document.getElementById("mpOvertimeInput").value = "";
 }
 document.getElementById("setMpOvertimeBtn")?.addEventListener("click", handleSetMpOvertime);
+
+// ========== UPLOAD MODAL & FUNCTIONALITY ==========
+// Modal dan elemen-elemen terkait upload
+const uploadModal = document.getElementById("uploadModal");
+const closeUploadModal = document.getElementById("closeUploadModal");
+const uploadDataBtn = document.getElementById("uploadDataBtn");
+const uploadFileInput = document.getElementById("uploadFileInput");
+const submitUploadBtn = document.getElementById("submitUploadBtn");
+const selectedFileName = document.getElementById("selectedFileName");
+const uploadLoadingIndicator = document.getElementById("uploadLoadingIndicator");
+const uploadModePhoenix = document.getElementById("uploadModePhoenix");
+const uploadModeZLogix = document.getElementById("uploadModeZLogix");
+const modalNotification = document.getElementById("modalNotification");
+const modalNotificationText = document.getElementById("modalNotificationText");
+
+// Mode upload saat ini (default: phoenix)
+let currentUploadMode = "phoenix";
+
+// Show upload modal when upload button is clicked
+uploadDataBtn?.addEventListener("click", () => {
+  uploadModal.style.display = "block";
+  // Reset form state
+  uploadFileInput.value = "";
+  selectedFileName.textContent = "Belum ada file yang dipilih";
+  submitUploadBtn.disabled = true;
+  uploadModePhoenix.checked = true;
+  currentUploadMode = "phoenix";
+  // Reset notifikasi modal
+  hideModalNotification();
+  // Bisa juga ditambahkan notifikasi disini untuk memberi tahu user harus memilih file
+  // showModalNotification("Silakan pilih file Excel untuk diupload", false);
+});
+
+// Close upload modal
+closeUploadModal?.addEventListener("click", () => {
+  uploadModal.style.display = "none";
+  hideModalNotification(); // Reset notifikasi modal saat ditutup
+  clearTimeout(window.modalNotificationTimeout); // Pastikan timeout dibersihkan
+});
+
+// Close modal when clicking outside
+window.addEventListener("click", (e) => {
+  if (e.target === uploadModal) {
+    uploadModal.style.display = "none";
+    hideModalNotification(); // Reset notifikasi modal saat ditutup
+    clearTimeout(window.modalNotificationTimeout); // Pastikan timeout dibersihkan
+  }
+});
+
+// Handle file selection
+uploadFileInput?.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    selectedFileName.textContent = file.name;
+    submitUploadBtn.disabled = false;
+    // Hapus notifikasi error jika ada, karena file sudah dipilih
+    hideModalNotification();
+  } else {
+    selectedFileName.textContent = "Belum ada file yang dipilih";
+    submitUploadBtn.disabled = true;
+    // Tampilkan notifikasi error jika file dihapus/dibatalkan
+    showModalNotification("Belum ada file yang dipilih", true);
+  }
+});
+
+// Handle mode toggle
+uploadModePhoenix?.addEventListener("change", () => {
+  if (uploadModePhoenix.checked) {
+    currentUploadMode = "phoenix";
+    isPhoenixFormat = true;
+    // Tampilkan informasi format untuk Phoenix
+    showModalNotification("Format Phoenix: Header di baris ke-3, data mulai baris ke-4", false);
+  }
+});
+
+uploadModeZLogix?.addEventListener("change", () => {
+  if (uploadModeZLogix.checked) {
+    currentUploadMode = "zlogix";
+    isPhoenixFormat = false;
+    // Tampilkan informasi format untuk Z-Logix
+    showModalNotification("Format Z-Logix: Header di baris ke-5, data mulai baris ke-6", false);
+  }
+});
+
+/**
+ * Fungsi untuk menampilkan notifikasi dalam modal upload
+ * @param {string} message - Pesan yang akan ditampilkan dalam modal
+ * @param {boolean} isError - Jika true, tampilkan sebagai error (merah)
+ * @param {number} duration - Durasi tampilan notifikasi dalam milidetik, default 5000ms
+ */
+function showModalNotification(message, isError = false, duration = 5000) {
+  if (!modalNotification || !modalNotificationText) {
+    console.warn("Modal notification elements not found");
+    return;
+  }
+  
+  console.log(`Showing modal notification: ${message} (isError: ${isError})`);
+  modalNotificationText.textContent = message;
+  modalNotification.classList.toggle('error', isError);
+  modalNotification.classList.toggle('success', !isError);
+  modalNotification.style.display = 'block';
+  
+  // Hapus notifikasi setelah durasi yang ditentukan
+  clearTimeout(window.modalNotificationTimeout);
+  
+  // Jika durasinya 0, notifikasi akan tetap tampil sampai modal ditutup atau notifikasi disembunyikan manual
+  if (duration > 0) {
+    window.modalNotificationTimeout = setTimeout(() => {
+      modalNotification.style.display = 'none';
+    }, duration);
+  }
+}
+
+/**
+ * Fungsi untuk menyembunyikan notifikasi modal
+ */
+function hideModalNotification() {
+  if (modalNotification) {
+    console.log("Hiding modal notification");
+    modalNotification.style.display = 'none';
+  } else {
+    console.warn("Modal notification element not found");
+  }
+}
+
+// Handle upload submission
+submitUploadBtn?.addEventListener("click", () => {
+  const file = uploadFileInput.files[0];
+  if (!file) {
+    showModalNotification("Pilih file terlebih dahulu (CSV, XLS, XLSX).", true);
+    // Fokuskan ke elemen input file untuk mempermudah pemilihan file
+    uploadFileInput.click();
+    return;
+  }
+  
+  // Validasi tipe file
+  const fileExtension = file.name.split('.').pop().toLowerCase();
+  const validExtensions = ['csv', 'xls', 'xlsx'];
+  if (!validExtensions.includes(fileExtension)) {
+    showModalNotification(`Tipe file tidak didukung. Gunakan file ${validExtensions.join(', ')}`, true);
+    return;
+  }
+  
+  uploadLoadingIndicator.style.display = "block";
+  submitUploadBtn.disabled = true;
+  hideModalNotification(); // Sembunyikan notifikasi sebelumnya jika ada
+  
+  // Reset isPhoenixFormat based on selected mode
+  isPhoenixFormat = (currentUploadMode === "phoenix");
+  
+  // Parse file based on selected mode
+  if (currentUploadMode === "phoenix") {
+    parsePhoenixExcel(file);
+  } else {
+    parseZLogixExcel(file);
+  }
+});
+
+/**
+ * Fungsi parsing file Excel/CSV format Phoenix.
+ * Header di baris ke-3, data mulai baris ke-4.
+ * Field mapping sesuai dengan struktur:
+ * Job No. ===========> jobNo
+ * ETD ==============> deliveryDate
+ * Delivery Note No.==> deliveryNote
+ * BC No. ===========> qty
+ * Reff. No.==========> remark
+ * Status ===========> status
+ */
+function parsePhoenixExcel(file) {
+  console.log("Starting Phoenix format parsing dengan header di baris 3, data mulai baris 4");
+  
+  parseExcelFile(file, {
+    headerRow: 3, // Header di baris ke-3 (index 2)
+    dataStartRow: 4, // Data mulai di baris ke-4 (index 3)
+    startColumn: 1, // Kolom mulai dari kolom ke-2 (index 1)
+    mapping: {
+      // Mapping sesuai kebutuhan baru
+      "Job No.": "jobNo",
+      "ETD": "deliveryDate",
+      "Delivery Note No.": "deliveryNote",
+      "BC No.": "qty",
+      "Reff. No.": "remark",
+      "Status": "status"
+    },
+    formatters: {
+      // Format deliveryDate to DD-MMM-YYYY
+      deliveryDate: (value) => {
+        if (!value) return "";
+        
+        try {
+          let date;
+          if (value instanceof Date) {
+            date = value;
+          } else if (typeof value === 'number') {
+            // Handle Excel date serial number
+            date = new Date(Math.round((value - 25569) * 86400 * 1000));
+          } else {
+            // Mencoba parse format lainnya
+            date = new Date(value);
+          }
+          
+          if (isNaN(date.getTime())) {
+            console.warn("Invalid date format:", value);
+            return value; // Return original if can't parse
+          }
+          
+          // Format tanggal ke DD-MMM-YYYY tanpa waktu
+          const day = date.getDate().toString().padStart(2, '0');
+          const month = date.toLocaleString('en-US', { month: 'short' });
+          const year = date.getFullYear();
+          
+          return `${day}-${month}-${year}`;
+        } catch (err) {
+          console.error("Error formatting date:", err);
+          return value; // Return original if error
+        }
+      },
+      
+      // Format job number
+      jobNo: (value) => {
+        if (!value) return "";
+        return String(value).trim();
+      },
+      
+      // Format quantity/BC No
+      qty: (value) => {
+        if (value === null || value === undefined || value === "") return "";
+        // Convert to number if possible, otherwise keep as string
+        const num = Number(value);
+        return isNaN(num) ? String(value).trim() : num;
+      },
+      
+      // Format status
+      status: (value) => {
+        if (!value) return "Pending Allocation";
+        const statusValue = String(value).trim();
+        
+        // If status is valid, use it, otherwise use default
+        if (STATUS_OPTIONS.includes(statusValue)) {
+          return statusValue;
+        }
+        return "Pending Allocation";
+      },
+      
+      // Format remark (default jika kosong)
+      remark: (value) => {
+        if (!value) return "";
+        return String(value).trim();
+      }
+    }
+  });
+}
+
+/**
+ * Fungsi parsing file Excel/CSV format Z-Logix.
+ * Header di baris ke-5 (Excel row 5 = index 4)
+ * Data mulai baris ke-6 (Excel row 6 = index 5)
+ * Field mapping sesuai dengan format baru:
+ * Job No ===========> jobNo
+ * Delivery Date =====> deliveryDate
+ * Delivery Note =====> deliveryNote
+ * Plan Qty ==========> qty
+ * Remark ============> remark
+ * Status ============> status
+ */
+function parseZLogixExcel(file) {
+  console.log("Starting Z-Logix format parsing dengan header di baris 5, data mulai baris 6");
+  
+  parseExcelFile(file, {
+    headerRow: 5, // Header di baris ke-5 Excel (index 4 JavaScript)
+    dataStartRow: 6, // Data mulai di baris ke-6 Excel (index 5 JavaScript)
+    startColumn: 0, // Kolom mulai dari kolom pertama (A = index 0)
+    mapping: {
+      "Job No": "jobNo",
+      "Delivery Date": "deliveryDate",
+      "Delivery Note": "deliveryNote",
+      "Plan Qty": "qty",
+      "Remark": "remark",
+      "Status": "status"
+    },
+    formatters: {
+      // Format deliveryDate to DD-MMM-YYYY
+      deliveryDate: (value) => {
+        if (!value) return "";
+        
+        // Handle jika tanggal sudah dalam format "DD-MMM-YYYY" tanpa waktu
+        if (typeof value === 'string' && value.match(/^\d{2}-[A-Za-z]{3}-\d{4}$/)) {
+          return value;
+        }
+        
+        // Handle jika tanggal sudah dalam format "DD-MMM-YYYY" dengan waktu, hapus bagian waktunya
+        if (typeof value === 'string' && value.match(/^\d{2}-[A-Za-z]{3}-\d{4}\s/)) {
+          return value.split(' ')[0]; // Ambil bagian tanggalnya saja
+        }
+        
+        // Handle format "DD-MM-YYYY HH:MM:SS"
+        if (typeof value === 'string' && value.match(/^\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}:\d{2}/)) {
+          const parts = value.split(' ')[0].split('-');
+          if (parts.length === 3) {
+            const day = parts[0];
+            const monthIndex = parseInt(parts[1]) - 1;
+            const year = parts[2];
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return `${day}-${monthNames[monthIndex]}-${year}`;
+          }
+        }
+        
+        // Konversi dari tanggal Excel atau format lainnya
+        try {
+          let date;
+          if (value instanceof Date) {
+            date = value;
+          } else if (typeof value === 'number') {
+            // Handle Excel date serial number
+            date = new Date(Math.round((value - 25569) * 86400 * 1000));
+          } else {
+            // Mencoba parse format lainnya
+            date = new Date(value);
+          }
+          
+          if (isNaN(date.getTime())) {
+            console.warn("Invalid date format:", value);
+            return value; // Return original if can't parse
+          }
+          
+          // Format tanggal ke DD-MMM-YYYY tanpa waktu
+          const day = date.getDate().toString().padStart(2, '0');
+          const month = date.toLocaleString('en-US', { month: 'short' });
+          const year = date.getFullYear();
+          
+          return `${day}-${month}-${year}`;
+        } catch (err) {
+          console.error("Error formatting date:", err);
+          return value; // Return original if error
+        }
+      },
+      
+      // Format job number
+      jobNo: (value) => {
+        if (!value) return "";
+        return String(value).trim();
+      },
+      
+      // Format quantity (pastikan numeric)
+      qty: (value) => {
+        if (value === null || value === undefined || value === "") return "";
+        // Convert to number if possible
+        const num = Number(value);
+        return isNaN(num) ? value : num;
+      },
+      
+      // Format status (default jika kosong)
+      status: (value) => {
+        if (!value) return "Pending Allocation";
+        if (typeof value === "string" && STATUS_OPTIONS.includes(value.trim())) {
+          return value.trim();
+        }
+        return "Pending Allocation";
+      },
+      
+      // Format remark
+      remark: (value) => {
+        if (!value) return "";
+        return String(value).trim();
+      }
+    }
+  });
+}
+
+/**
+ * Fungsi generik untuk parsing Excel/CSV dengan konfigurasi yang fleksibel
+ * @param {File} file - File yang akan di-parse (dapat berupa .csv, .xls, atau .xlsx)
+ * @param {Object} config - Konfigurasi parsing
+ * @param {number} config.headerRow - Nomor baris untuk header (1-based)
+ * @param {number} config.dataStartRow - Nomor baris awal data (1-based)
+ * @param {number} config.startColumn - Kolom awal untuk data (0-based), default 0
+ * @param {Object} config.mapping - Pemetaan field dari nama header ke properti objek
+ * @param {Object} config.formatters - Fungsi formatter untuk memformat nilai field tertentu
+ */
+function parseExcelFile(file, config) {
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      // Tentukan tipe file berdasarkan ekstensi
+      const fileExtension = file.name.split('.').pop().toLowerCase();
+      let data;
+      let workbook;
+      let jsonData;
+      
+      // Proses file berdasarkan tipe
+      if (fileExtension === 'csv') {
+        try {
+          // Parse CSV
+          const csvText = e.target.result;
+          workbook = XLSX.read(csvText, { type: 'binary', raw: true });
+        } catch (csvError) {
+          console.error("Error parsing CSV with binary method, trying string method:", csvError);
+          try {
+            // Alternative CSV parsing approach
+            const csvText = e.target.result;
+            workbook = XLSX.read(csvText, { type: 'string' });
+          } catch (csvError2) {
+            console.error("Both CSV parsing methods failed:", csvError2);
+            throw new Error("Format CSV tidak dapat dibaca. Coba simpan ulang file atau konversi ke Excel.");
+          }
+        }
+      } else {
+        // Parse Excel (XLS/XLSX)
+        data = new Uint8Array(e.target.result);
+        workbook = XLSX.read(data, { type: 'array' });
+      }
+      
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: "" });
+
+      console.log("Total rows in file:", jsonData.length);
+      console.log("Struktur data file Excel:", jsonData);
+      
+      // Validate data structure based on format type
+      if (jsonData.length < config.headerRow) {
+        // Custom message based on format (Phoenix or Z-Logix)
+        const formatType = config.headerRow === 4 ? "Phoenix" : "Z-Logix";
+        throw new Error(`Format file tidak valid atau tidak ada data. File hanya memiliki ${jsonData.length} baris, header ${formatType} seharusnya di baris ke-${config.headerRow}`);
+      }
+
+      // Get header row
+      const headerIndex = config.headerRow - 1;
+      const headers = jsonData[headerIndex];
+      
+      // Define starting column if not specified
+      const startColumn = config.startColumn || 0;
+      
+      console.log(`Headers found at row ${config.headerRow} (index ${headerIndex}):`, headers);
+      console.log(`Data starts at row ${config.dataStartRow} (index ${config.dataStartRow - 1}), column ${startColumn+1} (index ${startColumn})`);
+      console.log("Header mapping yang dicari:", config.mapping);
+      
+      // Debug - Log beberapa baris pertama untuk verifikasi
+      console.log("Data pada file Excel:");
+      for (let i = 0; i < Math.min(6, jsonData.length); i++) {
+        console.log(`Baris ${i+1} (index ${i}):`, jsonData[i]);
+      }
+      
+      // Check if key headers are present
+      let missingHeaders = [];
+      for (const sourceField of Object.values(config.mapping)) {
+        let found = false;
+        for (let j = startColumn; j < headers.length; j++) {
+          const headerText = String(headers[j] || '').trim().toLowerCase();
+          const sourceText = String(sourceField).trim().toLowerCase();
+          
+          // More flexible matching for Phoenix format
+          if (headerText === sourceText || 
+              headerText.includes(sourceText) || 
+              sourceText.includes(headerText) ||
+              // Handle common variations (with/without dots, spaces, etc.)
+              headerText.replace(/[.\s]/g, '') === sourceText.replace(/[.\s]/g, '')) {
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          missingHeaders.push(sourceField);
+        }
+      }
+      
+      if (missingHeaders.length > 0) {
+        console.warn(`Missing headers: ${missingHeaders.join(', ')}`);
+        console.log(`Available headers: ${headers.map(h => String(h || '')).join(', ')}`);
+        
+        // For Phoenix format, make error message more helpful
+        if (config.headerRow === 4) {
+          console.log("This may be due to header position. Phoenix format expects headers at row 4 (index 3)");
+          
+          // Log some rows to help debug
+          for (let i = 0; i < Math.min(6, jsonData.length); i++) {
+            console.log(`Row ${i+1}:`, jsonData[i]);
+          }
+        }
+      }
+      
+      // Transform data to our format
+      const jobs = [];
+      for (let i = config.dataStartRow - 1; i < jsonData.length; i++) {
+        const row = jsonData[i];
+        // Skip empty rows - check if any cell in the row has content
+        if (!row || row.length === 0 || row.every(cell => cell === "" || cell === null || cell === undefined)) {
+          console.log(`Skipping empty row at index ${i}`);
+          continue;
+        }
+        
+        const job = {};
+        console.log(`Parsing row ${i+1}:`, row);
+        
+        // Map fields according to config
+        for (const [targetField, sourceField] of Object.entries(config.mapping)) {
+          // Find column index with flexible header match
+          let headerIndex = -1;
+          for (let j = startColumn; j < headers.length; j++) {
+            const headerText = String(headers[j] || '').trim().toLowerCase();
+            const sourceText = String(sourceField).trim().toLowerCase();
+            
+            // Debug informasi pencocokan header
+            console.log(`Mencoba mencocokkan header: '${headers[j]}' dengan '${sourceField}'`);
+            
+            // More flexible matching dengan toleransi lebih tinggi
+            if (headerText === sourceText || 
+                headerText.replace(/[.\s]/g, '') === sourceText.replace(/[.\s]/g, '') ||
+                headerText.replace(/\s+/g, '') === sourceText.replace(/\s+/g, '') ||
+                headerText.split(/\s+/)[0] === sourceText.split(/\s+/)[0] ||
+                headerText.includes(sourceText) || 
+                sourceText.includes(headerText)) {
+              headerIndex = j;
+              console.log(`✅ Berhasil mencocokkan! Header '${headers[j]}' dengan '${sourceField}'`);
+              break;
+            }
+          }
+          
+          // Debug logging
+          if (headerIndex !== -1) {
+            console.log(`Found match for ${sourceField}: '${headers[headerIndex]}'`);
+          }
+          else {
+            console.log(`⚠️ Tidak menemukan kecocokan untuk ${sourceField}`);
+          }
+          
+          if (headerIndex !== -1 && headerIndex < row.length) {
+            // Get the raw value
+            let value = row[headerIndex];
+            console.log(`  Found ${targetField} at column ${headerIndex}: ${value}`);
+            
+            // Process data through formatters if provided
+            if (config.formatters && config.formatters[targetField]) {
+              const oldValue = value;
+              value = config.formatters[targetField](value);
+              console.log(`  Formatted ${targetField}: ${oldValue} -> ${value}`);
+            }
+            
+            // Extra date formatting check for date fields
+            if (targetField === 'deliveryDate' && value) {
+              const oldValue = value;
+              value = formatDate(value);
+              console.log(`  Additional date formatting: ${oldValue} -> ${value}`);
+            }
+            
+            job[targetField] = value;
+          } else {
+            console.warn(`  Column not found for ${targetField} (${sourceField})`);
+          }
+        }
+        
+        // Add only if job number exists
+        if (job.jobNo) {
+          console.log(`Found valid job: ${job.jobNo}`);
+          
+          // Format delivery date if no formatter was specified
+          if (job.deliveryDate && !config.formatters?.deliveryDate) {
+            const oldValue = job.deliveryDate;
+            job.deliveryDate = formatDate(job.deliveryDate);
+            console.log(`  Formatted date: ${oldValue} -> ${job.deliveryDate}`);
+          }
+          
+          // Ensure status is valid
+          if (!job.status || !STATUS_OPTIONS.includes(job.status)) {
+            job.status = "Pending Allocation";
+            console.log(`  Set default status: ${job.status}`);
+          }
+          
+          // Untuk Phoenix format, pastikan semua field yang diperlukan ada
+          if (config.headerRow === 4) {
+            // Pastikan field-field penting yang sesuai format Phoenix tidak kosong
+            if (!job.jobType) job.jobType = "By Manual"; // Default dari contoh gambar
+            if (!job.deliveryDate) job.deliveryDate = "";
+            if (!job.status) job.status = "Pending Allocation";
+            if (!job.qty) job.qty = "";
+          }
+          
+          jobs.push(job);
+        } else {
+          console.log(`  Skipping row ${i+1}: No valid Job No`);
+        }
+      }
+      
+      console.log(`Parsing completed. Found ${jobs.length} valid jobs from file`);
+      
+      if (jobs.length === 0) {
+        // No valid jobs found
+        const formatType = currentUploadMode === "phoenix" ? "Phoenix" : "Z-Logix";
+        let errorMsg = `Tidak ada data job yang valid dalam file. Pastikan header berada di baris ke-${config.headerRow + 1} dan format data sesuai dengan ${formatType}.`;
+        
+        if (missingHeaders && missingHeaders.length > 0) {
+          errorMsg += `\n\nHeader kolom tidak ditemukan: ${missingHeaders.join(', ')}`;
+        }
+        
+        showModalNotification(errorMsg, true);
+        uploadLoadingIndicator.style.display = "none";
+        submitUploadBtn.disabled = false;
+      } else {
+        // Save to Firebase
+        console.log("Menyimpan data ke Firebase:", jobs);
+        syncUploadedJobsToFirebase(jobs);
+      }
+    } catch (error) {
+      console.error("Error parsing file:", error);
+      showModalNotification(`Gagal memproses file: ${error.message}`, true);
+      uploadLoadingIndicator.style.display = "none";
+      submitUploadBtn.disabled = false;
+    }
+  };
+  
+  reader.onerror = function() {
+    showModalNotification("Gagal membaca file", true);
+    uploadLoadingIndicator.style.display = "none";
+    submitUploadBtn.disabled = false;
+  };
+  
+  // Read file as binary or array buffer depending on type
+  const fileExtension = file.name.split('.').pop().toLowerCase();
+  if (fileExtension === 'csv') {
+    // For CSV, we'll try binary string first
+    console.log("Reading CSV file as binary string");
+    reader.readAsBinaryString(file);
+  } else {
+    // For Excel files, use ArrayBuffer
+    console.log("Reading Excel file as array buffer");
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+/**
+ * Function to sync data to Firebase with proper error handling and success message
+ * Digunakan oleh fungsi upload modal baru (format Phoenix dan Z-Logix).
+ * 
+ * PENTING: Implementasi ini berbeda dengan syncJobsToFirebase.
+ * - Fungsi ini menggunakan job.jobNo (huruf kecil)
+ * - Menggunakan update batch untuk semua job sekaligus
+ */
+function syncUploadedJobsToFirebase(jobs) {
+  // Verifikasi format tanggal sebelum disimpan ke Firebase
+  jobs.forEach(job => {
+    // Pastikan format tanggal konsisten DD-MMM-YYYY
+    if (job.deliveryDate) {
+      if (typeof job.deliveryDate === 'string' && job.deliveryDate.includes(' ')) {
+        // Strip any time component if present
+        job.deliveryDate = job.deliveryDate.split(' ')[0];
+      }
+      // Apply final formatting
+      job.deliveryDate = formatDate(job.deliveryDate);
+    }
+  });
+
+  // 1. Ambil semua jobNo dari data baru
+  const newJobNos = jobs.map(job => sanitizeValue(job.jobNo)).filter(jn => jn && !/[.#$\[\]]/.test(jn));
+
+  // 2. Ambil semua job di database
+  get(ref(db, "PhxOutboundJobs")).then(snapshot => {
+    // Existing Firebase sync code
+    const dbJobs = snapshot.exists() ? snapshot.val() : {};
+    
+    // Prepare batch update
+    const updates = {};
+    
+    // Add/update new jobs
+    jobs.forEach(job => {
+      if (job.jobNo && !/[.#$\[\]]/.test(job.jobNo)) {
+        const existingJob = dbJobs[job.jobNo];
+        
+        // If job exists in DB, preserve team assignment if any
+        if (existingJob && existingJob.team) {
+          job.team = existingJob.team;
+        }
+        
+        updates[job.jobNo] = job;
+      }
+    });
+    
+    // Update status of jobs in DB that aren't in new data
+    Object.keys(dbJobs).forEach(jobNo => {
+      if (!newJobNos.includes(jobNo)) {
+        // If job not in new data, mark as completed if not already
+        if (dbJobs[jobNo].status !== "Completed") {
+          updates[jobNo] = { ...dbJobs[jobNo], status: "Completed" };
+        }
+      }
+    });
+    
+    // Execute batch update
+    update(ref(db, "PhxOutboundJobs"), updates)
+      .then(() => {
+        // Tampilkan notifikasi sukses hanya di dalam modal, sesuai permintaan
+        const successMsg = `Berhasil menyinkronkan ${jobs.length} job dari file ke database`;
+        showModalNotification(successMsg, false, 0); // Durasi 0 = tetap tampil sampai modal ditutup
+        
+        // Jangan tutup modal secara otomatis, biarkan user yang menutup
+        uploadLoadingIndicator.style.display = "none";
+        submitUploadBtn.disabled = false;
+        loadJobsFromFirebase(); // Refresh the table
+      })
+      .catch(error => {
+        console.error("Error syncing to Firebase:", error);
+        showModalNotification("Gagal menyimpan data ke database: " + error.message, true);
+        uploadLoadingIndicator.style.display = "none";
+        submitUploadBtn.disabled = false;
+      });
+  }).catch(error => {
+    console.error("Error reading from Firebase:", error);
+    showModalNotification("Gagal membaca data dari database: " + error.message, true);
+    uploadLoadingIndicator.style.display = "none";
+    submitUploadBtn.disabled = false;
+  });
+}
 
 // Upload functionality - hidden but functional for compatibility
 if (uploadBtn) {

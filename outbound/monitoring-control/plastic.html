@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="css/enterprise-style.css" />
   <link rel="stylesheet" href="css/mobile-responsive.css" />
   <link rel="stylesheet" href="css/sortir.css" />
+  <link rel="stylesheet" href="css/upload-modal.css" />
   <link rel="icon" type="image/png" href="img/reverse-logistic.png"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,700&display=swap" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -306,6 +307,47 @@
       <div class="export-loading-content">
         <div class="export-spinner"></div>
         <div class="export-loading-text">Processing export, please wait...</div>
+      </div>
+    </div>
+
+    <!-- Modal Upload File -->
+    <div id="uploadModal" class="modal">
+      <div class="modal-content">
+        <span class="close" id="closeUploadModal">&times;</span>
+        <h3>Upload Data Excel</h3>
+        
+        <!-- Notifikasi dalam modal -->
+        <div id="modalNotification" class="modal-notification" style="display: none;">
+          <span id="modalNotificationText">Pesan notifikasi</span>
+        </div>
+        
+        <div class="toggle-container" style="margin: 15px 0; text-align: center;">
+          <label class="radio-container">
+            <input type="radio" name="uploadModeToggle" id="uploadModePhoenix" value="phoenix" checked>
+            <span class="radio-label">Phoenix</span>
+          </label>
+          <label class="radio-container">
+            <input type="radio" name="uploadModeToggle" id="uploadModeZLogix" value="zlogix">
+            <span class="radio-label">Z-Logix</span>
+          </label>
+        </div>
+        
+        <div class="file-upload-container" style="margin: 20px 0;">
+                    <label for="uploadFileInput" class="file-upload-label">
+            <span class="file-upload-icon">📁</span>
+            <span>Pilih File (Excel/CSV)</span>
+          </label>
+          <input type="file" id="uploadFileInput" accept=".xlsx, .xls, .csv" style="display:none;" />
+          <div id="selectedFileName" style="margin-top: 10px; font-size: 14px; color: #666;">Belum ada file yang dipilih</div>
+        </div>
+        
+        <div style="margin-top: 20px; text-align: center;">
+          <button id="submitUploadBtn" class="btn btn-primary" disabled>Upload Data</button>
+        </div>
+        
+        <div id="uploadLoadingIndicator" class="loading-indicator" style="display: none;">
+          <i class="fas fa-spinner fa-spin"></i> Mengupload dan memproses data...
+        </div>
       </div>
     </div>
 
