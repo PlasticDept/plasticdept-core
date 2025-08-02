@@ -1290,6 +1290,7 @@ function parseZLogixExcel(file) {
     dataStartRow: 6, // Data mulai di baris ke-6 Excel (index 5 JavaScript)
     startColumn: 0, // Kolom mulai dari kolom pertama (A = index 0)
     mapping: {
+      // Gunakan nama kolom persis seperti di Excel Z-Logix
       "Job No": "jobNo",
       "Delivery Date": "deliveryDate",
       "Delivery Note": "deliveryNote",
@@ -1298,9 +1299,17 @@ function parseZLogixExcel(file) {
       "Status": "status"
     },
     formatters: {
+      // Format job number - perbaikan untuk Z-Logix
+      jobNo: (value) => {
+        console.log("Processing jobNo:", value);
+        if (!value) return "";
+        return String(value).trim();
+      },
+      
       // Format deliveryDate to DD-MMM-YYYY
       deliveryDate: (value) => {
         if (!value) return "";
+        console.log("Processing deliveryDate:", value);
         
         // Handle jika tanggal sudah dalam format "DD-MMM-YYYY" tanpa waktu
         if (typeof value === 'string' && value.match(/^\d{2}-[A-Za-z]{3}-\d{4}$/)) {
@@ -1352,12 +1361,6 @@ function parseZLogixExcel(file) {
           console.error("Error formatting date:", err);
           return value; // Return original if error
         }
-      },
-      
-      // Format job number
-      jobNo: (value) => {
-        if (!value) return "";
-        return String(value).trim();
       },
       
       // Format quantity (pastikan numeric)
@@ -1521,28 +1524,42 @@ function parseExcelFile(file, config) {
           // Find column index with flexible header match
           let headerIndex = -1;
           
-          // Modified header matching logic - more direct approach
+          // Log pencarian headers untuk debugging
+          console.log("Looking for header:", sourceField);
+
+          // Modified header matching logic - improved for Z-Logix format
           for (let j = startColumn; j < headers.length; j++) {
-            const headerText = String(headers[j] || '').trim().toLowerCase();
-            const sourceText = String(sourceField).trim().toLowerCase();
+            const headerText = String(headers[j] || '').trim();
+            const sourceText = String(sourceField).trim();
             
-            // Try more specific exact matching first
-            if (headerText === sourceText || 
-                headerText.replace(/\./g, '') === sourceText.replace(/\./g, '')) {
+            // Log untuk debugging
+            console.log(`  Comparing '${headerText}' with '${sourceText}'`);
+            
+            // 1. Coba pencocokan langsung (case-insensitive)
+            if (headerText.toLowerCase() === sourceText.toLowerCase()) {
               headerIndex = j;
-              console.log(`✅ Exact match for '${sourceField}' found at column ${j}: '${headers[j]}'`);
+              console.log(`✅ EXACT match for '${sourceField}' found at column ${j}: '${headers[j]}'`);
               break;
             }
             
-            // Try removing all spaces and punctuation
-            if (headerText.replace(/[.\s]/g, '') === sourceText.replace(/[.\s]/g, '')) {
+            // 2. Coba pencocokan dengan menghapus tanda baca
+            if (headerText.toLowerCase().replace(/[.\s]/g, '') === sourceText.toLowerCase().replace(/[.\s]/g, '')) {
               headerIndex = j;
               console.log(`✅ Normalized match for '${sourceField}' found at column ${j}: '${headers[j]}'`);
               break;
             }
             
-            // Try partial matching as last resort
-            if (headerText.includes(sourceText) || sourceText.includes(headerText)) {
+            // 3. Pencocokan khusus untuk kasus "Job No" yang mungkin terdeteksi sebagai "No"
+            if (sourceText === "Job No" && headerText === "Job No") {
+              headerIndex = j;
+              console.log(`✅ Special match for 'Job No' found at column ${j}`);
+              break;
+            }
+            
+            // 4. Pencocokan parsial sebagai upaya terakhir, tapi hanya untuk string yang cukup panjang
+            if ((headerText.toLowerCase().includes(sourceText.toLowerCase()) || 
+                sourceText.toLowerCase().includes(headerText.toLowerCase())) &&
+                headerText.length > 2) {
               headerIndex = j;
               console.log(`✅ Partial match for '${sourceField}' found at column ${j}: '${headers[j]}'`);
               break;
@@ -1553,6 +1570,21 @@ function parseExcelFile(file, config) {
             // Get the raw value
             let value = row[headerIndex];
             console.log(`  Found ${targetField} at column ${headerIndex}: ${value}`);
+            
+            // Koreksi khusus untuk kolom Job No di format Z-Logix
+            if (targetField === 'jobNo' && sourceField === 'Job No') {
+              // Untuk Z-Logix, gunakan nilai di kolom Job No, bukan No
+              for (let k = 0; k < headers.length; k++) {
+                if (headers[k] === 'Job No') {
+                  console.log(`  Special correction for Job No, found at column ${k}`);
+                  if (k < row.length) {
+                    value = row[k];
+                    console.log(`  Corrected Job No value: ${value}`);
+                  }
+                  break;
+                }
+              }
+            }
             
             // Process data through formatters if provided
             if (config.formatters && config.formatters[targetField]) {
