@@ -642,6 +642,52 @@ function parseExcel(file) {
   };
   reader.readAsArrayBuffer(file);
 }
+
+/**
+ * Fungsi untuk melakukan update data job dengan preservasi field penting.
+ * Memastikan field tertentu tidak ditimpa jika sudah memiliki nilai.
+ * @param {string} jobNo - Nomor job yang akan diupdate
+ * @param {Object} newData - Data baru yang akan disimpan
+ * @returns {Promise<Object>} - Data yang sudah dipreservasi
+ */
+async function preserveExistingFields(jobNo, newData) {
+  try {
+    // Field yang harus dipertahankan jika sudah ada nilainya
+    const preserveFields = ["finishAt", "jobType", "shift", "team", "teamName"];
+    
+    // Dapatkan data yang sudah ada di database
+    const jobRef = ref(db, `PhxOutboundJobs/${jobNo}`);
+    const snapshot = await get(jobRef);
+    
+    // Jika job sudah ada di database
+    if (snapshot.exists()) {
+      const existingData = snapshot.val();
+      const finalData = {...newData}; // Clone data baru
+      
+      // Untuk setiap field yang perlu dipertahankan
+      for (const field of preserveFields) {
+        // Jika field sudah ada nilai di database, pertahankan nilai tersebut
+        if (existingData[field] !== undefined && 
+            existingData[field] !== null && 
+            existingData[field] !== "" && 
+            !(typeof existingData[field] === 'string' && existingData[field].trim() === "")) {
+          // Prioritaskan nilai yang sudah ada di database
+          finalData[field] = existingData[field];
+          console.log(`🔒 Mempertahankan field ${field}: '${existingData[field]}'`);
+        }
+      }
+      
+      return finalData;
+    }
+    
+    // Jika job belum ada, kembalikan data baru apa adanya
+    return newData;
+  } catch (error) {
+    console.error(`Error saat preservasi field untuk job ${jobNo}:`, error);
+    return newData; // Kembalikan data asli jika terjadi error
+  }
+}
+
 /**
  * Simpan data hasil parsing ke PhxOutboundJobs di Firebase.
  * Jika ada job di database yang tidak ada di data baru, status-nya diubah menjadi "Completed".
@@ -676,6 +722,7 @@ function syncJobsToFirebase(jobs) {
       if (!jobNo || /[.#$\[\]]/.test(jobNo)) return Promise.resolve();
       const formattedDate = formatDate(job.ETD);
       const jobRef = ref(db, "PhxOutboundJobs/" + jobNo);
+      
       return get(jobRef).then(existingSnap => {
         const existing = existingSnap.exists() ? existingSnap.val() : {};
         const jobData = {
@@ -685,12 +732,18 @@ function syncJobsToFirebase(jobs) {
           remark: sanitizeValue(job.RefNo),
           status: sanitizeValue(job.Status),
           qty: sanitizeValue(job.BCNo),
-          team: existing.team || "",
-          jobType: existing.jobType || "",
-          shift: existing.shift || "",
-          teamName: existing.teamName || "" 
+          // Nilai default untuk field yang dipreservasi
+          team: "",
+          jobType: "",
+          shift: "", 
+          teamName: "",
+          finishAt: ""
         };
-        return set(jobRef, jobData);
+        
+        // Gunakan fungsi preservasi untuk mempertahankan field penting
+        return preserveExistingFields(jobNo, jobData).then(preservedData => {
+          return set(jobRef, preservedData);
+        });
       })
       .then(() => { uploadCount++; })
       .catch(() => { errorCount++; });
@@ -1607,7 +1660,7 @@ function parseExcelFile(file, config) {
  * - Fungsi ini menggunakan job.jobNo (huruf kecil)
  * - Menggunakan update batch untuk semua job sekaligus
  */
-function syncUploadedJobsToFirebase(jobs) {
+async function syncUploadedJobsToFirebase(jobs) {
   // Verifikasi format tanggal sebelum disimpan ke Firebase
   jobs.forEach(job => {
     // Pastikan format tanggal konsisten DD-MMM-YYYY
@@ -1624,27 +1677,31 @@ function syncUploadedJobsToFirebase(jobs) {
   // 1. Ambil semua jobNo dari data baru
   const newJobNos = jobs.map(job => sanitizeValue(job.jobNo)).filter(jn => jn && !/[.#$\[\]]/.test(jn));
 
-  // 2. Ambil semua job di database
-  get(ref(db, "PhxOutboundJobs")).then(snapshot => {
+  try {
+    // 2. Ambil semua job di database
+    const snapshot = await get(ref(db, "PhxOutboundJobs"));
     // Existing Firebase sync code
     const dbJobs = snapshot.exists() ? snapshot.val() : {};
     
     // Prepare batch update
     const updates = {};
     
-    // Add/update new jobs
-    jobs.forEach(job => {
+    // Proses semua job yang akan diupdate
+    const updatePromises = jobs.map(async job => {
       if (job.jobNo && !/[.#$\[\]]/.test(job.jobNo)) {
-        const existingJob = dbJobs[job.jobNo];
-        
-        // If job exists in DB, preserve team assignment if any
-        if (existingJob && existingJob.team) {
-          job.team = existingJob.team;
+        try {
+          // Gunakan fungsi preservasi untuk mempertahankan field penting
+          const preservedData = await preserveExistingFields(job.jobNo, job);
+          updates[job.jobNo] = preservedData;
+        } catch (err) {
+          console.error(`Error saat preservasi job ${job.jobNo}:`, err);
+          updates[job.jobNo] = job; // Fallback to original data
         }
-        
-        updates[job.jobNo] = job;
       }
     });
+
+    // Tunggu semua proses preservasi selesai
+    await Promise.all(updatePromises);
     
     // Update status of jobs in DB that aren't in new data
     Object.keys(dbJobs).forEach(jobNo => {
@@ -1657,29 +1714,22 @@ function syncUploadedJobsToFirebase(jobs) {
     });
     
     // Execute batch update
-    update(ref(db, "PhxOutboundJobs"), updates)
-      .then(() => {
-        // Tampilkan notifikasi sukses hanya di dalam modal, sesuai permintaan
-        const successMsg = `Berhasil menyinkronkan ${jobs.length} job dari file ke database`;
-        showModalNotification(successMsg, false, 0); // Durasi 0 = tetap tampil sampai modal ditutup
-        
-        // Jangan tutup modal secara otomatis, biarkan user yang menutup
-        uploadLoadingIndicator.style.display = "none";
-        submitUploadBtn.disabled = false;
-        loadJobsFromFirebase(); // Refresh the table
-      })
-      .catch(error => {
-        console.error("Error syncing to Firebase:", error);
-        showModalNotification("Gagal menyimpan data ke database: " + error.message, true);
-        uploadLoadingIndicator.style.display = "none";
-        submitUploadBtn.disabled = false;
-      });
-  }).catch(error => {
-    console.error("Error reading from Firebase:", error);
-    showModalNotification("Gagal membaca data dari database: " + error.message, true);
+    await update(ref(db, "PhxOutboundJobs"), updates);
+    
+    // Tampilkan notifikasi sukses hanya di dalam modal, sesuai permintaan
+    const successMsg = `Berhasil menyinkronkan ${jobs.length} job dari file ke database`;
+    showModalNotification(successMsg, false, 0); // Durasi 0 = tetap tampil sampai modal ditutup
+    
+    // Jangan tutup modal secara otomatis, biarkan user yang menutup
     uploadLoadingIndicator.style.display = "none";
     submitUploadBtn.disabled = false;
-  });
+    loadJobsFromFirebase(); // Refresh the table
+  } catch (error) {
+    console.error("Error syncing to Firebase:", error);
+    showModalNotification("Gagal menyimpan data ke database: " + error.message, true);
+    uploadLoadingIndicator.style.display = "none";
+    submitUploadBtn.disabled = false;
+  }
 }
 
 // Upload functionality - hidden but functional for compatibility
