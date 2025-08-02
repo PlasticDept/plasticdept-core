@@ -541,36 +541,54 @@ function showModal() { modal.style.display = "block"; }
 function hideModal() { modal.style.display = "none"; }
 
 /**
- * Menghapus semua job di node PhxOutboundJobs.
+ * Menghapus job dengan status Packed dan Completed di node PhxOutboundJobs.
  */
 function clearAllJobs() {
   showConfirmModal({
-    title: "Konfirmasi Hapus Semua",
-    message: "Apakah Anda yakin ingin <b>MENGHAPUS SEMUA</b> job dan plan target dari database?",
+    title: "Konfirmasi Hapus Job",
+    message: "Apakah Anda yakin ingin <b>MENGHAPUS JOB</b> dengan status Packed dan Completed dari database?",
     okText: "Hapus",
     okClass: "logout",
     onConfirm: () => {
-      const outboundRef = ref(db, "PhxOutboundJobs");
-      const manPowerRef = ref(db, "ManPower");
-      const manPowerOvertimeRef = ref(db, "ManPowerOvertime");
-      const planTargetRef = ref(db, "PlanTarget");
-      const dataStock = ref(db, "stock-material");
-
-      // Jalankan penghapusan paralel
-      Promise.all([
-        remove(outboundRef),
-        remove(manPowerRef),
-        remove(manPowerOvertimeRef),
-        remove(planTargetRef),
-        remove(dataStock)
-      ])
-        .then(() => {
-          showNotification("✅ Semua job, plan target, man power, dan overtime berhasil dihapus.");
-          loadJobsFromFirebase(); // Pastikan fungsi ini tidak tergantung PlanTarget
+      // Ambil semua job terlebih dahulu untuk filter
+      get(ref(db, "PhxOutboundJobs"))
+        .then((snapshot) => {
+          if (!snapshot.exists()) {
+            showNotification("Tidak ada data job yang dapat dihapus.", true);
+            return;
+          }
+          
+          const jobs = snapshot.val();
+          const updates = {};
+          let deleteCount = 0;
+          
+          // Filter job dengan status Packed atau Completed
+          Object.entries(jobs).forEach(([jobNo, jobData]) => {
+            if (jobData.status === "Packed" || jobData.status === "Completed") {
+              updates[jobNo] = null; // Set null untuk menghapus data
+              deleteCount++;
+            }
+          });
+          
+          if (deleteCount === 0) {
+            showNotification("Tidak ada job dengan status Packed atau Completed yang dapat dihapus.", true);
+            return;
+          }
+          
+          // Hapus job yang terfilter menggunakan update
+          update(ref(db, "PhxOutboundJobs"), updates)
+            .then(() => {
+              showNotification(`✅ Berhasil menghapus ${deleteCount} job dengan status Packed dan Completed.`);
+              loadJobsFromFirebase(); // Refresh data setelah penghapusan
+            })
+            .catch((err) => {
+              console.error(err);
+              showNotification("❌ Gagal menghapus data job!", true);
+            });
         })
-        .catch((err) => {
-          console.error(err);
-          showNotification("❌ Gagal menghapus data!", true);
+        .catch((error) => {
+          console.error("Error saat mengambil data job:", error);
+          showNotification("❌ Gagal mengambil data job untuk dihapus!", true);
         });
     }
   });
