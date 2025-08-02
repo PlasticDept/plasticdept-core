@@ -199,16 +199,16 @@ function formatToCustomDate(date) {
 function formatDate(input) {
   if (!input) return "";
   
+  // Jika input berupa string dan ada spasi (antara tanggal dan waktu), potong waktu
+  if (typeof input === "string" && input.includes(" ")) {
+    // Strip any time component if present
+    input = input.split(" ")[0];
+  }
+  
   // Handle Excel number format (days since 1900-01-01)
   if (typeof input === "number") {
     const date = new Date(Math.round((input - 25569) * 86400 * 1000));
     return formatToCustomDate(date);
-  }
-  
-  // Handle date string with time component
-  if (typeof input === "string" && input.includes(" ")) {
-    // Strip any time component if present
-    input = input.split(" ")[0];
   }
   
   // Try parsing as date string (handles ISO format, MM/DD/YYYY, DD/MM/YYYY, etc)
@@ -1299,10 +1299,24 @@ function parseZLogixExcel(file) {
         return String(value).trim();
       },
       
-      // Format deliveryDate to DD-MMM-YYYY
+      // Format deliveryDate to DD-MMM-YYYY - PERBAIKAN: memastikan tanpa waktu
       deliveryDate: (value) => {
         if (!value) return "";
         console.log("Processing deliveryDate:", value);
+        
+        // Jika sudah string format tanggal, hapus komponen waktu
+        if (typeof value === 'string') {
+          // Jika ada spasi (pemisah antara tanggal dan waktu), ambil bagian tanggal saja
+          if (value.includes(' ')) {
+            value = value.split(' ')[0];
+            console.log("  Stripped time component, date only:", value);
+          }
+          
+          // Jika sudah dalam format "DD-MMM-YYYY", kembalikan apa adanya
+          if (value.match(/^\d{2}-[A-Za-z]{3}-\d{4}$/)) {
+            return value;
+          }
+        }
         
         try {
           let date;
@@ -1326,7 +1340,9 @@ function parseZLogixExcel(file) {
           const month = date.toLocaleString('en-US', { month: 'short' });
           const year = date.getFullYear();
           
-          return `${day}-${month}-${year}`;
+          const formattedDate = `${day}-${month}-${year}`;
+          console.log("  Formatted to date-only:", formattedDate);
+          return formattedDate;
         } catch (err) {
           console.error("Error formatting date:", err);
           return value; // Return original if error
@@ -1336,7 +1352,6 @@ function parseZLogixExcel(file) {
       // Format quantity
       qty: (value) => {
         if (value === null || value === undefined || value === "") return "";
-        // Convert to number if possible
         const num = Number(value);
         return isNaN(num) ? String(value).trim() : num;
       },
@@ -1346,11 +1361,9 @@ function parseZLogixExcel(file) {
         if (!value) return "Pending Allocation";
         const statusValue = String(value).trim();
         
-        // If status is valid, use it, otherwise use default
         if (STATUS_OPTIONS.includes(statusValue)) {
           return statusValue;
         }
-        // Map Loaded to Packed if not in STATUS_OPTIONS
         if (statusValue.toLowerCase() === "loaded") {
           return "Packed";
         }
@@ -1691,14 +1704,27 @@ function parseExcelFile(file, config) {
 async function syncUploadedJobsToFirebase(jobs) {
   // Verifikasi format tanggal sebelum disimpan ke Firebase
   jobs.forEach(job => {
-    // Pastikan format tanggal konsisten DD-MMM-YYYY
+    // Pastikan format tanggal konsisten DD-MMM-YYYY tanpa waktu
     if (job.deliveryDate) {
-      if (typeof job.deliveryDate === 'string' && job.deliveryDate.includes(' ')) {
-        // Strip any time component if present
-        job.deliveryDate = job.deliveryDate.split(' ')[0];
+      // Cek apakah tanggal memiliki komponen waktu
+      if (typeof job.deliveryDate === 'string') {
+        // Hapus semua komponen waktu jika ada
+        if (job.deliveryDate.includes(' ')) {
+          const datePart = job.deliveryDate.split(' ')[0];
+          console.log(`Stripping time from date: ${job.deliveryDate} -> ${datePart}`);
+          job.deliveryDate = datePart;
+        }
+        
+        // Cek dan pastikan format DD-MMM-YYYY
+        if (!job.deliveryDate.match(/^\d{2}-[A-Za-z]{3}-\d{4}$/)) {
+          job.deliveryDate = formatDate(job.deliveryDate);
+        }
+      } else {
+        // Untuk tipe data lainnya (Date object, number)
+        job.deliveryDate = formatDate(job.deliveryDate);
       }
-      // Apply final formatting
-      job.deliveryDate = formatDate(job.deliveryDate);
+      
+      console.log(`Final delivery date format: ${job.deliveryDate}`);
     }
   });
 
