@@ -1138,15 +1138,15 @@ function parsePhoenixExcel(file) {
   parseExcelFile(file, {
     headerRow: 3, // Header di baris ke-3 (index 2)
     dataStartRow: 4, // Data mulai di baris ke-4 (index 3)
-    startColumn: 1, // Kolom mulai dari kolom ke-2 (index 1)
+    startColumn: 0, // Kolom mulai dari kolom pertama (index 0) - changed from 1
     mapping: {
-      // Mapping sesuai kebutuhan baru
-      "Job No.": "jobNo",
-      "ETD": "deliveryDate",
-      "Delivery Note No.": "deliveryNote",
-      "BC No.": "qty",
-      "Reff. No.": "remark",
-      "Status": "status"
+      // Reversed mapping to fix the issue
+      "jobNo": "Job No.",
+      "deliveryDate": "ETD",
+      "deliveryNote": "Delivery Note No.",
+      "qty": "BC No.",
+      "remark": "Reff. No.",
+      "status": "Status"
     },
     formatters: {
       // Format deliveryDate to DD-MMM-YYYY
@@ -1225,7 +1225,7 @@ function parsePhoenixExcel(file) {
  * Job No ===========> jobNo
  * Delivery Date =====> deliveryDate
  * Delivery Note =====> deliveryNote
- * Plan Qty ==========> qty
+ * Plan Qty ==========> qty (nilai qty diambil dari kolom Plan Qty)
  * Remark ============> remark
  * Status ============> status
  */
@@ -1343,8 +1343,9 @@ function parseZLogixExcel(file) {
  * @param {Object} config.mapping - Pemetaan field dari nama header ke properti objek
  * @param {Object} config.formatters - Fungsi formatter untuk memformat nilai field tertentu
  */
+
 function parseExcelFile(file, config) {
-  const reader = new FileReader();
+  const reader = new FileReader(); // Removed the "N" character that was here
   reader.onload = function (e) {
     try {
       // Tentukan tipe file berdasarkan ekstensi
@@ -1385,7 +1386,7 @@ function parseExcelFile(file, config) {
       // Validate data structure based on format type
       if (jsonData.length < config.headerRow) {
         // Custom message based on format (Phoenix or Z-Logix)
-        const formatType = config.headerRow === 4 ? "Phoenix" : "Z-Logix";
+        const formatType = config.headerRow === 3 ? "Phoenix" : "Z-Logix";
         throw new Error(`Format file tidak valid atau tidak ada data. File hanya memiliki ${jsonData.length} baris, header ${formatType} seharusnya di baris ke-${config.headerRow}`);
       }
 
@@ -1406,24 +1407,39 @@ function parseExcelFile(file, config) {
         console.log(`Baris ${i+1} (index ${i}):`, jsonData[i]);
       }
       
-      // Check if key headers are present
+      // Check if key headers are present (modified to work with reversed mapping)
       let missingHeaders = [];
-      for (const sourceField of Object.values(config.mapping)) {
+      const headerMap = {};
+      
+      // First, create a map of headers to their indices
+      for (let j = startColumn; j < headers.length; j++) {
+        const headerText = String(headers[j] || '').trim();
+        headerMap[headerText.toLowerCase()] = j;
+      }
+      
+      // Then check each source field in mapping
+      for (const [targetField, sourceField] of Object.entries(config.mapping)) {
         let found = false;
-        for (let j = startColumn; j < headers.length; j++) {
-          const headerText = String(headers[j] || '').trim().toLowerCase();
-          const sourceText = String(sourceField).trim().toLowerCase();
-          
-          // More flexible matching for Phoenix format
-          if (headerText === sourceText || 
-              headerText.includes(sourceText) || 
-              sourceText.includes(headerText) ||
-              // Handle common variations (with/without dots, spaces, etc.)
-              headerText.replace(/[.\s]/g, '') === sourceText.replace(/[.\s]/g, '')) {
+        const sourceFieldLower = String(sourceField).toLowerCase().trim();
+        
+        // Try different variations of the header text for matching
+        const variations = [
+          sourceFieldLower,
+          sourceFieldLower.replace(/[.\s]/g, ''),
+          sourceFieldLower.replace(/\s+/g, ''),
+          sourceFieldLower.split(/\s+/)[0]
+        ];
+        
+        // Check if any of the header variations match
+        for (const headerKey of Object.keys(headerMap)) {
+          if (variations.includes(headerKey) || 
+              headerKey.includes(sourceFieldLower) || 
+              sourceFieldLower.includes(headerKey)) {
             found = true;
             break;
           }
         }
+        
         if (!found) {
           missingHeaders.push(sourceField);
         }
@@ -1432,16 +1448,6 @@ function parseExcelFile(file, config) {
       if (missingHeaders.length > 0) {
         console.warn(`Missing headers: ${missingHeaders.join(', ')}`);
         console.log(`Available headers: ${headers.map(h => String(h || '')).join(', ')}`);
-        
-        // For Phoenix format, make error message more helpful
-        if (config.headerRow === 4) {
-          console.log("This may be due to header position. Phoenix format expects headers at row 4 (index 3)");
-          
-          // Log some rows to help debug
-          for (let i = 0; i < Math.min(6, jsonData.length); i++) {
-            console.log(`Row ${i+1}:`, jsonData[i]);
-          }
-        }
       }
       
       // Transform data to our format
@@ -1461,32 +1467,33 @@ function parseExcelFile(file, config) {
         for (const [targetField, sourceField] of Object.entries(config.mapping)) {
           // Find column index with flexible header match
           let headerIndex = -1;
+          
+          // Modified header matching logic - more direct approach
           for (let j = startColumn; j < headers.length; j++) {
             const headerText = String(headers[j] || '').trim().toLowerCase();
             const sourceText = String(sourceField).trim().toLowerCase();
             
-            // Debug informasi pencocokan header
-            console.log(`Mencoba mencocokkan header: '${headers[j]}' dengan '${sourceField}'`);
-            
-            // More flexible matching dengan toleransi lebih tinggi
+            // Try more specific exact matching first
             if (headerText === sourceText || 
-                headerText.replace(/[.\s]/g, '') === sourceText.replace(/[.\s]/g, '') ||
-                headerText.replace(/\s+/g, '') === sourceText.replace(/\s+/g, '') ||
-                headerText.split(/\s+/)[0] === sourceText.split(/\s+/)[0] ||
-                headerText.includes(sourceText) || 
-                sourceText.includes(headerText)) {
+                headerText.replace(/\./g, '') === sourceText.replace(/\./g, '')) {
               headerIndex = j;
-              console.log(`✅ Berhasil mencocokkan! Header '${headers[j]}' dengan '${sourceField}'`);
+              console.log(`✅ Exact match for '${sourceField}' found at column ${j}: '${headers[j]}'`);
               break;
             }
-          }
-          
-          // Debug logging
-          if (headerIndex !== -1) {
-            console.log(`Found match for ${sourceField}: '${headers[headerIndex]}'`);
-          }
-          else {
-            console.log(`⚠️ Tidak menemukan kecocokan untuk ${sourceField}`);
+            
+            // Try removing all spaces and punctuation
+            if (headerText.replace(/[.\s]/g, '') === sourceText.replace(/[.\s]/g, '')) {
+              headerIndex = j;
+              console.log(`✅ Normalized match for '${sourceField}' found at column ${j}: '${headers[j]}'`);
+              break;
+            }
+            
+            // Try partial matching as last resort
+            if (headerText.includes(sourceText) || sourceText.includes(headerText)) {
+              headerIndex = j;
+              console.log(`✅ Partial match for '${sourceField}' found at column ${j}: '${headers[j]}'`);
+              break;
+            }
           }
           
           if (headerIndex !== -1 && headerIndex < row.length) {
@@ -1531,14 +1538,13 @@ function parseExcelFile(file, config) {
             console.log(`  Set default status: ${job.status}`);
           }
           
-          // Untuk Phoenix format, pastikan semua field yang diperlukan ada
-          if (config.headerRow === 4) {
-            // Pastikan field-field penting yang sesuai format Phoenix tidak kosong
-            if (!job.jobType) job.jobType = "By Manual"; // Default dari contoh gambar
-            if (!job.deliveryDate) job.deliveryDate = "";
-            if (!job.status) job.status = "Pending Allocation";
-            if (!job.qty) job.qty = "";
-          }
+          // Ensure all fields that may be undefined are handled
+          if (!job.jobType) job.jobType = "By Manual";
+          if (!job.deliveryDate) job.deliveryDate = "";
+          if (!job.status) job.status = "Pending Allocation";
+          if (!job.qty) job.qty = "";
+          if (!job.remark) job.remark = "";
+          if (!job.deliveryNote) job.deliveryNote = "";
           
           jobs.push(job);
         } else {
@@ -1551,10 +1557,11 @@ function parseExcelFile(file, config) {
       if (jobs.length === 0) {
         // No valid jobs found
         const formatType = currentUploadMode === "phoenix" ? "Phoenix" : "Z-Logix";
-        let errorMsg = `Tidak ada data job yang valid dalam file. Pastikan header berada di baris ke-${config.headerRow + 1} dan format data sesuai dengan ${formatType}.`;
+        let errorMsg = `Tidak ada data job yang valid dalam file. Pastikan header berada di baris ke-${config.headerRow} dan format data sesuai dengan ${formatType}.`;
         
-        if (missingHeaders && missingHeaders.length > 0) {
-          errorMsg += `\n\nHeader kolom tidak ditemukan: ${missingHeaders.join(', ')}`;
+        if (missingHeaders.length > 0) {
+          errorMsg += `\n\nHeader kolom yang dibutuhkan tidak ditemukan: ${missingHeaders.join(', ')}`;
+          errorMsg += `\n\nHeader yang tersedia: ${headers.join(', ')}`;
         }
         
         showModalNotification(errorMsg, true);
