@@ -1197,3 +1197,180 @@ input[type="checkbox"] {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* IMPROVED MODAL STYLING */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 100;
+  left: 0; top: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(40,55,71,0.3);
+  backdrop-filter: blur(3px);
+  align-items: center;
+  justify-content: center;
+  animation: fadeInModalBg 0.3s;
+}
+
+.modal-content {
+  background: linear-gradient(135deg, #fff 80%, #e5eafc 100%);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(33, 118, 174, 0.22);
+  max-width: 440px;
+  width: 90%;
+  margin: 8% auto 0 auto;
+  text-align: center;
+  padding: 36px 32px 32px;
+  position: relative;
+  z-index: 101;
+  transform: translateY(-40px);
+  opacity: 0;
+  animation: modalPopUp 0.35s cubic-bezier(.32,1.56,.56,1) forwards;
+  border: 1px solid #d4e8fc;
+}
+
+.modal-content h3 {
+  color: #2176ae;
+  font-size: 1.5rem;
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-weight: 700;
+}
+
+.modal-content p {
+  margin: 0 0 24px;
+  font-size: 1.1rem;
+  color: #57616d;
+  line-height: 1.5;
+}
+
+/* Improved close button */
+.close {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  font-size: 24px;
+  font-weight: bold;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: color 0.2s;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f8fafc;
+  border: 1px solid #e5eafc;
+}
+
+.close:hover {
+  color: #e74c3c;
+  background: #fff5f5;
+}
+
+/* KONSISTEN STYLING TOMBOL DALAM MODAL */
+/* Menyesuaikan dengan class btn yang sudah ada */
+.modal-content .btn {
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  min-width: 120px;
+  border: none;
+  cursor: pointer;
+  margin: 0 6px;
+}
+
+/* Tombol Cancel/Batal */
+.modal-content .btn-secondary {
+  background: #f4f6fa;
+  color: #57616d;
+  border: 1px solid #d4e8fc;
+  box-shadow: 0 2px 8px rgba(33, 118, 174, 0.08);
+}
+
+.modal-content .btn-secondary:hover {
+  background: #e5eafc;
+  color: #2c3e50;
+  box-shadow: 0 3px 10px rgba(33, 118, 174, 0.1);
+}
+
+/* Tombol Primary/Confirm */
+.modal-content .btn-primary {
+  background: linear-gradient(135deg, #2176ae 0%, #1e6ba8 100%);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(33, 118, 174, 0.15);
+}
+
+.modal-content .btn-primary:hover {
+  background: linear-gradient(135deg, #185a89 0%, #144b73 100%);
+  box-shadow: 0 4px 15px rgba(33, 118, 174, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Tombol Danger/Delete/Logout */
+.modal-content .btn-danger {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(231, 76, 60, 0.15);
+}
+
+.modal-content .btn-danger:hover {
+  background: linear-gradient(135deg, #c0392b 0%, #a5281e 100%);
+  box-shadow: 0 4px 15px rgba(231, 76, 60, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Tombol Success */
+.modal-content .btn-success {
+  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(46, 204, 113, 0.15);
+}
+
+.modal-content .btn-success:hover {
+  background: linear-gradient(135deg, #219d54 0%, #27ae60 100%);
+  box-shadow: 0 4px 15px rgba(46, 204, 113, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Perbaikan tampilan untuk form controls di dalam modal */
+.modal-content label {
+  display: block;
+  margin-top: 15px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #2176ae;
+  text-align: left;
+}
+
+.modal-content .form-control {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d4e8fc;
+  background: #f8fafc;
+  font-size: 1rem;
+  margin-bottom: 16px;
+  box-shadow: inset 0 1px 3px rgba(33, 118, 174, 0.08);
+  transition: all 0.2s ease;
+}
+
+.modal-content .form-control:focus {
+  border-color: #2176ae;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(33, 118, 174, 0.12);
+}
+
+/* Animation */
+@keyframes modalPopUp {
+  0% {transform: translateY(-40px); opacity: 0;}
+  100% {transform: translateY(0); opacity: 1;}
+}
+
+@keyframes fadeInModalBg {
+  0% {background: rgba(40,55,71,0);}
+  100% {background: rgba(40,55,71,0.3);}
+}
