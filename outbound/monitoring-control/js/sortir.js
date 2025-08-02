@@ -1274,13 +1274,6 @@ function parsePhoenixExcel(file) {
  * Fungsi parsing file Excel/CSV format Z-Logix.
  * Header di baris ke-5 (Excel row 5 = index 4)
  * Data mulai baris ke-6 (Excel row 6 = index 5)
- * Field mapping sesuai dengan format baru:
- * Job No ===========> jobNo
- * Delivery Date =====> deliveryDate
- * Delivery Note =====> deliveryNote
- * Plan Qty ==========> qty (nilai qty diambil dari kolom Plan Qty)
- * Remark ============> remark
- * Status ============> status
  */
 function parseZLogixExcel(file) {
   console.log("Starting Z-Logix format parsing dengan header di baris 5, data mulai baris 6");
@@ -1290,16 +1283,16 @@ function parseZLogixExcel(file) {
     dataStartRow: 6, // Data mulai di baris ke-6 Excel (index 5 JavaScript)
     startColumn: 0, // Kolom mulai dari kolom pertama (A = index 0)
     mapping: {
-      // Gunakan nama kolom persis seperti di Excel Z-Logix
-      "Job No": "jobNo",
-      "Delivery Date": "deliveryDate",
-      "Delivery Note": "deliveryNote",
-      "Plan Qty": "qty",
-      "Remark": "remark",
-      "Status": "status"
+      // PENTING: Format Z-Logix berbeda, gunakan nama kolom persis seperti di file
+      "jobNo": "Job No", // Balik urutan mapping agar konsisten dengan format Phoenix
+      "deliveryDate": "Delivery Date",
+      "deliveryNote": "Delivery Note",
+      "qty": "Plan Qty",
+      "remark": "Remark",
+      "status": "Status"
     },
     formatters: {
-      // Format job number - perbaikan untuk Z-Logix
+      // Format job number
       jobNo: (value) => {
         console.log("Processing jobNo:", value);
         if (!value) return "";
@@ -1311,29 +1304,6 @@ function parseZLogixExcel(file) {
         if (!value) return "";
         console.log("Processing deliveryDate:", value);
         
-        // Handle jika tanggal sudah dalam format "DD-MMM-YYYY" tanpa waktu
-        if (typeof value === 'string' && value.match(/^\d{2}-[A-Za-z]{3}-\d{4}$/)) {
-          return value;
-        }
-        
-        // Handle jika tanggal sudah dalam format "DD-MMM-YYYY" dengan waktu, hapus bagian waktunya
-        if (typeof value === 'string' && value.match(/^\d{2}-[A-Za-z]{3}-\d{4}\s/)) {
-          return value.split(' ')[0]; // Ambil bagian tanggalnya saja
-        }
-        
-        // Handle format "DD-MM-YYYY HH:MM:SS"
-        if (typeof value === 'string' && value.match(/^\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}:\d{2}/)) {
-          const parts = value.split(' ')[0].split('-');
-          if (parts.length === 3) {
-            const day = parts[0];
-            const monthIndex = parseInt(parts[1]) - 1;
-            const year = parts[2];
-            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            return `${day}-${monthNames[monthIndex]}-${year}`;
-          }
-        }
-        
-        // Konversi dari tanggal Excel atau format lainnya
         try {
           let date;
           if (value instanceof Date) {
@@ -1363,19 +1333,26 @@ function parseZLogixExcel(file) {
         }
       },
       
-      // Format quantity (pastikan numeric)
+      // Format quantity
       qty: (value) => {
         if (value === null || value === undefined || value === "") return "";
         // Convert to number if possible
         const num = Number(value);
-        return isNaN(num) ? value : num;
+        return isNaN(num) ? String(value).trim() : num;
       },
       
-      // Format status (default jika kosong)
+      // Format status
       status: (value) => {
         if (!value) return "Pending Allocation";
-        if (typeof value === "string" && STATUS_OPTIONS.includes(value.trim())) {
-          return value.trim();
+        const statusValue = String(value).trim();
+        
+        // If status is valid, use it, otherwise use default
+        if (STATUS_OPTIONS.includes(statusValue)) {
+          return statusValue;
+        }
+        // Map Loaded to Packed if not in STATUS_OPTIONS
+        if (statusValue.toLowerCase() === "loaded") {
+          return "Packed";
         }
         return "Pending Allocation";
       },
@@ -1524,44 +1501,49 @@ function parseExcelFile(file, config) {
           // Find column index with flexible header match
           let headerIndex = -1;
           
-          // Log pencarian headers untuk debugging
+          // Log pencarian headers untuk debuggingx
           console.log("Looking for header:", sourceField);
+
+          // Balik logika pencarian header - cari berdasarkan targetField ke sourceField untuk Z-Logix
+          const isZLogixFormat = config.headerRow === 5; // Ini adalah indikator format Z-Logix
+          const headerToSearch = isZLogixFormat ? targetField : sourceField;
+          const headerToMatch = isZLogixFormat ? sourceField : targetField;
 
           // Modified header matching logic - improved for Z-Logix format
           for (let j = startColumn; j < headers.length; j++) {
             const headerText = String(headers[j] || '').trim();
-            const sourceText = String(sourceField).trim();
+            const searchText = String(headerToSearch).trim();
             
             // Log untuk debugging
-            console.log(`  Comparing '${headerText}' with '${sourceText}'`);
+            console.log(`  Comparing '${headerText}' with '${searchText}'`);
             
             // 1. Coba pencocokan langsung (case-insensitive)
-            if (headerText.toLowerCase() === sourceText.toLowerCase()) {
+            if (headerText.toLowerCase() === searchText.toLowerCase()) {
               headerIndex = j;
-              console.log(`✅ EXACT match for '${sourceField}' found at column ${j}: '${headers[j]}'`);
+              console.log(`✅ EXACT match for '${headerToSearch}' found at column ${j}: '${headers[j]}'`);
               break;
             }
             
             // 2. Coba pencocokan dengan menghapus tanda baca
-            if (headerText.toLowerCase().replace(/[.\s]/g, '') === sourceText.toLowerCase().replace(/[.\s]/g, '')) {
+            if (headerText.toLowerCase().replace(/[.\s]/g, '') === searchText.toLowerCase().replace(/[.\s]/g, '')) {
               headerIndex = j;
-              console.log(`✅ Normalized match for '${sourceField}' found at column ${j}: '${headers[j]}'`);
+              console.log(`✅ Normalized match for '${headerToSearch}' found at column ${j}: '${headers[j]}'`);
               break;
             }
             
             // 3. Pencocokan khusus untuk kasus "Job No" yang mungkin terdeteksi sebagai "No"
-            if (sourceText === "Job No" && headerText === "Job No") {
+            if ((searchText === "Job No" || searchText === "jobNo") && headerText === "Job No") {
               headerIndex = j;
               console.log(`✅ Special match for 'Job No' found at column ${j}`);
               break;
             }
             
             // 4. Pencocokan parsial sebagai upaya terakhir, tapi hanya untuk string yang cukup panjang
-            if ((headerText.toLowerCase().includes(sourceText.toLowerCase()) || 
-                sourceText.toLowerCase().includes(headerText.toLowerCase())) &&
+            if ((headerText.toLowerCase().includes(searchText.toLowerCase()) || 
+                searchText.toLowerCase().includes(headerText.toLowerCase())) &&
                 headerText.length > 2) {
               headerIndex = j;
-              console.log(`✅ Partial match for '${sourceField}' found at column ${j}: '${headers[j]}'`);
+              console.log(`✅ Partial match for '${headerToSearch}' found at column ${j}: '${headers[j]}'`);
               break;
             }
           }
@@ -1571,15 +1553,17 @@ function parseExcelFile(file, config) {
             let value = row[headerIndex];
             console.log(`  Found ${targetField} at column ${headerIndex}: ${value}`);
             
+            // Fix untuk Z-Logix
+            const isZLogixFormat = config.headerRow === 5;
+            
             // Koreksi khusus untuk kolom Job No di format Z-Logix
-            if (targetField === 'jobNo' && sourceField === 'Job No') {
-              // Untuk Z-Logix, gunakan nilai di kolom Job No, bukan No
+            if (isZLogixFormat && targetField === 'jobNo') {
+              // Cari kolom yang sesuai dengan "Job No"
               for (let k = 0; k < headers.length; k++) {
                 if (headers[k] === 'Job No') {
-                  console.log(`  Special correction for Job No, found at column ${k}`);
-                  if (k < row.length) {
+                  if (k < row.length && row[k]) { // Pastikan nilai valid
                     value = row[k];
-                    console.log(`  Corrected Job No value: ${value}`);
+                    console.log(`  Using Job No from column ${k}: ${value}`);
                   }
                   break;
                 }
@@ -1609,6 +1593,14 @@ function parseExcelFile(file, config) {
         // Add only if job number exists
         if (job.jobNo) {
           console.log(`Found valid job: ${job.jobNo}`);
+          console.log(`  Complete job data:`, {
+            jobNo: job.jobNo,
+            deliveryDate: job.deliveryDate,
+            deliveryNote: job.deliveryNote,
+            qty: job.qty,
+            remark: job.remark,
+            status: job.status
+          });
           
           // Format delivery date if no formatter was specified
           if (job.deliveryDate && !config.formatters?.deliveryDate) {
@@ -1619,14 +1611,18 @@ function parseExcelFile(file, config) {
           
           // Ensure status is valid
           if (!job.status || !STATUS_OPTIONS.includes(job.status)) {
-            job.status = "Pending Allocation";
-            console.log(`  Set default status: ${job.status}`);
+            // Handle 'Loaded' status specially for Z-Logix
+            if (job.status && job.status.toLowerCase() === 'loaded') {
+              job.status = "Packed"; // Map to valid status
+            } else {
+              job.status = "Pending Allocation";
+            }
+            console.log(`  Set status to: ${job.status}`);
           }
           
           // Ensure all fields that may be undefined are handled
           if (!job.jobType) job.jobType = "By Manual";
           if (!job.deliveryDate) job.deliveryDate = "";
-          if (!job.status) job.status = "Pending Allocation";
           if (!job.qty) job.qty = "";
           if (!job.remark) job.remark = "";
           if (!job.deliveryNote) job.deliveryNote = "";
