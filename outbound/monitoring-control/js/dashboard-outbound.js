@@ -725,6 +725,8 @@ function showLineChartMessage(msg) {
 }
 
 // --- Fungsi utama render Line Chart Outbound ---
+// ... (kode sebelumnya tetap, sampai sebelum renderLineChartOutbound)
+
 function renderLineChartOutbound(jobs, shiftType, manPowerTotal) {
   // --- Validasi manpower
   if (!manPowerTotal || isNaN(manPowerTotal) || manPowerTotal <= 0) {
@@ -765,6 +767,69 @@ function renderLineChartOutbound(jobs, shiftType, manPowerTotal) {
     if (iso) return { hour: parseInt(iso[1], 10), minute: parseInt(iso[2], 10) };
     return null;
   }
+
+  // ======================= GROUPING & LOGGING JOBS PER JAM =======================
+  // Utility: get job jam dalam 24 jam mode (untuk shift malam)
+  function getJobJamMinute(jobFinishAt, shiftType) {
+    const parsed = parseFinishAt(jobFinishAt);
+    if (!parsed) return null;
+    let jam = parsed.hour;
+    let minute = parsed.minute;
+    if (shiftType === "Night" && jam < 6) jam += 24; // jam 0-5 jadi 24-29 untuk Night
+    return { jam, minute };
+  }
+
+  // Untuk setiap jam (mulai dari i=1, karena jam pertama adalah dummy/awal)
+  for (let i = 1; i < hourRange.length; i++) {
+    const prev = hourRange[i - 1];
+    const curr = hourRange[i];
+
+    // Untuk shift malam, jam < 6 jadi +24
+    let prevStart = prev.start;
+    let currStart = curr.start;
+    if (shiftType === "Night" && prevStart < 6) prevStart += 24;
+    if (shiftType === "Night" && currStart < 6) currStart += 24;
+
+    // Mencari job yang finishAt-nya di range jam ini (minute range: prev.end:01 - curr.end:00)
+    // Contoh: jam 08:00 artinya finishAt > 07:00 (07:01-08:00)
+    // Logika: 
+    // - jam lebih besar dari prevStart & <= currStart
+    // - jika jam sama dengan prevStart, minute > 0
+    // - jika jam sama dengan currStart, minute == 0
+    // - jam di antara prevStart dan currStart
+
+    let jobsInThisHour = jobs.filter(job => {
+      if ((job.shift || "") !== shiftLabel) return false;
+      if (!job.finishAt) return false;
+      if (!finishedStatus.includes((job.status || '').toLowerCase())) return false;
+      const jm = getJobJamMinute(job.finishAt, shiftType);
+      if (!jm) return false;
+      // Misal: prevStart = 7, currStart = 8, jm.jam = 8, jm.minute = 0 (masuk jam 08:00)
+      // Masuk jika:
+      // - (jm.jam == prevStart && jm.minute > 0)
+      // - (jm.jam == currStart && jm.minute == 0)
+      // - (jm.jam > prevStart && jm.jam < currStart)
+      if (
+        (jm.jam == prevStart && jm.minute > 0) ||
+        (jm.jam == currStart && jm.minute == 0) ||
+        (jm.jam > prevStart && jm.jam < currStart)
+      ) {
+        return true;
+      }
+      return false;
+    });
+
+    if (jobsInThisHour.length > 0) {
+      let jamLabel = curr.label;
+      console.log(`Jam ${jamLabel}`);
+      jobsInThisHour.forEach(job => {
+        console.log(`${job.jobNo} = ${job.qty}`);
+      });
+    } else {
+      console.log(`Tidak ada data di jam ${curr.label}`);
+    }
+  }
+  // ===================== END GROUPING & LOGGING =======================
 
   // --- Qty Per Jam (bukan akumulasi) ---
   let actualPerJamArr = Array(hourRange.length).fill(0);
