@@ -2073,7 +2073,8 @@ document.getElementById("downloadDataOutboundBtn").addEventListener("click", asy
         "Team": job.team || "",
         "Job Type": job.jobType || "",
         "Shift": job.shift || "",
-        "Team Name": job.teamName || ""
+        "Team Name": job.teamName || "",
+        "Finish At": job.finishAt || "" // <-- TAMBAHKAN finishAt DI SINI
       };
     });
 
@@ -2093,7 +2094,8 @@ document.getElementById("downloadDataOutboundBtn").addEventListener("click", asy
       {wch: 10}, // Team
       {wch: 12}, // Job Type
       {wch: 12}, // Shift
-      {wch: 15}  // Team Name
+      {wch: 15}, // Team Name
+      {wch: 24}  // Finish At
     ];
 
     // Tambahkan worksheet ke workbook
