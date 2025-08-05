@@ -280,20 +280,28 @@ function createTableRow(job) {
     qtyDisplay = Number(job.qty).toLocaleString();
   }
   
+  // Bagian dalam fungsi createTableRow:
   row.innerHTML = `
-    <td><input type="checkbox" data-jobno="${job.jobNo}"></td>
-    <td>${sanitizeValue(job.jobNo)}</td>
-    <td>${sanitizeValue(job.deliveryDate)}</td>
-    <td>${sanitizeValue(job.deliveryNote)}</td>
-    <td>${remark}</td>
-    <td><span class="badge ${badgeClass}">${sanitizeValue(job.status)}</span></td>
-    <td>${qtyDisplay}</td>
-    <td>${team}</td>
-    <td class="table-actions">
-      <button class="assign" data-jobno="${job.jobNo}">Assign</button>
-      <button class="unassign" data-jobno="${job.jobNo}">Unassign</button>
-    </td>
-  `;
+      <td><input type="checkbox" data-jobno="${job.jobNo}"></td>
+      <td>${sanitizeValue(job.jobNo)}</td>
+      <td>${sanitizeValue(job.deliveryDate)}</td>
+      <td>${sanitizeValue(job.deliveryNote)}</td>
+      <td>${remark}</td>
+      <td><span class="badge ${badgeClass}">${sanitizeValue(job.status)}</span></td>
+      <td>${qtyDisplay}</td>
+      <td>${team}</td>
+      <td class="table-actions">
+        <button class="action-btn assign-btn" data-jobno="${job.jobNo}" title="Assign Job">
+          <i class="fas fa-user-plus"></i>
+        </button>
+        <button class="action-btn unassign-btn" data-jobno="${job.jobNo}" title="Unassign Job">
+          <i class="fas fa-user-minus"></i>
+        </button>
+        <button class="action-btn edit-btn" data-jobno="${job.jobNo}" title="Edit Job">
+          <i class="fas fa-edit"></i>
+        </button>
+      </td>
+    `;
   
   return row;
 }
@@ -360,10 +368,11 @@ function attachTableEventListeners() {
 }
 
 function handleTableClick(e) {
-  // Handle assign button clicks
-  if (e.target.classList.contains('assign')) {
+  // Handle assign button clicks - perbaiki selector untuk mendukung icon dan button
+  if (e.target.classList.contains('assign-btn') || e.target.closest('.assign-btn')) {
     e.preventDefault();
-    const jobNo = e.target.getAttribute('data-jobno');
+    const clickedElement = e.target.classList.contains('assign-btn') ? e.target : e.target.closest('.assign-btn');
+    const jobNo = clickedElement.getAttribute('data-jobno');
     
     // Cek apakah ada checkbox yang tercentang di tabel
     const checked = document.querySelectorAll('tbody input[type="checkbox"]:checked');
@@ -384,9 +393,10 @@ function handleTableClick(e) {
   }
   
   // Handle unassign button clicks
-  if (e.target.classList.contains('unassign')) {
+  if (e.target.classList.contains('unassign-btn') || e.target.closest('.unassign-btn')) {
     e.preventDefault();
-    const jobNo = e.target.getAttribute('data-jobno');
+    const clickedElement = e.target.classList.contains('unassign-btn') ? e.target : e.target.closest('.unassign-btn');
+    const jobNo = clickedElement.getAttribute('data-jobno');
     
     const jobRef = ref(db, "PhxOutboundJobs/" + jobNo);
     get(jobRef).then(snapshot => {
@@ -414,6 +424,14 @@ function handleTableClick(e) {
         }
       });
     });
+  }
+  
+  // Handle edit button clicks - pastikan tidak dihapus
+  if (e.target.classList.contains('edit-btn') || e.target.closest('.edit-btn')) {
+    e.preventDefault();
+    const editBtn = e.target.classList.contains('edit-btn') ? e.target : e.target.closest('.edit-btn');
+    const jobNo = editBtn.getAttribute('data-jobno');
+    enterEditMode(jobNo);
   }
 }
 
@@ -2041,6 +2059,7 @@ window.addEventListener("click", (e) => {
 });
 
 // ========== DOWNLOAD OUTBOUND DATA ==========
+
 document.getElementById("downloadDataOutboundBtn").addEventListener("click", async () => {
   showExportLoading(true); // Tampilkan spinner
 
@@ -2451,6 +2470,145 @@ async function renderMpPicListTable() {
       });
     });
   });
+}
+
+// Fungsi untuk mengaktifkan mode edit
+function enterEditMode(jobNo) {
+  // Cari job data
+  const job = allJobsData.find(job => job.jobNo === jobNo);
+  if (!job) return;
+  
+  // Cari row yang berisi job ini
+  const rows = document.querySelectorAll('tbody tr');
+  let targetRow;
+  
+  for (const row of rows) {
+    const checkbox = row.querySelector('input[type="checkbox"]');
+    if (checkbox && checkbox.getAttribute('data-jobno') === jobNo) {
+      targetRow = row;
+      break;
+    }
+  }
+  
+  if (!targetRow) return;
+  
+  // Cari cell yang berisi remark dan qty
+  const remarkCell = targetRow.children[4]; // Kolom remark (indeks 4)
+  const qtyCell = targetRow.children[6];    // Kolom qty (indeks 6)
+  
+  // Simpan nilai asli
+  const originalRemark = job.remark || '';
+  const originalQty = job.qty || '';
+  
+  // Ubah menjadi input fields dengan tombol masing-masing
+  remarkCell.classList.add('edit-mode');
+  remarkCell.innerHTML = `
+    <input type="text" class="edit-input remark-input" value="${originalRemark}">
+    <div class="edit-actions">
+      <button class="save-btn save-remark" data-jobno="${jobNo}">Simpan</button>
+      <button class="cancel-btn cancel-remark" data-jobno="${jobNo}">Batal</button>
+    </div>
+  `;
+  
+  qtyCell.classList.add('edit-mode');
+  qtyCell.innerHTML = `
+    <input type="text" class="edit-input qty-input" value="${originalQty}">
+    <div class="edit-actions">
+      <button class="save-btn save-qty" data-jobno="${jobNo}">Simpan</button>
+      <button class="cancel-btn cancel-qty" data-jobno="${jobNo}">Batal</button>
+    </div>
+  `;
+  
+  // Focus pada input remark
+  remarkCell.querySelector('.remark-input').focus();
+  
+  // Tambahkan event listener untuk tombol simpan dan batal remark
+  remarkCell.querySelector('.save-remark').addEventListener('click', () => saveRemarkChanges(jobNo, targetRow));
+  remarkCell.querySelector('.cancel-remark').addEventListener('click', () => cancelRemarkEdit(jobNo, targetRow, originalRemark));
+  
+  // Tambahkan event listener untuk tombol simpan dan batal qty
+  qtyCell.querySelector('.save-qty').addEventListener('click', () => saveQtyChanges(jobNo, targetRow));
+  qtyCell.querySelector('.cancel-qty').addEventListener('click', () => cancelQtyEdit(jobNo, targetRow, originalQty));
+}
+
+// Fungsi untuk menyimpan perubahan remark saja
+function saveRemarkChanges(jobNo, row) {
+  const remarkInput = row.querySelector('.remark-input');
+  if (!remarkInput) return;
+  
+  const newRemark = remarkInput.value;
+  
+  // Update ke Firebase, hanya field remark
+  const updates = {
+    remark: newRemark
+  };
+  
+  update(ref(db, "PhxOutboundJobs/" + jobNo), updates)
+    .then(() => {
+      showNotification("✅ Data remark berhasil diperbarui");
+      
+      // Update juga di allJobsData
+      const jobIndex = allJobsData.findIndex(job => job.jobNo === jobNo);
+      if (jobIndex !== -1) {
+        allJobsData[jobIndex].remark = newRemark;
+      }
+      
+      // Refresh tampilan remark cell saja
+      const remarkCell = row.children[4]; // Kolom remark (indeks 4)
+      remarkCell.classList.remove('edit-mode');
+      remarkCell.textContent = newRemark;
+    })
+    .catch(error => {
+      console.error("Error updating remark:", error);
+      showNotification("❌ Gagal memperbarui data remark", true);
+    });
+}
+
+// Fungsi untuk membatalkan edit remark
+function cancelRemarkEdit(jobNo, row, originalRemark) {
+  const remarkCell = row.children[4]; // Kolom remark (indeks 4)
+  remarkCell.classList.remove('edit-mode');
+  remarkCell.textContent = originalRemark;
+}
+
+// Fungsi untuk menyimpan perubahan qty saja
+function saveQtyChanges(jobNo, row) {
+  const qtyInput = row.querySelector('.qty-input');
+  if (!qtyInput) return;
+  
+  const newQty = qtyInput.value;
+  
+  // Update ke Firebase, hanya field qty
+  const updates = {
+    qty: newQty
+  };
+  
+  update(ref(db, "PhxOutboundJobs/" + jobNo), updates)
+    .then(() => {
+      showNotification("✅ Data qty berhasil diperbarui");
+      
+      // Update juga di allJobsData
+      const jobIndex = allJobsData.findIndex(job => job.jobNo === jobNo);
+      if (jobIndex !== -1) {
+        allJobsData[jobIndex].qty = newQty;
+      }
+      
+      // Refresh tampilan qty cell saja
+      const qtyCell = row.children[6]; // Kolom qty (indeks 6)
+      qtyCell.classList.remove('edit-mode');
+      qtyCell.textContent = formatNumericValue(newQty);
+    })
+    .catch(error => {
+      console.error("Error updating qty:", error);
+      showNotification("❌ Gagal memperbarui data qty", true);
+    });
+}
+
+// Fungsi untuk membatalkan edit qty
+function cancelQtyEdit(jobNo, row, originalQty) {
+  const qtyCell = row.children[6]; // Kolom qty (indeks 6)
+  qtyCell.classList.remove('edit-mode');
+  qtyCell.textContent = formatNumericValue(originalQty);
 }
 
 authPromise.then(() => {
