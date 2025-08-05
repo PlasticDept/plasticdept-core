@@ -541,27 +541,41 @@ function showModal() { modal.style.display = "block"; }
 function hideModal() { modal.style.display = "none"; }
 
 /**
- * Menghapus job dengan status Packed dan Completed di node PhxOutboundJobs.
+ * Menghapus job dengan status Packed dan Completed di node PhxOutboundJobs,
+ * serta menghapus node tambahan: MPPIC, ManPower, ManPowerOvertime, PICOperator, PlanTarget.
  */
 function clearAllJobs() {
   showConfirmModal({
-    title: "Konfirmasi Hapus Job",
-    message: "Apakah Anda yakin ingin <b>MENGHAPUS JOB</b> dengan status Packed dan Completed dari database?",
-    okText: "Hapus",
+    title: "Konfirmasi Hapus Data",
+    message: `
+      Apakah Anda yakin ingin <b>MENGHAPUS JOB</b> dengan status <b>Packed</b> dan <b>Completed</b> dari database?<br>
+      <br>
+      <span style="color:#d32f2f;font-weight:bold;">
+        <u>PERHATIAN:</u> <br>
+        Tindakan ini juga akan menghapus seluruh data di node:<br>
+        - MPPIC<br>
+        - ManPower<br>
+        - ManPowerOvertime<br>
+        - PICOperator<br>
+        - PlanTarget
+      </span>
+    `,
+    okText: "Hapus Semua",
     okClass: "logout",
     onConfirm: () => {
-      // Ambil semua job terlebih dahulu untuk filter
+      // 1. Hapus job di PhxOutboundJobs (status Packed/Completed)
       get(ref(db, "PhxOutboundJobs"))
         .then((snapshot) => {
           if (!snapshot.exists()) {
             showNotification("Tidak ada data job yang dapat dihapus.", true);
-            return;
+            // Tetap hapus node lainnya meski job kosong
+            return Promise.resolve({});
           }
-          
+
           const jobs = snapshot.val();
           const updates = {};
           let deleteCount = 0;
-          
+
           // Filter job dengan status Packed atau Completed
           Object.entries(jobs).forEach(([jobNo, jobData]) => {
             if (jobData.status === "Packed" || jobData.status === "Completed") {
@@ -569,26 +583,35 @@ function clearAllJobs() {
               deleteCount++;
             }
           });
-          
+
           if (deleteCount === 0) {
             showNotification("Tidak ada job dengan status Packed atau Completed yang dapat dihapus.", true);
-            return;
           }
-          
+
           // Hapus job yang terfilter menggunakan update
-          update(ref(db, "PhxOutboundJobs"), updates)
-            .then(() => {
-              showNotification(`✅ Berhasil menghapus ${deleteCount} job dengan status Packed dan Completed.`);
-              loadJobsFromFirebase(); // Refresh data setelah penghapusan
-            })
-            .catch((err) => {
-              console.error(err);
-              showNotification("❌ Gagal menghapus data job!", true);
-            });
+          return update(ref(db, "PhxOutboundJobs"), updates).then(() => deleteCount);
+        })
+        .then((deleteCount) => {
+          if (typeof deleteCount === "number" && deleteCount > 0) {
+            showNotification(`✅ Berhasil menghapus ${deleteCount} job dengan status Packed dan Completed.`);
+          }
+          loadJobsFromFirebase(); // Refresh data setelah penghapusan
+
+          // 2. Hapus node tambahan (MPPIC, ManPower, ManPowerOvertime, PICOperator, PlanTarget)
+          return Promise.all([
+            remove(ref(db, "MPPIC")),
+            remove(ref(db, "ManPower")),
+            remove(ref(db, "ManPowerOvertime")),
+            remove(ref(db, "PICOperator")),
+            remove(ref(db, "PlanTarget")),
+          ]);
+        })
+        .then(() => {
+          showNotification("✅ Semua node tambahan (MPPIC, ManPower, ManPowerOvertime, PICOperator, PlanTarget) berhasil dihapus.");
         })
         .catch((error) => {
-          console.error("Error saat mengambil data job:", error);
-          showNotification("❌ Gagal mengambil data job untuk dihapus!", true);
+          console.error("Gagal menghapus data:", error);
+          showNotification("❌ Gagal menghapus data job atau node tambahan!", true);
         });
     }
   });
