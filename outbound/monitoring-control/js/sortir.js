@@ -767,11 +767,7 @@ function syncJobsToFirebase(jobs) {
 
     // 3. Cari jobNo yang tidak ada di data baru
     const missingJobNos = existingJobNos.filter(jobNo => !newJobNos.includes(jobNo));
-
-    // 4. Update status job yang tidak ada di data baru menjadi "Completed"
-    const updateMissing = missingJobNos.map(jobNo =>
-      update(ref(db, "PhxOutboundJobs/" + jobNo), { status: "Completed" })
-    );
+    const updateMissing = [];
 
     // 5. Upload/update data baru
     let uploadCount = 0;
@@ -1815,16 +1811,6 @@ async function syncUploadedJobsToFirebase(jobs) {
 
     // Tunggu semua proses preservasi selesai
     await Promise.all(updatePromises);
-    
-    // Update status of jobs in DB that aren't in new data
-    Object.keys(dbJobs).forEach(jobNo => {
-      if (!newJobNos.includes(jobNo)) {
-        // If job not in new data, mark as completed if not already
-        if (dbJobs[jobNo].status !== "Completed") {
-          updates[jobNo] = { ...dbJobs[jobNo], status: "Completed" };
-        }
-      }
-    });
     
     // Execute batch update
     await update(ref(db, "PhxOutboundJobs"), updates);
