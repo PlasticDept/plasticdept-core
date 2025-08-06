@@ -955,6 +955,7 @@ const fileInput = document.getElementById("fileInput"); // Hidden element to pre
 const uploadBtn = document.getElementById("uploadBtn"); // Hidden element to prevent errors
 const jobTable = document.getElementById("jobTable").getElementsByTagName("tbody")[0];
 const bulkAddBtn = document.getElementById("bulkAddBtn");
+const bulkUnassignBtn = document.getElementById("bulkUnassignBtn");
 const modal = document.getElementById("addModal");
 const closeModal = document.getElementById("closeModal");
 const confirmAdd = document.getElementById("confirmAdd");
@@ -1874,6 +1875,49 @@ bulkAddBtn.addEventListener("click", async () => {
   selectedSingleJob = null;
   window.jobsToBulkAssign = selectedJobs;
   showModal();
+});
+
+// Listener tombol bulk unassign
+bulkUnassignBtn?.addEventListener("click", async () => {
+  const selectedJobs = getSelectedJobs();
+  if (!selectedJobs.length) {
+    showNotification("Pilih job yang ingin di-unassign.", true);
+    return;
+  }
+  showConfirmModal({
+    title: "Konfirmasi Unassign",
+    message: `Apakah Anda yakin ingin <b>UNASSIGN</b> ${selectedJobs.length} job terpilih?`,
+    okText: "Unassign",
+    okClass: "logout",
+    onConfirm: async () => {
+      try {
+        // Ambil data job dari Firebase untuk setiap jobNo
+        const jobSnaps = await Promise.all(selectedJobs.map(jobNo => get(ref(db, `PhxOutboundJobs/${jobNo}`))));
+        const updates = {};
+        jobSnaps.forEach((snap, idx) => {
+          if (snap.exists()) {
+            const job = snap.val();
+            const jobNo = selectedJobs[idx];
+            // Hapus field hasil assign
+            updates[`PhxOutboundJobs/${jobNo}/team`] = null;
+            updates[`PhxOutboundJobs/${jobNo}/jobType`] = null;
+            updates[`PhxOutboundJobs/${jobNo}/shift`] = null;
+            updates[`PhxOutboundJobs/${jobNo}/teamName`] = null;
+            // Jangan ubah status jika status bukan "Pending Allocation"
+            if (job.status === "Pending Allocation") {
+              updates[`PhxOutboundJobs/${jobNo}/status`] = "Pending Allocation";
+            }
+            // Jika field lain ingin direset ke default, tambahkan di sini
+          }
+        });
+        await update(ref(db), updates);
+        showNotification(`${selectedJobs.length} job berhasil di-unassign.`, false);
+        refreshDataWithoutReset();
+      } catch (err) {
+        showNotification("Gagal unassign job: " + err.message, true);
+      }
+    }
+  });
 });
 
 // Listener tombol assign di modal
