@@ -404,45 +404,85 @@ select.form-control {
     background-color: #27ae60;
 }
 
-/* Action Toolbar */
 .action-toolbar {
-    background-color: #f0f4f8;
-    padding: 12px 24px;
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-    border-bottom: 1px solid #e0e6ed;
-    z-index: 8;
+  background-color: #f8f9fa;
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-bottom: 1px solid #e0e6ed;
+  z-index: 8;
 }
 
 .toolbar-left, .toolbar-right {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .btn-action {
-    background-color: #0078d4;
-    color: white;
+  background-color: #0078d4;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .btn-action:hover {
-    background-color: #0056b3;
+  background-color: #0056b3;
+}
+
+/* Unassign button */
+.btn-warning {
+  background-color: rgb(221, 42, 42);
+  color: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-warning:hover {
+  background-color: #8a2222;
 }
 
 .btn-filter {
-    position: relative;
+  background-color: white;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .btn-filter i.fa-chevron-down {
-    margin-left: 6px;
-    font-size: 12px;
-    opacity: 0.7;
+  margin-left: 3px;
+  font-size: 11px;
+  opacity: 0.7;
 }
 
 .btn-filter:hover {
-    background-color: #f0f4f8;
+  background-color: #f8f8f8;
 }
 
 /* Dropdown */
