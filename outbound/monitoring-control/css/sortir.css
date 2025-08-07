@@ -103,7 +103,7 @@ body {
 /* NOTIFICATION */
 .notification-bar {
   position: fixed;
-  top: 208px;
+  top: 400px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10000;
