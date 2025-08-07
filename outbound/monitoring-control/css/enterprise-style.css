@@ -231,7 +231,7 @@ body {
 .shift-selector {
   display: flex;
   align-items: center;
-  margin: 0; /* Hapus margin yang sebelumnya ada */
+  margin-left: 50px;
 }
 
 .radio-container {
@@ -361,6 +361,7 @@ select.form-control {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    margin: 0 3px;
 }
 
 .btn i {
@@ -408,13 +409,16 @@ select.form-control {
   background-color: #f8f9fa;
   padding: 10px 16px;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 10px;
   border-bottom: 1px solid #e0e6ed;
   z-index: 8;
+  max-width: 100%;
+  align-items: center;
 }
 
+/* Combined toolbar - toolbar-left and toolbar-right classes kept for backwards compatibility */
 .toolbar-left, .toolbar-right {
   display: flex;
   flex-wrap: wrap;
@@ -825,8 +829,11 @@ select.form-control {
 
 /* MP PIC List - Redesigned Compact Version */
 .mp-pic-section {
-    grid-column: span 2;
-    margin-top: 2px;
+    grid-column: span 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .mp-pic-header {
@@ -845,11 +852,13 @@ select.form-control {
 
 .mp-pic-cards {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 10px;
-    max-height: 80px;
-    overflow-y: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
     padding: 4px 0;
+    width: 100%;
+    justify-content: center;
 }
 
 .mp-pic-card {
@@ -860,7 +869,6 @@ select.form-control {
     border-radius: 6px;
     padding: 6px 10px;
     gap: 8px;
-    width: calc(50% - 5px);
     min-width: 220px;
     max-width: 280px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -1108,21 +1116,3 @@ li.nav-dropdown {
     overflow: visible;
 }
 
-/* Styling untuk shift-selector di toolbar-left */
-.action-toolbar .toolbar-left .shift-selector {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: 16px;
-}
-.action-toolbar .toolbar-left .shift-selector .radio-container {
-  display: flex;
-  align-items: center;
-  margin-bottom: 0;
-}
-.action-toolbar .toolbar-left .shift-selector .radio-label {
-  margin-left: 4px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-}

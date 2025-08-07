@@ -44,6 +44,18 @@
         <img src="img/reverse-logistic.png" alt="Plastic Dept Logo" class="logo">
         <span class="logo-divider"></span>
         <h1>PLASTIC<span>DEPT.</span></h1>
+
+        <!-- Shift Selector tetap di sini -->
+        <div class="shift-selector">
+            <label class="radio-container">
+              <input type="radio" name="shiftType" id="shiftDay" value="Day">
+              <span class="radio-label">Day Shift</span>
+            </label>
+            <label class="radio-container">
+              <input type="radio" name="shiftType" id="shiftNight" value="Night" checked>
+              <span class="radio-label">Night Shift</span>
+            </label>
+        </div>
       </div>
 
       <nav class="main-nav">
@@ -162,21 +174,9 @@
           </div>
         </div>
       </div>
-      
-      <!-- MP PIC Table -->
-      <div class="mp-pic-section">
-        <div class="mp-pic-header">
-          <h3>MP PIC List</h3>
-        </div>
-        <div id="mpPicTableContainer" class="mp-pic-cards">
-          <!-- Will be populated by JS -->
-        </div>
-      </div>
-    </div>
 
-    <!-- ACTION TOOLBAR -->
+      <!-- ACTION TOOLBAR -->
     <div class="action-toolbar">
-      <div class="toolbar-left">
         <button class="btn btn-action" id="bulkAddBtn"><i class="fas fa-user-check"></i> Assign Job Selected</button>
         <button class="btn btn-warning" id="bulkUnassignBtn"><i class="fas fa-user-times"></i> Unassign Job Selected</button>
         
@@ -209,31 +209,27 @@
             </select>
           </div>
         </div>
-          <!-- Shift Selector tetap di sini -->
-          <div class="shift-selector">
-            <label class="radio-container">
-              <input type="radio" name="shiftType" id="shiftDay" value="Day">
-              <span class="radio-label">Day Shift</span>
-            </label>
-            <label class="radio-container">
-              <input type="radio" name="shiftType" id="shiftNight" value="Night" checked>
-              <span class="radio-label">Night Shift</span>
-            </label>
-          </div>
-      </div>
-      
-      <div class="toolbar-right">
+        
         <button class="btn btn-secondary" id="downloadDataOutboundBtn"><i class="fas fa-download"></i> Download Data</button>
-        <button class="btn btn-primary" id="uploadDataBtn" style="margin-left:8px;"><i class="fas fa-upload"></i> Upload Data</button>
+        <button class="btn btn-primary" id="uploadDataBtn"><i class="fas fa-upload"></i> Upload Data</button>
         <button class="btn btn-danger" id="clearDatabaseBtn"><i class="fas fa-trash"></i> Delete Data</button>
         <button class="btn btn-success" id="exportExcelBtn"><i class="fas fa-save"></i> Save Target</button>
-      </div>
     </div>
     
+    <!-- MP PIC Table -->
+    <div class="mp-pic-section">
+      <div class="mp-pic-header">
+        <h3>MP PIC List</h3>
+      </div>
+      <div id="mpPicTableContainer" class="mp-pic-cards">
+        <!-- Will be populated by JS -->
+      </div>
+    </div>
 
     <!-- FILTER INDICATOR -->
     <div id="filterIndicator" class="filter-indicator"></div>
 
+    
     <!-- TABLE CONTAINER -->
     <div class="content-container">
       <table id="jobTable" class="enterprise-table">
