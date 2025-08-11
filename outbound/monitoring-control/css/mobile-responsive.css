@@ -1,0 +1,447 @@
+/* Mobile Responsive CSS for Plastic Web App
+ * This CSS makes the application responsive for smartphones and tablets
+ * Created: August 11, 2025
+ */
+
+/* Base responsive styles */
+@media screen and (max-width: 1080px) {
+  .enterprise-container {
+    width: 100%;
+    overflow-x: hidden;
+  }
+  
+  .container {
+    max-width: 95%;
+    padding: 20px 15px;
+    margin: 20px auto;
+  }
+  
+  /* Wrap setting cards for better visibility */
+  .settings-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: space-between;
+  }
+  
+  /* Ensure tables are scrollable */
+  .job-table-container {
+    overflow-x: auto;
+    width: 100%;
+  }
+  
+  /* Make buttons more tappable */
+  button, .btn, .dropdown-toggle {
+    min-height: 38px; /* Better touch target */
+  }
+}
+
+/* Tablet styles */
+@media screen and (max-width: 768px) {
+  .main-header {
+    padding: 0 15px;
+    height: auto;
+    flex-wrap: wrap;
+  }
+  
+  .logo-container {
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 10px 0;
+  }
+  
+  .logo {
+    height: 32px;
+  }
+  
+  .logo-container h1 {
+    font-size: 18px;
+  }
+  
+  .shift-selector {
+    margin-left: 10px;
+  }
+  
+  .main-nav ul {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .main-nav li {
+    margin: 5px;
+  }
+  
+  .main-nav a {
+    padding: 8px 15px;
+    font-size: 13px;
+  }
+  
+  /* Table adjustments */
+  table {
+    width: 100%;
+    display: block;
+    overflow-x: auto;
+  }
+  
+  /* Form controls */
+  input, select {
+    max-width: 100%;
+  }
+  
+  /* Button adjustments */
+  .btn, .button, button {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  /* Form groups */
+  .form-row, .form-group, .input-group {
+    flex-direction: column;
+    margin-bottom: 15px;
+  }
+}
+
+/* Smartphone styles */
+@media screen and (max-width: 480px) {
+  .main-header {
+    padding: 0 10px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .logo-container {
+    width: 100%;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  
+  .logo {
+    height: 28px;
+  }
+  
+  .logo-container h1 {
+    font-size: 16px;
+  }
+  
+  .shift-selector {
+    margin: 10px 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    background-color: #f5f7fa;
+    border-radius: 4px;
+    padding: 5px;
+  }
+  
+  .radio-container {
+    margin: 5px 0;
+    display: block;
+    width: 100%;
+    text-align: left;
+  }
+  
+  .radio-label {
+    font-size: 13px;
+    margin-left: 5px;
+  }
+  
+  /* Nav menu adjustments for mobile */
+  .nav-dropdown {
+    position: static !important;
+  }
+  
+  .nav-dropdown-content {
+    position: static !important;
+    width: 100%;
+    box-shadow: none;
+    border: none;
+    background: #f5f7fa;
+  }
+  
+  .main-nav {
+    width: 100%;
+  }
+  
+  .main-nav ul {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .main-nav li {
+    width: 100%;
+    margin: 2px 0;
+  }
+  
+  .main-nav a {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 10px;
+  }
+  
+  /* Specific for the app interface from the image */
+  .header-bar {
+    flex-direction: column;
+    height: auto;
+    padding: 10px;
+  }
+  
+  .logo-title {
+    font-size: 1.4rem;
+    margin-bottom: 10px;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .user-profile, .user-section {
+    width: 100%;
+    justify-content: center;
+    margin-top: 10px;
+  }
+  
+  /* Card layout adjustments */
+  .setting-card {
+    width: 100%;
+    margin-bottom: 15px;
+  }
+  
+  .card-content {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .card-content select, 
+  .card-content input, 
+  .card-content button {
+    margin: 5px 0;
+    width: 100%;
+  }
+  
+  /* Action toolbar */
+  .action-toolbar {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .action-toolbar button,
+  .action-toolbar .dropdown {
+    width: 100%;
+    margin: 5px 0;
+  }
+  
+  /* Fix for the buttons and controls in the image */
+  #set-target-section, #set-mp-section, #set-pic-section, #set-mp-ot-section {
+    flex-direction: column;
+    margin-bottom: 15px;
+  }
+  
+  /* Table fixes from the image */
+  .table-responsive {
+    overflow-x: auto;
+    width: 100%;
+    display: block;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  table {
+    min-width: 600px; /* Ensure tables have a minimum width */
+    table-layout: fixed;
+  }
+  
+  /* MP PIC List styling for the image */
+  .mp-pic-list {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .mp-pic-item {
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+  }
+  
+  /* Job assignment table */
+  .job-table th, 
+  .job-table td {
+    padding: 8px 5px;
+    font-size: 12px;
+  }
+  
+  /* Checkbox column */
+  .checkbox-column {
+    width: 30px;
+  }
+  
+  /* Status column - enhance readability */
+  .status-badge {
+    padding: 3px 6px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  
+  /* Button groups in the image */
+  .btn-group, .action-buttons {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .btn-group button, .action-buttons button {
+    margin: 5px 0;
+    width: 100%;
+  }
+  
+  /* Filters and search controls */
+  .filter-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filter-item {
+    margin: 5px 0;
+    width: 100%;
+  }
+  
+  /* MP PIC list responsive fix */
+  .mp-pic-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+  
+  .mp-pic-item {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  
+  /* Specific style fixes for form controls in the image */
+  select, input[type="text"], input[type="number"] {
+    width: 100%;
+    margin: 5px 0;
+  }
+  
+  /* Fix for the dimensions indicator in the header */
+  .dimension-indicator {
+    font-size: 12px;
+    padding: 3px 6px;
+    display: block;
+    width: 100%;
+    text-align: center;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e0e6ed;
+  }
+  
+  /* Improve navigation dropdown usability */
+  .nav-dropdown-content {
+    min-width: 100%;
+    left: 0;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+  }
+  
+  .dropdown-item {
+    padding: 10px 15px;
+  }
+  
+  /* Fix any modal dialogs */
+  .modal-content {
+    width: 95%;
+    margin: 0 auto;
+  }
+  
+  .modal-body {
+    padding: 10px;
+  }
+  
+  /* MP Summary display */
+  .mp-summary {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .mp-summary-item {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 10px;
+  }
+  
+  /* Notification styles */
+  .notification-bar {
+    width: 100%;
+    padding: 10px;
+    font-size: 13px;
+  }
+}
+
+/* Extra small devices */
+@media screen and (max-width: 320px) {
+  .container {
+    padding: 10px;
+  }
+  
+  .logo-container h1 {
+    font-size: 14px;
+  }
+  
+  .btn, .button, button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
+
+/* Landscape orientation adjustments */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+  .main-header {
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .logo-container {
+    width: auto;
+    margin-bottom: 0;
+  }
+  
+  .shift-selector {
+    flex-direction: row;
+    margin: 0 10px;
+  }
+  
+  .radio-container {
+    margin: 0 10px 0 0;
+    width: auto;
+  }
+  
+  /* Make navigation more horizontal */
+  .main-nav ul {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .main-nav li {
+    width: auto;
+    margin: 5px;
+  }
+  
+  /* Setting cards in a row */
+  .settings-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .setting-card {
+    flex: 1;
+    min-width: 200px;
+  }
+  
+  /* Action toolbar in row */
+  .action-toolbar {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .action-toolbar button,
+  .action-toolbar .dropdown {
+    width: auto;
+    margin: 5px;
+  }
+}
