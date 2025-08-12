@@ -312,26 +312,24 @@ function badgeForStatus(status) {
   }
 }
 
-/**
- * Membuat satu baris (row) untuk table job (kembali ke pendekatan HTML).
- */
+// Ganti isi fungsi createTableRow dengan versi berikut
 function createTableRow(job) {
   const row = document.createElement("tr");
   const badgeClass = badgeForStatus(job.status);
-  
+
   // Sanitasi nilai sebelum menampilkan
   const remark = sanitizeValue(job.remark);
   const team = sanitizeValue(job.team);
-  
+
   // Khusus untuk qty, tangani kasus numerik
   let qtyDisplay = "";
   if (job.qty && !isNaN(job.qty)) {
     qtyDisplay = Number(job.qty).toLocaleString();
   }
-  
-  // Bagian dalam fungsi createTableRow:
+
   row.innerHTML = `
       <td><input type="checkbox" data-jobno="${job.jobNo}"></td>
+      <td class="row-no"></td> <!-- ✅ kolom No (diisi kemudian oleh renumberRows) -->
       <td>${sanitizeValue(job.jobNo)}</td>
       <td>${sanitizeValue(job.deliveryDate)}</td>
       <td>${sanitizeValue(job.deliveryNote)}</td>
@@ -351,8 +349,17 @@ function createTableRow(job) {
         </button>
       </td>
     `;
-  
   return row;
+}
+
+// Tambahkan fungsi baru untuk memberi nomor urut pada kolom "No"
+function renumberRows() {
+  const rows = document.querySelectorAll('#jobTable tbody tr');
+  let i = 1;
+  rows.forEach(tr => {
+    const noCell = tr.querySelector('.row-no') || tr.children[1];
+    if (noCell) noCell.textContent = i++;
+  });
 }
 
 /**
@@ -379,9 +386,7 @@ function handleSelectAllChange() {
   });
 }
 
-/**
- * Render table data to tbody
- */
+// Perbarui renderTableData agar memanggil renumberRows di akhir
 function renderTableData(data) {
   const tbody = document.querySelector('#jobTable tbody');
   if (!tbody) return;
@@ -398,6 +403,9 @@ function renderTableData(data) {
     const row = createTableRow(job);
     tbody.appendChild(row);
   });
+
+  // ✅ Nomori ulang sesuai baris yang tampil (termasuk saat difilter)
+  renumberRows();
 
   attachTableEventListeners();
   updateSelectAllCheckbox();
@@ -2613,14 +2621,11 @@ async function renderMpPicListTable() {
 
 // Fungsi untuk mengaktifkan mode edit
 function enterEditMode(jobNo) {
-  // Cari job data
   const job = allJobsData.find(job => job.jobNo === jobNo);
   if (!job) return;
-  
-  // Cari row yang berisi job ini
+
   const rows = document.querySelectorAll('tbody tr');
   let targetRow;
-  
   for (const row of rows) {
     const checkbox = row.querySelector('input[type="checkbox"]');
     if (checkbox && checkbox.getAttribute('data-jobno') === jobNo) {
@@ -2628,18 +2633,14 @@ function enterEditMode(jobNo) {
       break;
     }
   }
-  
   if (!targetRow) return;
-  
-  // Cari cell yang berisi remark dan qty
-  const remarkCell = targetRow.children[4]; // Kolom remark (indeks 4)
-  const qtyCell = targetRow.children[6];    // Kolom qty (indeks 6)
-  
-  // Simpan nilai asli
+
+  const remarkCell = targetRow.children[5]; // sebelumnya 4, bergeser +1
+  const qtyCell = targetRow.children[7];    // sebelumnya 6, bergeser +1
+
   const originalRemark = job.remark || '';
   const originalQty = job.qty || '';
-  
-  // Ubah menjadi input fields dengan tombol masing-masing
+
   remarkCell.classList.add('edit-mode');
   remarkCell.innerHTML = `
     <input type="text" class="edit-input remark-input" value="${originalRemark}">
@@ -2648,7 +2649,7 @@ function enterEditMode(jobNo) {
       <button class="cancel-btn cancel-remark" data-jobno="${jobNo}">Batal</button>
     </div>
   `;
-  
+
   qtyCell.classList.add('edit-mode');
   qtyCell.innerHTML = `
     <input type="text" class="edit-input qty-input" value="${originalQty}">
@@ -2657,15 +2658,12 @@ function enterEditMode(jobNo) {
       <button class="cancel-btn cancel-qty" data-jobno="${jobNo}">Batal</button>
     </div>
   `;
-  
-  // Focus pada input remark
+
   remarkCell.querySelector('.remark-input').focus();
-  
-  // Tambahkan event listener untuk tombol simpan dan batal remark
+
   remarkCell.querySelector('.save-remark').addEventListener('click', () => saveRemarkChanges(jobNo, targetRow));
   remarkCell.querySelector('.cancel-remark').addEventListener('click', () => cancelRemarkEdit(jobNo, targetRow, originalRemark));
-  
-  // Tambahkan event listener untuk tombol simpan dan batal qty
+
   qtyCell.querySelector('.save-qty').addEventListener('click', () => saveQtyChanges(jobNo, targetRow));
   qtyCell.querySelector('.cancel-qty').addEventListener('click', () => cancelQtyEdit(jobNo, targetRow, originalQty));
 }
@@ -2674,26 +2672,17 @@ function enterEditMode(jobNo) {
 function saveRemarkChanges(jobNo, row) {
   const remarkInput = row.querySelector('.remark-input');
   if (!remarkInput) return;
-  
+
   const newRemark = remarkInput.value;
-  
-  // Update ke Firebase, hanya field remark
-  const updates = {
-    remark: newRemark
-  };
-  
+  const updates = { remark: newRemark };
+
   update(ref(db, "PhxOutboundJobs/" + jobNo), updates)
     .then(() => {
       showNotification("✅ Data remark berhasil diperbarui");
-      
-      // Update juga di allJobsData
       const jobIndex = allJobsData.findIndex(job => job.jobNo === jobNo);
-      if (jobIndex !== -1) {
-        allJobsData[jobIndex].remark = newRemark;
-      }
-      
-      // Refresh tampilan remark cell saja
-      const remarkCell = row.children[4]; // Kolom remark (indeks 4)
+      if (jobIndex !== -1) allJobsData[jobIndex].remark = newRemark;
+
+      const remarkCell = row.children[5]; // sebelumnya 4
       remarkCell.classList.remove('edit-mode');
       remarkCell.textContent = newRemark;
     })
@@ -2703,37 +2692,26 @@ function saveRemarkChanges(jobNo, row) {
     });
 }
 
-// Fungsi untuk membatalkan edit remark
 function cancelRemarkEdit(jobNo, row, originalRemark) {
-  const remarkCell = row.children[4]; // Kolom remark (indeks 4)
+  const remarkCell = row.children[5]; // sebelumnya 4
   remarkCell.classList.remove('edit-mode');
   remarkCell.textContent = originalRemark;
 }
 
-// Fungsi untuk menyimpan perubahan qty saja
 function saveQtyChanges(jobNo, row) {
   const qtyInput = row.querySelector('.qty-input');
   if (!qtyInput) return;
-  
+
   const newQty = qtyInput.value;
-  
-  // Update ke Firebase, hanya field qty
-  const updates = {
-    qty: newQty
-  };
-  
+  const updates = { qty: newQty };
+
   update(ref(db, "PhxOutboundJobs/" + jobNo), updates)
     .then(() => {
       showNotification("✅ Data qty berhasil diperbarui");
-      
-      // Update juga di allJobsData
       const jobIndex = allJobsData.findIndex(job => job.jobNo === jobNo);
-      if (jobIndex !== -1) {
-        allJobsData[jobIndex].qty = newQty;
-      }
-      
-      // Refresh tampilan qty cell saja
-      const qtyCell = row.children[6]; // Kolom qty (indeks 6)
+      if (jobIndex !== -1) allJobsData[jobIndex].qty = newQty;
+
+      const qtyCell = row.children[7]; // sebelumnya 6
       qtyCell.classList.remove('edit-mode');
       qtyCell.textContent = formatNumericValue(newQty);
     })
@@ -2743,9 +2721,8 @@ function saveQtyChanges(jobNo, row) {
     });
 }
 
-// Fungsi untuk membatalkan edit qty
 function cancelQtyEdit(jobNo, row, originalQty) {
-  const qtyCell = row.children[6]; // Kolom qty (indeks 6)
+  const qtyCell = row.children[7]; // sebelumnya 6
   qtyCell.classList.remove('edit-mode');
   qtyCell.textContent = formatNumericValue(originalQty);
 }
