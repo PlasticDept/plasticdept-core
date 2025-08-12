@@ -212,14 +212,31 @@ function loadTeamJobs() {
     renderChart(achievedQty, PLAN_TARGET_QTY);
 
     if (!$.fn.DataTable.isDataTable("#teamTable")) {
-      $("#teamTable").DataTable({
+      const dt = $("#teamTable").DataTable({
         paging: true,
         searching: true,
         ordering: true,
         info: true,
         pageLength: -1,
-        lengthMenu: [[-1], ["All"]]
+        lengthMenu: [[-1], ["All"]],
+        columnDefs: [
+          { targets: 0, orderable: false, searchable: false } // kolom "No"
+        ],
+        order: [] // tidak set default order; user bebas klik header mana pun
       });
+
+      // Isi ulang nomor setiap order/search/draw
+      dt.on("order.dt search.dt draw.dt", function () {
+        let i = 1;
+        dt.column(0, { search: "applied", order: "applied", page: "current" })
+          .nodes()
+          .each(function (cell) {
+            cell.textContent = i++;
+          });
+      }).draw();
+    } else {
+      // Jika sudah terinisialisasi, redraw agar nomor ter-update
+      $("#teamTable").DataTable().draw(false);
     }
   });
 }

@@ -189,6 +189,7 @@ function loadTeamJobs() {
 
           const row = document.createElement("tr");
           row.innerHTML = `
+            <td></td> <!-- No -->
             <td>${job.jobNo}</td>
             <td>${job.deliveryDate}</td>
             <td>${job.deliveryNote}</td>
@@ -197,7 +198,8 @@ function loadTeamJobs() {
             <td>${qty.toLocaleString()}</td>
             <td>${job.jobType ? `<span class="job-type ${job.jobType}">${job.jobType}</span>` : ""}</td>
           `;
-          row.querySelector("td:nth-child(5)").appendChild(createStatusLabel(job.status));
+          // ✅ kolom Status sekarang di kolom ke-6 setelah penambahan "No"
+          row.querySelector("td:nth-child(6)").appendChild(createStatusLabel(job.status));
           teamTable.appendChild(row);
         }
       });
@@ -211,15 +213,33 @@ function loadTeamJobs() {
 
     renderChart(achievedQty, PLAN_TARGET_QTY);
 
+    // ✅ Inisialisasi DataTable + penomoran otomatis
     if (!$.fn.DataTable.isDataTable("#teamTable")) {
-      $("#teamTable").DataTable({
+      const dt = $("#teamTable").DataTable({
         paging: true,
         searching: true,
         ordering: true,
         info: true,
         pageLength: -1,
-        lengthMenu: [[-1], ["All"]]
+        lengthMenu: [[-1], ["All"]],
+        columnDefs: [
+          { targets: 0, orderable: false, searchable: false } // kolom "No"
+        ],
+        order: [] // tidak set default order; user bebas klik header mana pun
       });
+
+      // Isi ulang nomor setiap order/search/draw
+      dt.on("order.dt search.dt draw.dt", function () {
+        let i = 1;
+        dt.column(0, { search: "applied", order: "applied", page: "current" })
+          .nodes()
+          .each(function (cell) {
+            cell.textContent = i++;
+          });
+      }).draw();
+    } else {
+      // Jika sudah terinisialisasi, redraw agar nomor ter-update
+      $("#teamTable").DataTable().draw(false);
     }
   });
 }
