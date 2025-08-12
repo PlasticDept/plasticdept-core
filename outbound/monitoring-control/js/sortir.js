@@ -60,6 +60,55 @@ function showNotification(message, isError = false) {
   }, 4000);
 }
 
+/**
+ * Mengkonversi nilai ManPower menjadi nilai target berdasarkan rumus:
+ * 0.5mp = 8820, 1mp = 17640, 2mp = 35280, 3mp = 52920
+ * @param {number} manPower - Nilai ManPower
+ * @return {number} - Nilai target yang sesuai
+ */
+function convertManPowerToTarget(manPower) {
+  if (manPower <= 0) return 0;
+  
+  // Konversi berdasarkan rumus
+  if (manPower === 0.5) return 8820;
+  else return Math.round(manPower * 17640); // 1mp = 17640
+}
+
+/**
+ * Fungsi untuk menghapus nilai ManPower dan PlanTarget untuk team tertentu
+ * @param {string} team - Nama team (Sugity/Reguler)
+ */
+function clearManPowerAndTarget(team) {
+  const shiftType = (localStorage.getItem("shiftType") === "Night") ? "Night Shift" : "Day Shift";
+  
+  if (!team) {
+    showNotification("Team tidak valid.", true);
+    return;
+  }
+  
+  // Konfirmasi sebelum menghapus
+  showConfirmModal({
+    title: "Konfirmasi Hapus MP",
+    message: `Apakah Anda yakin ingin menghapus nilai ManPower dan Target untuk ${team} (${shiftType})?`,
+    okText: "Hapus",
+    okClass: "danger",
+    onConfirm: async () => {
+      try {
+        // Hapus nilai ManPower dan PlanTarget secara bersamaan
+        const updates = {};
+        updates[`ManPower/${shiftType}/${team}`] = null;
+        updates[`PlanTarget/${shiftType}/${team}`] = null;
+        
+        await update(ref(db), updates);
+        showNotification(`ManPower dan Target untuk ${team} (${shiftType}) berhasil dihapus.`);
+      } catch (err) {
+        showNotification("Gagal menghapus data dari database.", true);
+        console.error(err);
+      }
+    }
+  });
+}
+
 function formatNumericValue(value) {
   if (!value || value === "" || value === undefined || value === null || isNaN(value)) {
     return "";
@@ -1011,6 +1060,12 @@ function populateStatusOptions() {
   });
 }
 
+// Listener tombol clear man power
+document.getElementById("clearManPowerBtn")?.addEventListener("click", function() {
+  const team = manPowerTeamSelector.value;
+  clearManPowerAndTarget(team);
+});
+
 // Listener tombol set plan target (jika masih digunakan)
 setPlanTargetBtn?.addEventListener("click", handleSetPlanTarget);
 
@@ -1020,30 +1075,76 @@ setManPowerBtn?.addEventListener("click", handleSetManPower);
 // --- Fungsi Set Man Power ---
 function saveManPowerToFirebase(team, manPower) {
   const shiftType = (localStorage.getItem("shiftType") === "Night") ? "Night Shift" : "Day Shift";
-  if (!team || isNaN(manPower) || manPower <= 0) {
+  if (!team || isNaN(manPower) || manPower < 0) {
     showNotification("Data man power tidak valid.", true);
-    return;
+    return Promise.reject(new Error("Data man power tidak valid"));
   }
+  
   const dbPath = `ManPower/${shiftType}/${team}`;
-  set(ref(db, dbPath), manPower)
+  return set(ref(db, dbPath), manPower)
     .then(() => {
       showNotification(`Man Power untuk ${team} (${shiftType}) berhasil disimpan: ${manPower} orang.`);
-    })
-    .catch((err) => {
-      showNotification("Gagal menyimpan man power ke database.", true);
-      console.error(err);
+      
+      // Hitung dan kembalikan nilai target
+      const targetValue = convertManPowerToTarget(manPower);
+      return targetValue;
     });
 }
+
+// Modifikasi fungsi ini untuk auto-update target saat ManPower berubah
 function handleSetManPower() {
   const team = manPowerTeamSelector.value;
   const manPower = parseFloat(manPowerInput.value);
 
-  if (isNaN(manPower) || manPower <= 0) {
+  if (isNaN(manPower) || manPower < 0) {
     showNotification("Masukkan jumlah man power yang valid.", true);
     return;
   }
-  saveManPowerToFirebase(team, manPower);
-  manPowerInput.value = "";
+  
+  // Simpan ManPower ke Firebase
+  saveManPowerToFirebase(team, manPower)
+    .then(() => {
+      // Setelah ManPower disimpan, hitung dan update PlanTarget
+      const targetValue = convertManPowerToTarget(manPower);
+      return savePlanTargetToFirebase(team, targetValue);
+    })
+    .then(() => {
+      showNotification(`Man Power dan Target untuk ${team} berhasil disimpan.`);
+      manPowerInput.value = "";
+    })
+    .catch(err => {
+      showNotification("Gagal menyimpan data ke database.", true);
+      console.error(err);
+    });
+}
+
+// Fungsi untuk mengambil nilai ManPower dari Firebase dan menghitung Target
+async function updatePlanTargetFromManPower() {
+  const shiftType = (localStorage.getItem("shiftType") === "Night") ? "Night Shift" : "Day Shift";
+  
+  try {
+    // Ambil data ManPower
+    const snapshot = await get(ref(db, `ManPower/${shiftType}`));
+    if (!snapshot.exists()) return;
+    
+    const manPowerData = snapshot.val();
+    
+    // Update PlanTarget untuk setiap team
+    const updates = {};
+    
+    for (const [team, mpValue] of Object.entries(manPowerData)) {
+      const targetValue = convertManPowerToTarget(mpValue);
+      updates[`PlanTarget/${shiftType}/${team}`] = targetValue;
+    }
+    
+    // Simpan semua perubahan sekaligus
+    if (Object.keys(updates).length > 0) {
+      await update(ref(db), updates);
+      console.log("✅ Target diperbarui berdasarkan nilai ManPower");
+    }
+  } catch (error) {
+    console.error("Gagal memperbarui Target:", error);
+  }
 }
 
 // Fungsi simpan MP Overtime ke Firebase
@@ -2205,11 +2306,19 @@ if (savedShiftType === "Night") {
 }
 localStorage.setItem("shiftType", savedShiftType); // ensure always set
 
+// Tambahkan ini di bagian event listener shift toggle
 shiftDayRadio.addEventListener("change", function() {
-  if (this.checked) localStorage.setItem("shiftType", "Day");
+  if (this.checked) {
+    localStorage.setItem("shiftType", "Day");
+    updatePlanTargetFromManPower(); // Update target saat shift berubah
+  }
 });
+
 shiftNightRadio.addEventListener("change", function() {
-  if (this.checked) localStorage.setItem("shiftType", "Night");
+  if (this.checked) {
+    localStorage.setItem("shiftType", "Night");
+    updatePlanTargetFromManPower(); // Update target saat shift berubah
+  }
 });
 
 // Tampilkan shift dari localStorage di bagian user profile
@@ -2641,12 +2750,14 @@ function cancelQtyEdit(jobNo, row, originalQty) {
   qtyCell.textContent = formatNumericValue(originalQty);
 }
 
+// Tambahkan ini di dalam authPromise.then() atau DOMContentLoaded
 authPromise.then(() => {
   console.log('Auth promise resolved');
   populateStatusOptions();
-  
-  // Tambahkan panggilan ke fungsi populasi data user
   populateUserProfileData();
+  
+  // Update target berdasarkan ManPower saat halaman dimuat
+  updatePlanTargetFromManPower();
   
   // Load data first, then setup table
   loadJobsFromFirebase();

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <script src="js/auth-check.js"></script>
   <title>Outbound Job Assignment</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link rel="stylesheet" href="css/enterprise-style.css" />
   <link rel="stylesheet" href="css/mobile-responsive.css" />
   <link rel="stylesheet" href="css/sortir.css" />
@@ -123,20 +124,6 @@
     <div class="controls-container">
       <!-- Setting Cards -->
       <div class="setting-cards">
-        <!-- Set Target Card -->
-        <div class="setting-card">
-          <h3>Set Target</h3>
-          <div class="card-content">
-            <select id="planTeamSelector" class="form-control">
-              <option value="Sugity">Team Sugity</option>
-              <option value="Reguler">Team Reguler</option>
-            </select>
-            <input type="number" id="planTargetInput" class="form-control" placeholder="Qty Target">
-            <button class="btn btn-primary" id="setPlanTargetBtn">Set Target</button>
-          </div>
-        </div>
-        
-        <!-- Set MP Card -->
         <div class="setting-card">
           <h3>Set MP</h3>
           <div class="card-content">
@@ -145,10 +132,12 @@
               <option value="Reguler">Team Reguler</option>
             </select>
             <input type="number" id="manPowerInput" class="form-control" placeholder="Qty MP">
-            <button class="btn btn-primary" id="setManPowerBtn">Set MP</button>
+            <div class="button-group">
+              <button class="btn btn-primary" id="setManPowerBtn">Set MP</button>
+              <button class="btn btn-danger" id="clearManPowerBtn">Delete MP</button>
+            </div>
           </div>
         </div>
-        
         <!-- Set PIC Card -->
         <div class="setting-card">
           <h3>Set PIC</h3>
@@ -221,7 +210,7 @@
       <div class="mp-pic-header">
         <h3>MP PIC List</h3>
       </div>
-      <div id="mpPicTableContainer" class="mp-pic-cards">
+      <div id="mpPicTableContainer" class="mp-pic-cards mp-pic-list">
         <!-- Will be populated by JS -->
       </div>
     </div>
@@ -231,8 +220,8 @@
 
     
     <!-- TABLE CONTAINER -->
-    <div class="content-container">
-      <table id="jobTable" class="enterprise-table">
+    <div class="content-container table-responsive">
+      <table id="jobTable" class="enterprise-table job-table">
         <thead>
           <tr>
             <th><input type="checkbox" id="selectAll" /></th>
