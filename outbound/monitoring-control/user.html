@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <script src="js/auth-check.js"></script>
+  <title>User Management</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="css/enterprise-style.css" />
+  <link rel="stylesheet" href="css/mobile-responsive.css" />
+  <link rel="stylesheet" href="css/sortir.css" />
+  <link rel="stylesheet" href="css/upload-modal.css" />
+  <link rel="stylesheet" href="css/user-management.css" />
+  <link rel="icon" type="image/png" href="img/reverse-logistic.png"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,700&display=swap" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  <div class="enterprise-container">
+    <!-- HEADER SECTION -->
+    <header class="main-header">
+      <div class="logo-container">
+        <img src="img/reverse-logistic.png" alt="Plastic Dept Logo" class="logo">
+        <span class="logo-divider"></span>
+        <h1>PLASTIC<span>DEPT.</span></h1>
+
+        <!-- Shift Selector tetap di sini -->
+        <div class="shift-selector">
+            <label class="radio-container">
+              <input type="radio" name="shiftType" id="shiftDay" value="Day">
+              <span class="radio-label">Day Shift</span>
+            </label>
+            <label class="radio-container">
+              <input type="radio" name="shiftType" id="shiftNight" value="Night" checked>
+              <span class="radio-label">Night Shift</span>
+            </label>
+        </div>
+      </div>
+
+      <nav class="main-nav">
+        <ul>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link"><i class="fas fa-box"></i> Outbound <i class="fas fa-chevron-down"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="dashboard-outbound.html" class="dropdown-item"><i class="fas fa-chart-line"></i> Outbound Dashboard</a>
+              <a href="#" class="dropdown-item"><i class="fas fa-truck"></i> Loading Delivery</a>
+            </div>
+          </li>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link"><i class="fas fa-users"></i> Team Monitoring <i class="fas fa-chevron-down"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="team-sugity.html" class="dropdown-item"><i class="fas fa-user-friends"></i> Team Sugity</a>
+              <a href="team-reguler.html" class="dropdown-item"><i class="fas fa-user-friends"></i> Team Reguler</a>
+            </div>
+          </li>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link"><i class="fas fa-truck-loading"></i> Inbound <i class="fas fa-chevron-down"></i> <i class="fa-container-storage"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="https://plasticdept.github.io/plasticdept-core/inbound/incoming-schedule/input.html" class="dropdown-item"><i class="fas fa-file-import"></i> Input Data Incoming</a>
+              <a href="https://plasticdept.github.io/plasticdept-core/inbound/incoming-schedule/display.html" class="dropdown-item"><i class="fas fa-calendar-alt"></i> Schedule Incoming Container</a>
+              <a href="https://plasticdept.github.io/plasticdept-core/inbound/container-dashboard.html" class="dropdown-item"><i class="fas fa-cubes"></i> Incoming Container Dashboard</a>
+            </div>
+          </li>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link"><i class="fas fa-warehouse"></i> Inventory <i class="fas fa-chevron-down"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="https://plasticdept.github.io/plasticdept-core/inventory/occupancy.html" class="dropdown-item"><i class="fas fa-chart-pie"></i> Occupancy</a>
+              <a href="https://plasticdept.github.io/plasticdept-core/inventory/part-master.html" class="dropdown-item"><i class="fas fa-cogs"></i> Part Master</a>
+            </div>
+          </li>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link"><i class="fas fa-chart-bar"></i> Reports <i class="fas fa-chevron-down"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="achievement.html" class="dropdown-item"><i class="fas fa-chart-line"></i> Achievement Report</a>
+              <a href="report.html" class="dropdown-item"><i class="fas fa-calendar-day"></i>Daily Outbound Report</a>
+              <a href="https://plasticdept.github.io/plasticdept-core/inbound/incoming-schedule/dailyreport.html" class="dropdown-item"><i class="fas fa-clipboard-check"></i> Daily Inbound Report</a>
+            </div>
+          </li>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link active"><i class="fas fa-cogs"></i> Master <i class="fas fa-chevron-down"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="user.html" class="dropdown-item"><i class="fas fa-user"></i> User</a>
+            </div>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="user-section">
+        <div class="user-info">
+          <span class="username" id="userFullName">Administrator</span>
+          <span class="user-role" id="userShift">-</span>
+        </div>
+        <div class="avatar" id="userAvatar">A</div>
+        <button id="headerLogoutBtn"><i class="fas fa-sign-out-alt"></i></button>
+      </div>
+    </header>
+
+    <!-- NOTIFICATION BAR -->
+    <div id="notification" class="notification-bar"></div>
+
+    <!-- USER MANAGEMENT CONTENT -->
+    <div class="content-container">
+      <h2 class="page-title"><i class="fas fa-users"></i> User Management</h2>
+      <p class="content-subtitle">View and manage all users in the system</p>
+      
+      <!-- User actions toolbar -->
+      <div class="user-actions">
+        <button class="btn btn-primary" id="addUserBtn">
+          <i class="fas fa-user-plus"></i> Add New User
+        </button>
+        
+        <div class="user-filters">
+          <input type="text" id="userSearchInput" class="search-box" placeholder="Search by name or user ID...">
+          <select id="roleFilter" class="form-control">
+            <option value="">All Positions</option>
+            <option value="Management">Management</option>
+            <option value="Operator">Operator</option>
+          </select>
+          <select id="statusFilter" class="form-control">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Users table -->
+      <div class="table-responsive">
+        <table id="usersTable" class="enterprise-table">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>User ID</th>
+              <th>Full Name</th>
+              <th>Position</th>
+              <th>Shift</th>
+              <th>Status</th>
+              <th>Last Login</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <!-- Will be populated by JS -->
+            <tr>
+              <td colspan="8" class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading user data...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ADD/EDIT USER MODAL -->
+    <div id="userModal" class="modal">
+      <div class="modal-content">
+        <span class="close" id="closeUserModal">&times;</span>
+        <h3 id="userModalTitle">Add New User</h3>
+        
+        <form id="userForm">
+          <div class="form-group">
+            <label for="userIdInput">User ID</label>
+            <input type="text" id="userIdInput" class="form-control" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="fullNameInput">Full Name</label>
+            <input type="text" id="fullNameInput" class="form-control" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="passwordInput">Password</label>
+            <input type="password" id="passwordInput" class="form-control">
+            <small class="form-text text-muted">Leave empty to keep current password (when editing)</small>
+          </div>
+          
+          <div class="form-group">
+            <label for="positionSelect">Position</label>
+            <select id="positionSelect" class="form-control" required>
+              <option value="">Select Position</option>
+              <option value="Management">Management</option>
+              <option value="Operator">Operator</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="shiftSelect">Shift</label>
+            <select id="shiftSelect" class="form-control" required>
+              <option value="">Select Shift</option>
+              <option value="Non Shift">Non Shift</option>
+              <option value="Blue Team">Blue Team</option>
+              <option value="Green Team">Green Team</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Status</label>
+            <div class="radio-group">
+              <label class="radio-container">
+                <input type="radio" name="status" id="statusActive" value="active" checked>
+                <span class="radio-label">Active</span>
+              </label>
+              <label class="radio-container">
+                <input type="radio" name="status" id="statusInactive" value="inactive">
+                <span class="radio-label">Inactive</span>
+              </label>
+            </div>
+          </div>
+          
+          <div class="form-actions">
+            <button type="button" id="cancelUserBtn" class="btn btn-secondary">Cancel</button>
+            <button type="submit" id="saveUserBtn" class="btn btn-primary">Save User</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- DELETE CONFIRMATION MODAL -->
+    <div id="confirmModal" class="modal">
+      <div class="modal-content">
+        <h3 id="confirmModalTitle">Confirm Delete</h3>
+        <p id="confirmModalMessage">Are you sure you want to delete this user? This action cannot be undone.</p>
+        <div class="modal-actions">
+          <button id="cancelConfirmBtn" class="btn btn-secondary">Cancel</button>
+          <button id="okConfirmBtn" class="btn btn-danger">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOGOUT MODAL -->
+    <div id="logoutModal" class="modal">
+      <div class="modal-content">
+        <h3>Confirm Logout</h3>
+        <p>Are you sure you want to log out?<br>
+           <small>Your session will be terminated.</small>
+        </p>
+        <div class="modal-actions">
+          <button id="cancelLogoutBtn" class="btn btn-secondary">Cancel</button>
+          <button id="confirmLogoutBtn" class="btn btn-danger"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script type="module" src="js/config.js"></script>
+  <script type="module" src="js/user-management.js"></script>
+</body>
+</html>
