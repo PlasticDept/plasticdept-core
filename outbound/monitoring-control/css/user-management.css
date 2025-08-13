@@ -1,0 +1,227 @@
+/* User management specific styling */
+.page-title {
+  font-size: 24px;
+  margin-bottom: 8px;
+  color: #0078d4;
+}
+
+.content-subtitle {
+  color: #666;
+  margin-bottom: 24px;
+}
+
+.user-actions {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.user-filters {
+  display: flex;
+  gap: 10px;
+}
+
+.search-box {
+  padding: 8px 12px;
+  border: 1px solid #ccd7e1;
+  border-radius: 4px;
+  width: 250px;
+}
+
+/* User role badges */
+.shift-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+  text-align: center;
+}
+
+.shift-non-shift {
+  background-color: #ffe066;
+  color: #7a5c00;
+}
+
+.shift-blue-team {
+  background-color: #339af0;
+  color: white;
+}
+
+.shift-green-team {
+  background-color: #51cf66;
+  color: white;
+}
+
+/* User status badges */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+  min-width: 80px;
+  text-align: center;
+}
+
+.status-active {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.status-inactive {
+  background-color: #95a5a6;
+  color: white;
+}
+
+/* Form group styling */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.form-text {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+/* Modal actions */
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+/* Table action buttons */
+.btn-edit {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-edit:hover {
+  background-color: #2980b9;
+}
+
+.btn-delete {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-delete:hover {
+  background-color: #c0392b;
+}
+
+/* Empty state styling */
+.empty-state {
+  text-align: center;
+  padding: 20px;
+  color: #777;
+  font-style: italic;
+}
+
+.error-state {
+  text-align: center;
+  padding: 20px;
+  color: #e74c3c;
+  font-style: italic;
+}
+
+/* Radio button group */
+.radio-group {
+  display: flex;
+  gap: 16px;
+}
+
+/* Loading indicator - visible by default */
+.loading-indicator {
+  text-align: center;
+  color: #777;
+  padding: 20px;
+  font-style: italic;
+  display: block; /* Ensure it's visible */
+}
+
+.loading-indicator i {
+  margin-right: 8px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Header user section styling */
+.user-info .user-role {
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-weight: bold;
+  display: inline-block;
+}
+
+.user-info .shift-non {
+  background-color: #ffe066;
+  color: #7a5c00;
+}
+
+.user-info .shift-blue {
+  background-color: #339af0;
+  color: #fff;
+}
+
+.user-info .shift-green {
+  background-color: #51cf66;
+  color: #fff;
+}
+
+/* Dropdown navigation hover behavior */
+.nav-dropdown:hover .nav-dropdown-content {
+  display: block;
+}
+
+.nav-dropdown:hover .nav-link {
+  background-color: #f0f4f8;
+  color: #0078d4;
+}
+
+.nav-dropdown-content {
+  position: absolute !important;
+  display: none;
+  z-index: 99999 !important;
+  background-color: white;
+  border: 1px solid #e0e6ed;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  border-radius: 4px;
+  padding: 5px 0;
+  margin-top: 0;
+}
+
+.main-nav, .nav-dropdown {
+  position: relative !important;
+  z-index: 9999 !important;
+  overflow: visible !important;
+}
