@@ -10,7 +10,7 @@ html, body {
 
 /* ====== CONTAINER ====== */
 .container {
-    max-width: 1100px;
+    width: 85%;
     margin: 40px auto;
     background: #fff;
     border-radius: 18px;

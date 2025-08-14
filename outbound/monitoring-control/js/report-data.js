@@ -1,5 +1,65 @@
+// Update warna label shift user
+function updateUserShiftColor() {
+    const userShiftSpan = document.getElementById('userShift');
+    if (!userShiftSpan) return;
+    const shiftValue = userShiftSpan.textContent.trim().toLowerCase();
+    // Reset style
+    userShiftSpan.style.backgroundColor = '';
+    userShiftSpan.style.color = '';
+    userShiftSpan.style.fontWeight = 'bold';
+    userShiftSpan.style.borderRadius = '6px';
+    userShiftSpan.style.padding = '2px 10px';
+    userShiftSpan.style.display = 'inline-block';
+    userShiftSpan.style.fontSize = '13px';
+
+    if (shiftValue === 'blue team') {
+        userShiftSpan.style.backgroundColor = '#1976d2'; // biru
+        userShiftSpan.style.color = '#fff';
+    } else if (shiftValue === 'green team') {
+        userShiftSpan.style.backgroundColor = '#43a047'; // hijau
+        userShiftSpan.style.color = '#fff';
+    } else if (shiftValue === 'non shift') {
+        userShiftSpan.style.backgroundColor = '#e0e0e0'; // abu-abu
+        userShiftSpan.style.color = '#1976d2';
+    } else if (shiftValue === 'sugity') {
+        userShiftSpan.style.backgroundColor = '#f5f5f5'; // abu-abu lebih terang
+        userShiftSpan.style.color = '#1976d2';
+    } else if (shiftValue === 'reguler') {
+        userShiftSpan.style.backgroundColor = '#f5f5f5';
+        userShiftSpan.style.color = '#43a047';
+    }
+}
 import { db, authPromise } from './config.js';
 import { ref, onValue, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+// Ambil data user dan tampilkan ke profil
+function populateUserProfileData() {
+    // Ambil username dari localStorage
+    const username = localStorage.getItem("username");
+    if (!username) return;
+
+    // Referensi ke elemen UI
+    const userFullNameElement = document.getElementById('userFullName');
+    const userAvatarElement = document.getElementById('userAvatar');
+    const userInitialElement = document.getElementById('userInitial');
+    const userShiftElement = document.getElementById('userShift');
+
+    // Ambil data user dari node users/[username]
+    get(ref(db, `users/${username}`))
+        .then((snapshot) => {
+            if (!snapshot.exists()) return;
+            const user = snapshot.val();
+            if (userFullNameElement) userFullNameElement.textContent = user.Name || username;
+            if (userAvatarElement && user.Avatar) userAvatarElement.src = user.Avatar;
+            if (userInitialElement && user.Name) userInitialElement.textContent = user.Name.charAt(0).toUpperCase();
+            if (userShiftElement && user.Shift) userShiftElement.textContent = user.Shift;
+            // Update warna label shift setelah data diisi
+            updateUserShiftColor();
+        })
+        .catch((error) => {
+            // Optional: tampilkan error di UI
+        });
+}
 
 // Helper: Format angka ribuan
 function formatNumber(num) {
@@ -135,6 +195,9 @@ authPromise.then(async () => {
     const dayToggle = document.getElementById('day-shift');
     const nightToggle = document.getElementById('night-shift');
     const spinner = document.getElementById('spinner');
+
+    // Tampilkan data user profil di awal
+    populateUserProfileData();
 
     // Disable toggle & tampilkan spinner saat loading
     if (dayToggle) dayToggle.disabled = true;
