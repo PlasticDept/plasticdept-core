@@ -120,6 +120,65 @@
     <!-- NOTIFICATION BAR -->
     <div id="notification" class="notification-bar"></div>
 
+    <!-- Dashboard Cards Container -->
+      <div class="dashboard-cards-container">
+        <!-- PIC List Card -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h3><i class="fas fa-users"></i> PIC List</h3>
+            <div class="card-actions">
+              <button id="refreshPicListBtn" class="refresh-btn"><i class="fas fa-sync-alt"></i></button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="pic-list-container">
+              <div id="picListContent" class="pic-cards-wrapper">
+                <!-- PIC items will be inserted here by JavaScript -->
+                <div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading PIC data...</div>
+              </div>
+            </div>
+          </div>
+          <!-- BAR WARNA DI BAWAH CARD -->
+          <div class="dashboard-card-bottombar bottombar-blue"></div>
+        </div>
+
+        <!-- Outbound Progress Card -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h3><i class="fas fa-chart-line"></i> Outbound Progress</h3>
+            <div class="card-actions">
+              <button id="refreshOutboundProgressBtn" class="refresh-btn"><i class="fas fa-sync-alt"></i></button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="outboundProgressContent">
+              <!-- Progress items will be inserted here by JavaScript -->
+              <div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading progress data...</div>
+            </div>
+          </div>
+          <!-- BAR WARNA DI BAWAH CARD -->
+          <div class="dashboard-card-bottombar bottombar-green"></div>
+        </div>
+
+        <!-- Outstanding Job Card -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h3><i class="fas fa-exclamation-circle"></i> Outstanding Jobs</h3>
+            <div class="card-actions">
+              <button id="refreshOutstandingJobsBtn" class="refresh-btn"><i class="fas fa-sync-alt"></i></button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="outstandingJobsContent">
+              <!-- Outstanding job data will be inserted here by JavaScript -->
+              <div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading outstanding jobs data...</div>
+            </div>
+          </div>
+          <!-- BAR WARNA DI BAWAH CARD -->
+          <div class="dashboard-card-bottombar bottombar-red"></div>
+        </div>
+      </div> 
+
     <!-- CONTROLS CONTAINER -->
     <div class="controls-container">
       <!-- Setting Cards -->
@@ -204,64 +263,7 @@
           <button class="btn btn-danger" id="clearDatabaseBtn"><i class="fas fa-trash"></i> Delete Data</button>
           <button class="btn btn-success" id="exportExcelBtn"><i class="fas fa-save"></i> Save Target</button>
       </div>
-      <!-- Dashboard Cards Container -->
-      <div class="dashboard-cards-container">
-        <!-- PIC List Card -->
-        <div class="dashboard-card">
-          <div class="card-header">
-            <h3><i class="fas fa-users"></i> PIC List</h3>
-            <div class="card-actions">
-              <button id="refreshPicListBtn" class="refresh-btn"><i class="fas fa-sync-alt"></i></button>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="pic-list-container">
-              <div id="picListContent" class="pic-cards-wrapper">
-                <!-- PIC items will be inserted here by JavaScript -->
-                <div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading PIC data...</div>
-              </div>
-            </div>
-          </div>
-          <!-- BAR WARNA DI BAWAH CARD -->
-          <div class="dashboard-card-bottombar bottombar-blue"></div>
-        </div>
-
-        <!-- Outbound Progress Card -->
-        <div class="dashboard-card">
-          <div class="card-header">
-            <h3><i class="fas fa-chart-line"></i> Outbound Progress</h3>
-            <div class="card-actions">
-              <button id="refreshOutboundProgressBtn" class="refresh-btn"><i class="fas fa-sync-alt"></i></button>
-            </div>
-          </div>
-          <div class="card-body">
-            <div id="outboundProgressContent">
-              <!-- Progress items will be inserted here by JavaScript -->
-              <div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading progress data...</div>
-            </div>
-          </div>
-          <!-- BAR WARNA DI BAWAH CARD -->
-          <div class="dashboard-card-bottombar bottombar-green"></div>
-        </div>
-
-        <!-- Outstanding Job Card -->
-        <div class="dashboard-card">
-          <div class="card-header">
-            <h3><i class="fas fa-exclamation-circle"></i> Outstanding Jobs</h3>
-            <div class="card-actions">
-              <button id="refreshOutstandingJobsBtn" class="refresh-btn"><i class="fas fa-sync-alt"></i></button>
-            </div>
-          </div>
-          <div class="card-body">
-            <div id="outstandingJobsContent">
-              <!-- Outstanding job data will be inserted here by JavaScript -->
-              <div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading outstanding jobs data...</div>
-            </div>
-          </div>
-          <!-- BAR WARNA DI BAWAH CARD -->
-          <div class="dashboard-card-bottombar bottombar-red"></div>
-        </div>
-      </div>    <!-- FILTER INDICATOR -->
+    <!-- FILTER INDICATOR -->
     <div id="filterIndicator" class="filter-indicator"></div>
 
     
