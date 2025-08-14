@@ -1127,6 +1127,7 @@ li.nav-dropdown {
 
 /* Card Base Styling */
 .dashboard-card {
+  position: relative; 
   background-color: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -1496,3 +1497,20 @@ li.nav-dropdown {
 .modal-btn.danger:hover {
   background-color: #c0392b;
 }
+
+.dashboard-card-bottombar {
+  width: 100%;
+  height: 7px;
+  border-radius: 0 0 8px 8px;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  margin-bottom: 0;
+}
+
+.bottombar-blue    { background: #2196f3; }
+.bottombar-green   { background: #43a047; }
+.bottombar-red     { background: #e53935; }
+.bottombar-orange  { background: #fbc02d; }
+.bottombar-black   { background: #232323; }
+.bottombar-gray    { background: #cfd8dc; }
