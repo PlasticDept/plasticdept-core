@@ -30,6 +30,74 @@ let selectedDate = null;
 let dataTable = null;
 let fp = null;
 
+// --- UPDATE SHIFT LABEL COLOR ---
+function updateUserShiftColor() {
+  const userShiftSpan = document.getElementById('userShift');
+  if (userShiftSpan) {
+    const value = userShiftSpan.textContent.trim();
+    userShiftSpan.style.background = '';
+    userShiftSpan.style.color = '';
+    userShiftSpan.style.borderRadius = '6px';
+    userShiftSpan.style.padding = '2px 8px';
+    userShiftSpan.style.fontWeight = 'bold';
+    userShiftSpan.style.display = 'inline-block';
+    if (value === 'Non Shift') {
+      userShiftSpan.style.background = '#ffe066';
+      userShiftSpan.style.color = '#333';
+    } else if (value.toLowerCase().includes('blue')) {
+      userShiftSpan.style.background = '#2196f3';
+      userShiftSpan.style.color = '#fff';
+    } else if (value.toLowerCase().includes('green')) {
+      userShiftSpan.style.background = '#43a047';
+      userShiftSpan.style.color = '#fff';
+    } else if (value.toLowerCase().includes('night')) {
+      userShiftSpan.style.background = '#222e50';
+      userShiftSpan.style.color = '#fff';
+    } else if (value.toLowerCase().includes('day')) {
+      userShiftSpan.style.background = '#f7b32b';
+      userShiftSpan.style.color = '#222';
+    }
+  }
+}
+
+// --- USER PROFILE LOGIC ---
+async function populateUserProfileData() {
+  const username = localStorage.getItem("username");
+  if (!username) return;
+
+  const userFullNameElement = document.getElementById('userFullName');
+  const userAvatarElement = document.getElementById('userAvatar');
+  const userShiftElement = document.getElementById('userShift');
+
+  try {
+    const userRef = ref(db, `users/${username}`);
+    const snapshot = await get(userRef);
+    if (snapshot.exists()) {
+      const userData = snapshot.val();
+      if (userFullNameElement) userFullNameElement.textContent = userData.Name || username;
+      if (userAvatarElement) {
+        if (userData.AvatarUrl) {
+          userAvatarElement.innerHTML = `<img src="${userData.AvatarUrl}" alt="Avatar" style="width:32px;height:32px;border-radius:50%;">`;
+        } else {
+          userAvatarElement.textContent = (userData.Name || username).charAt(0).toUpperCase();
+        }
+      }
+      if (userShiftElement) userShiftElement.textContent = userData.Shift || "-";
+      updateUserShiftColor();
+    } else {
+      if (userFullNameElement) userFullNameElement.textContent = username;
+      if (userAvatarElement) userAvatarElement.textContent = username.charAt(0).toUpperCase();
+      if (userShiftElement) userShiftElement.textContent = "-";
+      updateUserShiftColor();
+    }
+  } catch (err) {
+    if (userFullNameElement) userFullNameElement.textContent = username;
+    if (userAvatarElement) userAvatarElement.textContent = username.charAt(0).toUpperCase();
+    if (userShiftElement) userShiftElement.textContent = "-";
+    updateUserShiftColor();
+  }
+}
+
 // Helper: format tanggal ke path
 function getDateDBPath(dateStr) {
   if (!dateStr) return null;
@@ -71,6 +139,8 @@ async function populateShifts() {
     showNotif({type: "error", message: "Gagal mengambil shift: " + err.message});
   }
 }
+
+
 
 // Populate team selector
 async function populateTeams() {
@@ -285,6 +355,7 @@ teamSelect.addEventListener('change', async () => {
   const auth = getAuth(app);
   await signInAnonymously(auth);
   initDatepicker();
+  populateUserProfileData();
 })();
 
 document.getElementById('customExportBtn').onclick = function() {
