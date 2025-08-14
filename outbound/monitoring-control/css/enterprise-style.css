@@ -1330,13 +1330,13 @@ li.nav-dropdown {
 
 .progress-bar {
   height: 100%;
-  background-color: #0078d4;
+  background-color: #43a047;
   border-radius: 5px;
   transition: width 0.3s ease;
 }
 
 .progress-percentage {
-  font-size: 12px;
+  font-size: 20px;
   color: #666;
   margin-top: 4px;
   text-align: right;
@@ -1509,7 +1509,7 @@ li.nav-dropdown {
 }
 
 .bottombar-blue    { background: #2196f3; }
-.bottombar-green   { background: #43a047; }
+.bottombar-green   { background: #fbc02d; }
 .bottombar-red     { background: #e53935; }
 .bottombar-orange  { background: #fbc02d; }
 .bottombar-black   { background: #232323; }

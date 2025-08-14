@@ -315,7 +315,7 @@ async function updateOutboundProgressData() {
         <div class="progress-bar-container">
           <div class="progress-bar" style="width: ${percentage}%"></div>
         </div>
-        <div class="progress-percentage">${percentage}% Complete</div>
+        <div class="progress-percentage">${percentage}% Completed</div>
       `;
       
       outboundProgressContent.appendChild(progressItem);
