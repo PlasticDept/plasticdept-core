@@ -280,11 +280,11 @@ async function updateOutboundProgressData() {
     teams.forEach(team => {
       const planTarget = planTargets[team] || 0;
       
-      // Calculate actual target - sum qty for jobs assigned to this team and current shift
+      // Calculate actual target - sum qty for jobs assigned to this team and current shift with status "Packed" or "Completed"
       let actualTarget = 0;
       
       Object.values(jobs).forEach(job => {
-        if (job.team === team && job.shift === activeShift) {
+        if (job.team === team && job.shift === activeShift && (job.status === "Packed" || job.status === "Completed")) {
           // Convert qty to number and add to total
           const qty = parseFloat(job.qty) || 0;
           actualTarget += qty;
