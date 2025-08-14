@@ -1142,7 +1142,7 @@ li.nav-dropdown {
 /* Card Header */
 .card-header {
   padding: 16px;
-  background-color: #f8fafc;
+  background-color: #9fb3c7;
   border-bottom: 1px solid #e0e6ed;
   display: flex;
   justify-content: space-between;
@@ -1152,10 +1152,13 @@ li.nav-dropdown {
 .card-header h3 {
   margin: 0;
   font-size: 16px;
-  font-weight: 600;
-  color: #0078d4;
+  font-weight: 1000;
+  color: #ffffff;
   display: flex;
   align-items: center;
+  justify-content: center;  /* tambahkan ini */
+  text-align: center;
+  width: 100%;              /* pastikan judul memenuhi lebar container */
 }
 
 .card-header h3 i {
