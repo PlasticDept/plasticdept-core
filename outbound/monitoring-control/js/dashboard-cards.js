@@ -276,9 +276,9 @@ async function updateOutboundProgressData() {
       return;
     }
     
-    // Calculate actual target for each team
-    teams.forEach(team => {
-      const planTarget = planTargets[team] || 0;
+      // Calculate actual target for each team (rounded to integer)
+      teams.forEach(team => {
+        const planTarget = planTargets[team] || 0;
       
       // Calculate actual target - sum qty for jobs assigned to this team and current shift with status "Packed" or "Completed"
       let actualTarget = 0;
@@ -292,7 +292,7 @@ async function updateOutboundProgressData() {
       });
       
       // Calculate progress percentage
-      const percentage = planTarget > 0 ? Math.min(100, Math.round((actualTarget / planTarget) * 100)) : 0;
+        const percentage = planTarget > 0 ? Math.round((actualTarget / planTarget) * 100) : 0;
       
       // Create progress item
       const progressItem = document.createElement('div');
