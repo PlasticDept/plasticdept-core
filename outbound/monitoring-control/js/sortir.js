@@ -321,6 +321,7 @@ function createTableRow(job) {
   // Sanitasi nilai sebelum menampilkan
   const remark = sanitizeValue(job.remark);
   const team = sanitizeValue(job.team);
+  const owner = sanitizeValue(job.owner);  // Add this line to extract and sanitize the owner
 
   // Khusus untuk qty, tangani kasus numerik
   let qtyDisplay = "";
@@ -332,6 +333,7 @@ function createTableRow(job) {
       <td><input type="checkbox" data-jobno="${job.jobNo}"></td>
       <td class="row-no"></td> <!-- ✅ kolom No (diisi kemudian oleh renumberRows) -->
       <td>${sanitizeValue(job.jobNo)}</td>
+      <td>${owner}</td>
       <td>${sanitizeValue(job.deliveryDate)}</td>
       <td>${sanitizeValue(job.deliveryNote)}</td>
       <td>${remark}</td>
@@ -1455,7 +1457,8 @@ function parseZLogixExcel(file) {
       "deliveryNote": "Delivery Note",
       "qty": "Plan Qty",
       "remark": "Remark",
-      "status": "Status"
+      "status": "Status",
+      "owner": "BU"  // This maps the "BU" column to the "owner" field
     },
     formatters: {
       // Format job number
@@ -1465,17 +1468,22 @@ function parseZLogixExcel(file) {
         return String(value).trim();
       },
       
+      // Owner field formatter
+      owner: (value) => {
+        console.log("Processing owner value:", value);
+        if (!value) return "";
+        return String(value).trim();
+      },
+      
       // Format deliveryDate to DD-MMM-YYYY - PERBAIKAN: memastikan tanpa waktu
       deliveryDate: (value) => {
         if (!value) return "";
-        console.log("Processing deliveryDate:", value);
         
         // Jika sudah string format tanggal, hapus komponen waktu
         if (typeof value === 'string') {
           // Jika ada spasi (pemisah antara tanggal dan waktu), ambil bagian tanggal saja
           if (value.includes(' ')) {
             value = value.split(' ')[0];
-            console.log("  Stripped time component, date only:", value);
           }
           
           // Jika sudah dalam format "DD-MMM-YYYY", kembalikan apa adanya
@@ -1497,7 +1505,6 @@ function parseZLogixExcel(file) {
           }
           
           if (isNaN(date.getTime())) {
-            console.warn("Invalid date format:", value);
             return value; // Return original if can't parse
           }
           
@@ -1507,10 +1514,8 @@ function parseZLogixExcel(file) {
           const year = date.getFullYear();
           
           const formattedDate = `${day}-${month}-${year}`;
-          console.log("  Formatted to date-only:", formattedDate);
           return formattedDate;
         } catch (err) {
-          console.error("Error formatting date:", err);
           return value; // Return original if error
         }
       },
@@ -1524,7 +1529,7 @@ function parseZLogixExcel(file) {
       
       // Format status
       status: (value) => {
-        if (!value) return "Pending Allocation";
+        if (!value) return "Pending Pick";
         const statusValue = String(value).trim();
         
         if (STATUS_OPTIONS.includes(statusValue)) {
@@ -1533,7 +1538,7 @@ function parseZLogixExcel(file) {
         if (statusValue.toLowerCase() === "loaded") {
           return "Packed";
         }
-        return "Pending Allocation";
+        return "Pending Pick";
       },
       
       // Format remark
@@ -1541,7 +1546,9 @@ function parseZLogixExcel(file) {
         if (!value) return "";
         return String(value).trim();
       }
-    }
+    },
+    debug: true,
+    exactMatchForShortHeaders: true
   });
 }
 
@@ -1557,7 +1564,7 @@ function parseZLogixExcel(file) {
  */
 
 function parseExcelFile(file, config) {
-  const reader = new FileReader(); // Removed the "N" character that was here
+  const reader = new FileReader();
   reader.onload = function (e) {
     try {
       // Tentukan tipe file berdasarkan ekstensi
@@ -1608,6 +1615,16 @@ function parseExcelFile(file, config) {
       
       // Define starting column if not specified
       const startColumn = config.startColumn || 0;
+
+      // Enhanced debugging
+      if (config.debug) {
+        console.log("Complete headers found:", headers);
+        
+        // Log each header with its column index for debugging
+        for (let i = 0; i < headers.length; i++) {
+          console.log(`Header at column ${i}: "${headers[i]}"`);
+        }
+      }
       
       console.log(`Headers found at row ${config.headerRow} (index ${headerIndex}):`, headers);
       console.log(`Data starts at row ${config.dataStartRow} (index ${config.dataStartRow - 1}), column ${startColumn+1} (index ${startColumn})`);
@@ -1625,8 +1642,15 @@ function parseExcelFile(file, config) {
       
       // First, create a map of headers to their indices
       for (let j = startColumn; j < headers.length; j++) {
-        const headerText = String(headers[j] || '').trim();
+        if (headers[j] === undefined || headers[j] === null) continue;
+        
+        const headerText = String(headers[j]).trim();
         headerMap[headerText.toLowerCase()] = j;
+        
+        // Special case for exact matching of short headers (like "BU")
+        if (config.exactMatchForShortHeaders && headerText.length <= 2) {
+          headerMap[`exact_${headerText}`] = j;
+        }
       }
       
       // Then check each source field in mapping
@@ -1634,21 +1658,43 @@ function parseExcelFile(file, config) {
         let found = false;
         const sourceFieldLower = String(sourceField).toLowerCase().trim();
         
-        // Try different variations of the header text for matching
-        const variations = [
-          sourceFieldLower,
-          sourceFieldLower.replace(/[.\s]/g, ''),
-          sourceFieldLower.replace(/\s+/g, ''),
-          sourceFieldLower.split(/\s+/)[0]
-        ];
+        // Special handling for short headers (like "BU") - try exact match first
+        if (config.exactMatchForShortHeaders && sourceField.length <= 2) {
+          for (let j = 0; j < headers.length; j++) {
+            if (headers[j] === sourceField) {
+              found = true;
+              if (config.debug) {
+                console.log(`✓ Direct match for '${sourceField}' found at column ${j}`);
+              }
+              break;
+            }
+          }
+        }
         
-        // Check if any of the header variations match
-        for (const headerKey of Object.keys(headerMap)) {
-          if (variations.includes(headerKey) || 
-              headerKey.includes(sourceFieldLower) || 
-              sourceFieldLower.includes(headerKey)) {
-            found = true;
-            break;
+        if (!found) {
+          // Try different variations of the header text for matching
+          const variations = [
+            sourceFieldLower,
+            sourceFieldLower.replace(/[.\s]/g, ''),
+            sourceFieldLower.replace(/\s+/g, ''),
+            sourceFieldLower.split(/\s+/)[0],
+            // Add special case for 'BU'
+            sourceField === 'BU' ? 'bu' : null
+          ].filter(Boolean); // Remove null values
+        
+          // Check if any of the header variations match
+          for (const headerKey of Object.keys(headerMap)) {
+            if (variations.includes(headerKey) || 
+                headerKey.includes(sourceFieldLower) || 
+                sourceFieldLower.includes(headerKey) ||
+                // Special exact match for "BU" column
+                (sourceField === 'BU' && headerKey === 'bu')) {
+              found = true;
+              if (config.debug) {
+                console.log(`✓ Found '${sourceField}' via variation match in header '${headerKey}'`);
+              }
+              break;
+            }
           }
         }
         
@@ -1678,52 +1724,62 @@ function parseExcelFile(file, config) {
         // Map fields according to config
         for (const [targetField, sourceField] of Object.entries(config.mapping)) {
           // Find column index with flexible header match
-          let headerIndex = -1;
+          let headerIndex = -1; // IMPORTANT: Changed from const to let
           
-          // Log pencarian headers untuk debuggingx
+          // Log search info
           console.log("Looking for header:", sourceField);
+          
+          // Special direct search for "BU" column and short headers
+          if (sourceField === "BU") {
+            // Look for exact match of "BU" in headers
+            for (let j = 0; j < headers.length; j++) {
+              if (headers[j] === "BU") {
+                headerIndex = j;
+                console.log(`✅ Direct match for 'BU' found at column ${j}`);
+                break;
+              }
+            }
+          } 
+          
+          // If not found yet, use regular header matching logic
+          if (headerIndex === -1) {
+            const isZLogixFormat = config.headerRow === 5;
+            const headerToSearch = isZLogixFormat ? targetField : sourceField;
+            const headerToMatch = isZLogixFormat ? sourceField : targetField;
 
-          // Balik logika pencarian header - cari berdasarkan targetField ke sourceField untuk Z-Logix
-          const isZLogixFormat = config.headerRow === 5; // Ini adalah indikator format Z-Logix
-          const headerToSearch = isZLogixFormat ? targetField : sourceField;
-          const headerToMatch = isZLogixFormat ? sourceField : targetField;
-
-          // Modified header matching logic - improved for Z-Logix format
-          for (let j = startColumn; j < headers.length; j++) {
-            const headerText = String(headers[j] || '').trim();
-            const searchText = String(headerToSearch).trim();
-            
-            // Log untuk debugging
-            console.log(`  Comparing '${headerText}' with '${searchText}'`);
-            
-            // 1. Coba pencocokan langsung (case-insensitive)
-            if (headerText.toLowerCase() === searchText.toLowerCase()) {
-              headerIndex = j;
-              console.log(`✅ EXACT match for '${headerToSearch}' found at column ${j}: '${headers[j]}'`);
-              break;
-            }
-            
-            // 2. Coba pencocokan dengan menghapus tanda baca
-            if (headerText.toLowerCase().replace(/[.\s]/g, '') === searchText.toLowerCase().replace(/[.\s]/g, '')) {
-              headerIndex = j;
-              console.log(`✅ Normalized match for '${headerToSearch}' found at column ${j}: '${headers[j]}'`);
-              break;
-            }
-            
-            // 3. Pencocokan khusus untuk kasus "Job No" yang mungkin terdeteksi sebagai "No"
-            if ((searchText === "Job No" || searchText === "jobNo") && headerText === "Job No") {
-              headerIndex = j;
-              console.log(`✅ Special match for 'Job No' found at column ${j}`);
-              break;
-            }
-            
-            // 4. Pencocokan parsial sebagai upaya terakhir, tapi hanya untuk string yang cukup panjang
-            if ((headerText.toLowerCase().includes(searchText.toLowerCase()) || 
-                searchText.toLowerCase().includes(headerText.toLowerCase())) &&
-                headerText.length > 2) {
-              headerIndex = j;
-              console.log(`✅ Partial match for '${headerToSearch}' found at column ${j}: '${headers[j]}'`);
-              break;
+            for (let j = startColumn; j < headers.length; j++) {
+              const headerText = String(headers[j] || '').trim();
+              const searchText = String(headerToSearch).trim();
+              
+              // 1. Coba pencocokan langsung (case-insensitive)
+              if (headerText.toLowerCase() === searchText.toLowerCase()) {
+                headerIndex = j;
+                console.log(`✅ EXACT match for '${headerToSearch}' found at column ${j}: '${headers[j]}'`);
+                break;
+              }
+              
+              // 2. Coba pencocokan dengan menghapus tanda baca
+              if (headerText.toLowerCase().replace(/[.\s]/g, '') === searchText.toLowerCase().replace(/[.\s]/g, '')) {
+                headerIndex = j;
+                console.log(`✅ Normalized match for '${headerToSearch}' found at column ${j}: '${headers[j]}'`);
+                break;
+              }
+              
+              // 3. Pencocokan khusus untuk kasus "Job No" yang mungkin terdeteksi sebagai "No"
+              if ((searchText === "Job No" || searchText === "jobNo") && headerText === "Job No") {
+                headerIndex = j;
+                console.log(`✅ Special match for 'Job No' found at column ${j}`);
+                break;
+              }
+              
+              // 4. Pencocokan parsial sebagai upaya terakhir, tapi hanya untuk string yang cukup panjang
+              if ((headerText.toLowerCase().includes(searchText.toLowerCase()) || 
+                  searchText.toLowerCase().includes(headerText.toLowerCase())) &&
+                  headerText.length > 2) {
+                headerIndex = j;
+                console.log(`✅ Partial match for '${headerToSearch}' found at column ${j}: '${headers[j]}'`);
+                break;
+              }
             }
           }
           
@@ -1778,7 +1834,8 @@ function parseExcelFile(file, config) {
             deliveryNote: job.deliveryNote,
             qty: job.qty,
             remark: job.remark,
-            status: job.status
+            status: job.status,
+            owner: job.owner
           });
           
           // Format delivery date if no formatter was specified
@@ -1794,7 +1851,7 @@ function parseExcelFile(file, config) {
             if (job.status && job.status.toLowerCase() === 'loaded') {
               job.status = "Packed"; // Map to valid status
             } else {
-              job.status = "Pending Allocation";
+              job.status = "Pending Pick"; // Default status for Z-Logix
             }
             console.log(`  Set status to: ${job.status}`);
           }
@@ -2256,7 +2313,7 @@ document.getElementById("downloadDataOutboundBtn").addEventListener("click", asy
 
     // Konversi data ke format array untuk Excel
     const data = snapshot.val();
-    const jobsArray = Object.values(data).map(job => {
+      const jobsArray = Object.values(data).map(job => {
       // Konversi qty ke number
       const qtyValue = job.qty ? Number(job.qty) : "";
       
@@ -2289,6 +2346,7 @@ document.getElementById("downloadDataOutboundBtn").addEventListener("click", asy
 
       return {
         "Job No": job.jobNo || "",
+        "Owner": job.owner || "",
         "Delivery Date": deliveryDate,
         "Delivery Note": job.deliveryNote || "",
         "Remark": job.remark || "",
@@ -2310,6 +2368,7 @@ document.getElementById("downloadDataOutboundBtn").addEventListener("click", asy
     if (!ws['!cols']) ws['!cols'] = [];
     ws['!cols'] = [
       {wch: 15}, // Job No
+      {wch: 15}, // Owner
       {wch: 15, dt: 'd'}, // Delivery Date - set sebagai date
       {wch: 25}, // Delivery Note
       {wch: 30}, // Remark
@@ -2678,8 +2737,8 @@ function enterEditMode(jobNo) {
   }
   if (!targetRow) return;
 
-  const remarkCell = targetRow.children[5]; // sebelumnya 4, bergeser +1
-  const qtyCell = targetRow.children[7];    // sebelumnya 6, bergeser +1
+  const remarkCell = targetRow.children[6]; // Updated index: was 5, now 6 because of the Owner column
+  const qtyCell = targetRow.children[8];    // Updated index: was 7, now 8 because of the Owner column
 
   const originalRemark = job.remark || '';
   const originalQty = job.qty || '';
@@ -2725,7 +2784,7 @@ function saveRemarkChanges(jobNo, row) {
       const jobIndex = allJobsData.findIndex(job => job.jobNo === jobNo);
       if (jobIndex !== -1) allJobsData[jobIndex].remark = newRemark;
 
-      const remarkCell = row.children[5]; // sebelumnya 4
+      const remarkCell = row.children[6]; // Updated: was 5, now 6
       remarkCell.classList.remove('edit-mode');
       remarkCell.textContent = newRemark;
     })
@@ -2736,7 +2795,7 @@ function saveRemarkChanges(jobNo, row) {
 }
 
 function cancelRemarkEdit(jobNo, row, originalRemark) {
-  const remarkCell = row.children[5]; // sebelumnya 4
+  const remarkCell = row.children[6]; // Updated: was 5, now 6
   remarkCell.classList.remove('edit-mode');
   remarkCell.textContent = originalRemark;
 }
@@ -2754,7 +2813,7 @@ function saveQtyChanges(jobNo, row) {
       const jobIndex = allJobsData.findIndex(job => job.jobNo === jobNo);
       if (jobIndex !== -1) allJobsData[jobIndex].qty = newQty;
 
-      const qtyCell = row.children[7]; // sebelumnya 6
+      const qtyCell = row.children[8]; // Updated: was 7, now 8
       qtyCell.classList.remove('edit-mode');
       qtyCell.textContent = formatNumericValue(newQty);
     })
@@ -2765,7 +2824,7 @@ function saveQtyChanges(jobNo, row) {
 }
 
 function cancelQtyEdit(jobNo, row, originalQty) {
-  const qtyCell = row.children[7]; // sebelumnya 6
+  const qtyCell = row.children[8]; // Updated: was 7, now 8
   qtyCell.classList.remove('edit-mode');
   qtyCell.textContent = formatNumericValue(originalQty);
 }
