@@ -695,6 +695,68 @@ function clearAllJobs() {
   });
 }
 
+// Add this function after the clearAllJobs function
+
+/**
+ * Menghapus job dengan status "Completed" yang tidak memiliki field "shift" dari database.
+ * Fungsi ini membantu membersihkan database dari job yang sudah selesai namun belum diassign.
+ */
+function clearCompletedJobsWithoutShift() {
+  showConfirmModal({
+    title: "Konfirmasi Cargo Out",
+    message: `
+      Apakah Anda yakin ingin <b>MENGHAPUS JOB</b> dengan status <b>Completed</b> yang <b>TIDAK MEMILIKI</b> field "shift"?<br>
+      <br>
+      <span style="color:#d32f2f;font-weight:bold;">
+        <u>PERHATIAN:</u> <br>
+        Tindakan ini akan menghapus seluruh job completed yang belum diassign ke team manapun.
+      </span>
+    `,
+    okText: "Hapus Job",
+    okClass: "logout",
+    onConfirm: () => {
+      // Ambil semua job dari PhxOutboundJobs
+      get(ref(db, "PhxOutboundJobs"))
+        .then((snapshot) => {
+          if (!snapshot.exists()) {
+            showNotification("Tidak ada data job yang dapat dihapus.", true);
+            return Promise.resolve({});
+          }
+
+          const jobs = snapshot.val();
+          const updates = {};
+          let deleteCount = 0;
+
+          // Filter job dengan status "Completed" dan tidak memiliki shift
+          Object.entries(jobs).forEach(([jobNo, jobData]) => {
+            if (jobData.status === "Completed" && (!jobData.shift || jobData.shift.trim() === "")) {
+              updates[jobNo] = null; // Set null untuk menghapus data
+              deleteCount++;
+            }
+          });
+
+          if (deleteCount === 0) {
+            showNotification("Tidak ada job dengan status Completed tanpa shift yang dapat dihapus.", true);
+            return Promise.resolve(0);
+          }
+
+          // Hapus job yang terfilter menggunakan update batch
+          return update(ref(db, "PhxOutboundJobs"), updates).then(() => deleteCount);
+        })
+        .then((deleteCount) => {
+          if (typeof deleteCount === "number" && deleteCount > 0) {
+            showNotification(`✅ Berhasil menghapus ${deleteCount} job dengan status Completed tanpa shift.`);
+            loadJobsFromFirebase(); // Refresh data setelah penghapusan
+          }
+        })
+        .catch((error) => {
+          console.error("Gagal menghapus data:", error);
+          showNotification("❌ Gagal menghapus data job!", true);
+        });
+    }
+  });
+}
+
 /* =========================
    HANDLE EXCEL FILE UPLOAD
 ========================= */
@@ -2196,6 +2258,7 @@ teamOptions.addEventListener("change", () => {
 
 // Listener tombol clear database
 document.getElementById("clearDatabaseBtn").addEventListener("click", clearAllJobs);
+document.getElementById("cargoOutBtn")?.addEventListener("click", clearCompletedJobsWithoutShift);
 
 async function saveOutJobAchievement() {
   const jobsSnap = await get(ref(db, "PhxOutboundJobs"));

@@ -1514,3 +1514,19 @@ li.nav-dropdown {
 .bottombar-orange  { background: #fbc02d; }
 .bottombar-black   { background: #232323; }
 .bottombar-gray    { background: #cfd8dc; }
+
+/* Add this style for the black Cargo Out button */
+.btn-dark {
+  background-color: #000000;
+  color: white;
+  border: none;
+}
+
+.btn-dark:hover {
+  background-color: #333333;
+  color: white;
+}
+
+.btn-dark i {
+  color: white;
+}
