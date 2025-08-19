@@ -4,6 +4,7 @@
 
 import { db, authPromise } from "./config.js";
 import { ref, set, get, update, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import { nowInWIB, toWIB, getBusinessDateForShift, breakdownBusinessDate, formatDateTimeWIB } from "./shift-business-date.js";
 
 /* =========================
 /**
@@ -2030,37 +2031,57 @@ bulkUnassignBtn?.addEventListener("click", async () => {
 });
 
 // Listener tombol assign di modal
+// Listener tombol assign di modal (VERSI DENGAN BUSINESS DATE & TIMESTAMP)
 confirmAdd.addEventListener("click", async () => {
   const team = document.getElementById("teamSelect").value;
   const jobType = document.getElementById("jobTypeSelect").value;
   const shiftType = (localStorage.getItem("shiftType") === "Night") ? "Night Shift" : "Day Shift";
   const jobsToUpdate =
-    window.jobsToBulkAssign && Array.isArray(window.jobsToBulkAssign) && window.jobsToBulkAssign.length > 0
+    (window.jobsToBulkAssign && Array.isArray(window.jobsToBulkAssign) && window.jobsToBulkAssign.length > 0)
       ? window.jobsToBulkAssign
       : (selectedSingleJob ? [selectedSingleJob] : getSelectedJobs());
+
   const loadingIndicator = document.getElementById("loadingIndicator");
 
-  if (jobsToUpdate.length === 0) return showNotification("Tidak ada job yang dipilih.", true);
+  if (jobsToUpdate.length === 0) {
+    showNotification("Tidak ada job yang dipilih.", true);
+    return;
+  }
 
   loadingIndicator.style.display = "block";
   confirmAdd.disabled = true;
 
   try {
-    // Ambil teamName dari user login (lookup ke node users)
     const teamName = await getTeamNameForCurrentUser();
+
+    // Waktu dasar
+    const nowUTC = new Date();
+    const shiftKey = shiftType === "Night Shift" ? "NightShift" : "DayShift";
+    const businessDate = getBusinessDateForShift(shiftKey, nowUTC);   // YYYY-MM-DD (WIB logic)
+    const assignedAtUTC = nowUTC.toISOString();
+    const assignedAtWIB = formatDateTimeWIB(toWIB(nowUTC));
 
     await Promise.all(
       jobsToUpdate.map(jobNo =>
-        // PATCH: Tambahkan property shift dan teamName pada update
-        update(ref(db, "PhxOutboundJobs/" + jobNo), { team, jobType, shift: shiftType, teamName })
+        update(ref(db, "PhxOutboundJobs/" + jobNo), {
+          team,
+          jobType,
+          shift: shiftType,
+          teamName,
+          businessDate,   // NEW
+          assignedAtUTC,  // NEW
+          assignedAtWIB   // NEW
+        })
       )
     );
+
     showNotification(`Job berhasil ditambahkan ke team: ${team}`);
     selectedSingleJob = null;
     window.jobsToBulkAssign = null;
     hideModal();
     refreshDataWithoutReset();
   } catch (error) {
+    console.error(error);
     showNotification("Gagal menyimpan data ke Firebase.", true);
   } finally {
     loadingIndicator.style.display = "none";
@@ -2120,29 +2141,37 @@ teamOptions.addEventListener("change", () => {
 document.getElementById("clearDatabaseBtn").addEventListener("click", clearAllJobs);
 
 async function saveOutJobAchievement() {
-  // Ambil semua job dari node PhxOutboundJobs
   const jobsSnap = await get(ref(db, "PhxOutboundJobs"));
   const jobs = jobsSnap.exists() ? Object.values(jobsSnap.val()) : [];
 
-  // Buat struktur tanggal
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const yearShort = year.toString().slice(-2);
-  const nodeYear = `year${year}`;
-  const nodeMonth = `${month}_${yearShort}`;
-  const nodeDay = String(now.getDate()).padStart(2, '0');
+  if (!jobs.length) {
+    showNotification("Tidak ada job untuk disimpan.", true);
+    return;
+  }
 
-  // Kelompokkan data per shift & teamName
-  const result = { NightShift: {}, DayShift: {} };
+  // Kelompok: { [businessDate]: { NightShift: {teamName: {...}}, DayShift:{...} } }
+  const grouped = {};
+
   for (const job of jobs) {
-    if (!job.teamName || !job.jobNo) continue;
-    const shiftPath = job.shift === "Night Shift" ? "NightShift" : "DayShift";
-    const teamName = job.teamName;
-    if (!result[shiftPath][teamName]) result[shiftPath][teamName] = {};
-    
-    // Gunakan sanitizeValue untuk semua properti untuk mencegah undefined
-    result[shiftPath][teamName][job.jobNo] = {
+    if (!job.teamName || !job.jobNo || !job.shift) continue;
+
+    const shiftKey = job.shift === "Night Shift" ? "NightShift" : "DayShift";
+    // Jika job punya businessDate simpan pakai itu, jika tidak hitung dari assignedAtUTC atau sekarang.
+    let businessDate = job.businessDate;
+    if (!businessDate) {
+      const baseDate = job.assignedAtUTC ? new Date(job.assignedAtUTC) : new Date();
+      businessDate = getBusinessDateForShift(shiftKey, baseDate);
+    }
+
+    if (!grouped[businessDate]) {
+      grouped[businessDate] = { NightShift: {}, DayShift: {} };
+    }
+
+    if (!grouped[businessDate][shiftKey][job.teamName]) {
+      grouped[businessDate][shiftKey][job.teamName] = {};
+    }
+
+    grouped[businessDate][shiftKey][job.teamName][job.jobNo] = {
       deliveryDate: sanitizeValue(job.deliveryDate),
       deliveryNote: sanitizeValue(job.deliveryNote),
       jobNo: sanitizeValue(job.jobNo),
@@ -2153,17 +2182,31 @@ async function saveOutJobAchievement() {
       status: sanitizeValue(job.status),
       team: sanitizeValue(job.team),
       teamName: sanitizeValue(job.teamName),
-      finishAt: sanitizeValue(job.finishAt || "")
+      finishAt: sanitizeValue(job.finishAt || ""),
+      businessDate,                       // simpan juga di node achievement
+      assignedAtUTC: sanitizeValue(job.assignedAtUTC || ""),
+      assignedAtWIB: sanitizeValue(job.assignedAtWIB || "")
     };
   }
 
-  // Simpan ke database
-  if (Object.keys(result.NightShift).length > 0) {
-    await set(ref(db, `outJobAchievment/${nodeYear}/${nodeMonth}/${nodeDay}/NightShift`), result.NightShift);
-  }
-  if (Object.keys(result.DayShift).length > 0) {
-    await set(ref(db, `outJobAchievment/${nodeYear}/${nodeMonth}/${nodeDay}/DayShift`), result.DayShift);
-  }
+  // Simpan ke Firebase per businessDate
+  const writes = [];
+  Object.entries(grouped).forEach(([bDate, shiftsObj]) => {
+    const { yearKey, monthKey, day } = breakdownBusinessDate(bDate);
+    if (Object.keys(shiftsObj.NightShift).length > 0) {
+      writes.push(
+        set(ref(db, `outJobAchievment/${yearKey}/${monthKey}/${day}/NightShift`), shiftsObj.NightShift)
+      );
+    }
+    if (Object.keys(shiftsObj.DayShift).length > 0) {
+      writes.push(
+        set(ref(db, `outJobAchievment/${yearKey}/${monthKey}/${day}/DayShift`), shiftsObj.DayShift)
+      );
+    }
+  });
+
+  await Promise.all(writes);
+  showNotification("Data achievement (per business date) berhasil disimpan.");
 }
 
 // ========== SAVE TARGET TO DATABASE ==========

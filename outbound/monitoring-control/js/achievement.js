@@ -1,6 +1,11 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+import {
+  nowInWIB,
+  getBusinessDateForShift,
+  breakdownBusinessDate
+} from "./shift-business-date.js";
 
 // Firebase config
 const firebaseConfig = {
@@ -26,45 +31,58 @@ const matrixQtyAdditional = document.getElementById('matrixQtyAdditional');
 const matrixQtyRemaining = document.getElementById('matrixQtyRemaining');
 const matrixQtyH1 = document.getElementById('matrixQtyH1');
 const notifBox = document.getElementById('notifBox');
-let selectedDate = null;
+
+let selectedDate = null; // business date (YYYY-MM-DD)
 let dataTable = null;
 let fp = null;
 
-// --- UPDATE SHIFT LABEL COLOR ---
+// ================= Helpers =================
+function showNotif({type, message}) {
+  notifBox.innerHTML = `<div class="notif-${type}">${message}</div>`;
+  setTimeout(() => {
+    if (notifBox.innerHTML.includes(message)) notifBox.innerHTML = '';
+  }, 3500);
+}
+
+// Format path DB based on business date
+function getDateDBPath(dateStr) {
+  if (!dateStr) return null;
+  const { yearKey, monthKey, day } = breakdownBusinessDate(dateStr);
+  return `${yearKey}/${monthKey}/${day}`;
+}
+
+// ================= User Profile =================
 function updateUserShiftColor() {
   const userShiftSpan = document.getElementById('userShift');
-  if (userShiftSpan) {
-    const value = userShiftSpan.textContent.trim();
-    userShiftSpan.style.background = '';
-    userShiftSpan.style.color = '';
-    userShiftSpan.style.borderRadius = '6px';
-    userShiftSpan.style.padding = '2px 8px';
-    userShiftSpan.style.fontWeight = 'bold';
-    userShiftSpan.style.display = 'inline-block';
-    if (value === 'Non Shift') {
-      userShiftSpan.style.background = '#ffe066';
-      userShiftSpan.style.color = '#333';
-    } else if (value.toLowerCase().includes('blue')) {
-      userShiftSpan.style.background = '#2196f3';
-      userShiftSpan.style.color = '#fff';
-    } else if (value.toLowerCase().includes('green')) {
-      userShiftSpan.style.background = '#43a047';
-      userShiftSpan.style.color = '#fff';
-    } else if (value.toLowerCase().includes('night')) {
-      userShiftSpan.style.background = '#222e50';
-      userShiftSpan.style.color = '#fff';
-    } else if (value.toLowerCase().includes('day')) {
-      userShiftSpan.style.background = '#f7b32b';
-      userShiftSpan.style.color = '#222';
-    }
+  if (!userShiftSpan) return;
+  const value = userShiftSpan.textContent.trim();
+  userShiftSpan.style.background = '';
+  userShiftSpan.style.color = '';
+  userShiftSpan.style.borderRadius = '6px';
+  userShiftSpan.style.padding = '2px 8px';
+  userShiftSpan.style.fontWeight = 'bold';
+  userShiftSpan.style.display = 'inline-block';
+  if (value === 'Non Shift') {
+    userShiftSpan.style.background = '#ffe066';
+    userShiftSpan.style.color = '#333';
+  } else if (value.toLowerCase().includes('blue')) {
+    userShiftSpan.style.background = '#2196f3';
+    userShiftSpan.style.color = '#fff';
+  } else if (value.toLowerCase().includes('green')) {
+    userShiftSpan.style.background = '#43a047';
+    userShiftSpan.style.color = '#fff';
+  } else if (value.toLowerCase().includes('night')) {
+    userShiftSpan.style.background = '#222e50';
+    userShiftSpan.style.color = '#fff';
+  } else if (value.toLowerCase().includes('day')) {
+    userShiftSpan.style.background = '#f7b32b';
+    userShiftSpan.style.color = '#222';
   }
 }
 
-// --- USER PROFILE LOGIC ---
 async function populateUserProfileData() {
   const username = localStorage.getItem("username");
   if (!username) return;
-
   const userFullNameElement = document.getElementById('userFullName');
   const userAvatarElement = document.getElementById('userAvatar');
   const userShiftElement = document.getElementById('userShift');
@@ -83,43 +101,27 @@ async function populateUserProfileData() {
         }
       }
       if (userShiftElement) userShiftElement.textContent = userData.Shift || "-";
-      updateUserShiftColor();
     } else {
       if (userFullNameElement) userFullNameElement.textContent = username;
       if (userAvatarElement) userAvatarElement.textContent = username.charAt(0).toUpperCase();
       if (userShiftElement) userShiftElement.textContent = "-";
-      updateUserShiftColor();
     }
-  } catch (err) {
+  } catch {
     if (userFullNameElement) userFullNameElement.textContent = username;
     if (userAvatarElement) userAvatarElement.textContent = username.charAt(0).toUpperCase();
     if (userShiftElement) userShiftElement.textContent = "-";
-    updateUserShiftColor();
   }
+  updateUserShiftColor();
 }
 
-// Helper: format tanggal ke path
-function getDateDBPath(dateStr) {
-  if (!dateStr) return null;
-  const [year, month, day] = dateStr.split('-');
-  const yKey = 'year' + year;
-  const mKey = `${month}_${year.slice(2)}`;
-  return `${yKey}/${mKey}/${day}`;
-}
-
-// Show notification
-function showNotif({type, message}) {
-  notifBox.innerHTML = `<div class="notif-${type}">${message}</div>`;
-  setTimeout(() => notifBox.innerHTML = '', 3000);
-}
-
-// Populate shift selector (cek shift apa yang ada pada tanggal)
+// ================= Populate Shift / Team =================
 async function populateShifts() {
   shiftSelect.value = "";
   shiftSelect.disabled = true;
   teamSelect.innerHTML = '<option value="">Team</option>';
   teamSelect.disabled = true;
   if (!selectedDate) return;
+
   try {
     const path = `outJobAchievment/${getDateDBPath(selectedDate)}`;
     const dayRef = ref(db, path);
@@ -134,15 +136,12 @@ async function populateShifts() {
       shiftSelect.innerHTML += `<option value="${shift}">${shift.replace(/Shift$/, ' Shift')}</option>`;
     });
     shiftSelect.disabled = false;
-    showNotif({type:"success", message:"Shift ditemukan!"});
+    showNotif({type:"success", message:"Shift ditemukan."});
   } catch (err) {
     showNotif({type: "error", message: "Gagal mengambil shift: " + err.message});
   }
 }
 
-
-
-// Populate team selector
 async function populateTeams() {
   teamSelect.innerHTML = '<option value="">Team</option>';
   teamSelect.disabled = true;
@@ -155,18 +154,17 @@ async function populateTeams() {
       showNotif({type: "error", message: "Tidak ada team untuk shift ini."});
       return;
     }
-    const teams = Object.keys(snap.val());
-    teams.forEach(t => {
+    Object.keys(snap.val()).forEach(t => {
       teamSelect.innerHTML += `<option value="${t}">${t}</option>`;
     });
     teamSelect.disabled = false;
-    showNotif({type:"success", message:"Team ditemukan!"});
+    showNotif({type:"success", message:"Team ditemukan."});
   } catch (err) {
-    showNotif({type: "error", message: "Gagal mengambil team: " + err.message});
+    showNotif({type:"error", message:"Gagal mengambil team: " + err.message});
   }
 }
 
-// Render DataTable & Summary
+// ================= Data Table Render =================
 async function renderTable() {
   const team = teamSelect.value;
   const shift = shiftSelect.value;
@@ -177,41 +175,28 @@ async function renderTable() {
       const teamRef = ref(db, path);
       const snap = await get(teamRef);
       if (!snap.exists()) {
-        showNotif({type:"error", message: "Tidak ada job untuk team ini."});
-        matrixJobCount.textContent = '0';
-        matrixQty.textContent = '0';
-        matrixQtyRemaining.textContent = '0';
-        matrixQtyAdditional.textContent = '0';
-        matrixQtyH1.textContent = '0';
-        matrixQtyOvertime.textContent = '0';
-        if (dataTable) dataTable.clear().draw();
-        else $('#achievementTable').DataTable().clear().draw();
+        showNotif({type:"error", message:"Tidak ada job untuk team ini."});
+        resetSummaryToZero();
+        if (dataTable) dataTable.clear().draw(); else $('#achievementTable').DataTable().clear().draw();
         return;
       }
       jobs = Object.values(snap.val());
-      showNotif({type:"success", message:"Data berhasil di-load!"});
+      showNotif({type:"success", message:"Data berhasil di-load."});
     } catch (err) {
-      showNotif({type: "error", message: "Gagal load data: " + err.message});
-      jobs = [];
+      showNotif({type:"error", message:"Gagal load data: " + err.message});
     }
   }
 
-  // Hitung summary card (qty per tipe job)
+  // Summary counters
   let qtyRemaining = 0, qtyAdditional = 0, qtyH1 = 0, qtyOvertime = 0;
   jobs.forEach(job => {
-    if (!job.qty) return;
-    if (job.jobType && typeof job.jobType === 'string') {
-      const type = job.jobType.toLowerCase();
-      if (type.includes('remaining')) {
-        qtyRemaining += parseInt(job.qty) || 0;
-      } else if (type.includes('add')) {
-        qtyAdditional += parseInt(job.qty) || 0;
-      } else if (type.includes('h-1')) {
-        qtyH1 += parseInt(job.qty) || 0;
-      } else if (type.includes('ot')) {
-        qtyOvertime += parseInt(job.qty) || 0;
-      }
-    }
+    const q = parseInt(job.qty) || 0;
+    if (!job.jobType) return;
+    const t = job.jobType.toLowerCase();
+    if (t.includes('remaining')) qtyRemaining += q;
+    else if (t.includes('add')) qtyAdditional += q;
+    else if (t.includes('h-1')) qtyH1 += q;
+    else if (t.includes('ot')) qtyOvertime += q;
   });
 
   const rowData = jobs.map(job => [
@@ -224,10 +209,12 @@ async function renderTable() {
     job.shift || '-',
     job.team || '-',
     job.teamName || '-',
+    job.createdBy || '-',
+    job.businessDate || '-',
+    job.actualTimestampWIB || job.actualTimestamp || '-', // prefer WIB log
     (job.qty !== undefined && job.qty !== null && job.qty !== "") ? Number(job.qty).toLocaleString('en-US') : '-'
   ]);
 
-  // DataTables logic
   if (dataTable) {
     dataTable.clear();
     dataTable.rows.add(rowData);
@@ -247,6 +234,9 @@ async function renderTable() {
         { title: "Shift" },
         { title: "Team" },
         { title: "Team Name" },
+        { title: "Created By" },
+        { title: "Business Date" },
+        { title: "Actual Time (WIB)" },
         { title: "Qty" }
       ],
       dom: 'Bft',
@@ -266,41 +256,68 @@ async function renderTable() {
       });
       $buttons.appendTo($filter).css({'margin': '0', 'float': 'none'});
     }, 0);
-
-    $(document).on('draw.dt', function() {
-      $('.custom-excel-btn')
-        .css({
-          'background': 'linear-gradient(90deg, #1e579c 75%, #4288e6)',
-          'color': '#fff',
-          'border': 'none',
-          'border-radius': '7px',
-          'padding': '0 18px',
-          'height': '36px',
-          'font-size': '1em',
-          'font-weight': '500',
-          'cursor': 'pointer',
-          'box-shadow': '0 1px 4px #b4c8e635',
-          'transition': 'background 0.2s, filter 0.2s',
-          'display': 'inline-flex',
-          'align-items': 'center',
-          'gap': '7px',
-          'margin-right': '10px'
-        })
-        .hover(
-          function() { $(this).css('filter', 'brightness(1.08)'); },
-          function() { $(this).css('filter', 'none'); }
-        );
-    });
   }
+
+  // Update summary
   matrixJobCount.textContent = jobs.length;
-  matrixQty.textContent = jobs.reduce((acc, job) => acc + (parseInt(job.qty) || 0), 0).toLocaleString('en-US');
+  matrixQty.textContent = jobs.reduce((acc, j) => acc + (parseInt(j.qty) || 0), 0).toLocaleString('en-US');
   matrixQtyRemaining.textContent = qtyRemaining.toLocaleString('en-US');
   matrixQtyAdditional.textContent = qtyAdditional.toLocaleString('en-US');
   matrixQtyH1.textContent = qtyH1.toLocaleString('en-US');
   matrixQtyOvertime.textContent = qtyOvertime.toLocaleString('en-US');
 }
 
-// Jangan lupa di bagian reset juga!
+function resetSummaryToZero() {
+  matrixJobCount.textContent = '0';
+  matrixQty.textContent = '0';
+  matrixQtyRemaining.textContent = '0';
+  matrixQtyAdditional.textContent = '0';
+  matrixQtyH1.textContent = '0';
+  matrixQtyOvertime.textContent = '0';
+}
+
+// ================= Datepicker & Auto Business Date =================
+function initDatepicker() {
+  fp = flatpickr("#dateInput", {
+    dateFormat: "Y-m-d",
+    allowInput: false,
+    onChange: async (selectedDates, dateStr) => {
+      selectedDate = dateStr;
+      await populateShifts();
+      teamSelect.innerHTML = '<option value="">Team</option>';
+      teamSelect.disabled = true;
+      resetSummaryCards();
+      if (dataTable) dataTable.clear().draw();
+    }
+  });
+}
+
+function resetSummaryCards() {
+  matrixJobCount.textContent = '-';
+  matrixQty.textContent = '-';
+  matrixQtyRemaining.textContent = '-';
+  matrixQtyAdditional.textContent = '-';
+  matrixQtyH1.textContent = '-';
+  matrixQtyOvertime.textContent = '-';
+}
+
+// Set otomatis business date kalau masih jendela NightShift dini hari
+function autoSetBusinessDateIfNightWindow() {
+  const wibNow = nowInWIB();
+  const hour = wibNow.getHours();
+  // Jika dini hari (00–05) kita asumsikan user ingin melihat NightShift business date kemarin.
+  if (hour < 6) {
+    const bDate = getBusinessDateForShift('NightShift', new Date());
+    if (fp) fp.setDate(bDate, true);
+    else {
+      dateInput.value = bDate;
+      selectedDate = bDate;
+      populateShifts();
+    }
+  }
+}
+
+// ================= Events =================
 document.getElementById('refreshBtn').onclick = function() {
   dateInput.value = '';
   selectedDate = null;
@@ -308,58 +325,35 @@ document.getElementById('refreshBtn').onclick = function() {
   shiftSelect.disabled = true;
   teamSelect.innerHTML = '<option value="">Team</option>';
   teamSelect.disabled = true;
-  matrixJobCount.textContent = '-';
-  matrixQty.textContent = '-';
-  matrixQtyRemaining.textContent = '-';
-  matrixQtyAdditional.textContent = '-';
-  matrixQtyH1.textContent = '-';
-  matrixQtyOvertime.textContent = '-';
+  resetSummaryCards();
   notifBox.innerHTML = '';
   if (dataTable) dataTable.clear().draw();
   if (fp) fp.clear();
 };
-// Event binding
-function initDatepicker() {
-  fp = flatpickr("#dateInput", {
-    dateFormat: "Y-m-d",
-    allowInput: false,
-    onChange: async function(selectedDates, dateStr, instance) {
-      selectedDate = dateStr;
-      await populateShifts();
-      teamSelect.innerHTML = '<option value="">Team</option>';
-      teamSelect.disabled = true;
-      matrixJobCount.textContent = '-';
-      matrixQty.textContent = '-';
-      matrixQtyOvertime.textContent = '-';
-      matrixQtyAdditional.textContent = '-';
-      matrixQtyRemaining.textContent = '-';
-      if (dataTable) dataTable.clear().draw();
-    }
-  });
-}
+
 shiftSelect.addEventListener('change', async () => {
+  if (shiftSelect.value === 'NightShift') {
+    const expected = getBusinessDateForShift('NightShift');
+    if (selectedDate !== expected) {
+      selectedDate = expected;
+      if (fp) fp.setDate(expected, true);
+      else {
+        dateInput.value = expected;
+        await populateShifts();
+      }
+    }
+  }
   await populateTeams();
-  matrixJobCount.textContent = '-';
-  matrixQty.textContent = '-';
-  matrixQtyOvertime.textContent = '-';
-  matrixQtyAdditional.textContent = '-';
-  matrixQtyRemaining.textContent = '-';
+  resetSummaryCards();
   if (dataTable) dataTable.clear().draw();
 });
+
 teamSelect.addEventListener('change', async () => {
   await renderTable();
 });
 
-// INIT
-(async function() {
-  const auth = getAuth(app);
-  await signInAnonymously(auth);
-  initDatepicker();
-  populateUserProfileData();
-})();
-
+// ================= Export =================
 document.getElementById('customExportBtn').onclick = function() {
-  // Ambil nilai summary card
   const summary = [
     ['Total Job', ':', matrixJobCount.textContent],
     ['Total Qty', ':', matrixQty.textContent],
@@ -368,19 +362,11 @@ document.getElementById('customExportBtn').onclick = function() {
     ['Qty H-1', ':', matrixQtyH1.textContent],
     ['Qty Overtime', ':', matrixQtyOvertime.textContent]
   ];
-
-  // Title row (merge nanti)
-  const title = [['', '', '', 'Outbound Achievement Report']];
-
-  // Table header (samakan dengan DataTables)
+  const title = [['', '', '', 'Outbound Achievement Report (Business Date Basis)']];
   const tableHeaders = [
-    ['Job No', 'Delivery Date', 'Delivery Note', 'Remark', 'Finish At', 'Job Type', 'Shift', 'Team', 'Team Name', 'Qty']
+    ['Job No', 'Delivery Date', 'Delivery Note', 'Remark', 'Finish At', 'Job Type', 'Shift', 'Team', 'Team Name', 'Created By', 'Business Date', 'Actual Time (WIB)', 'Qty']
   ];
-
-  // Table data (ambil dari DataTables saja supaya pasti urut dan sesuai filter)
-  const tableData = dataTable.rows({search: 'applied'}).data().toArray();
-
-  // Gabungkan semua
+  const tableData = dataTable ? dataTable.rows({search: 'applied'}).data().toArray() : [];
   const wsData = [
     ...summary,
     [],
@@ -389,19 +375,21 @@ document.getElementById('customExportBtn').onclick = function() {
     ...tableHeaders,
     ...tableData
   ];
-
-  // Buat worksheet & workbook
   const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-  // Merge judul
+  // Merge judul (baris ke-8 index 7)
   ws['!merges'] = [
-    {s: {r: 7, c: 3}, e: {r: 7, c: 8}} // merge Outbound Achievement Report (baris ke-8, kolom D sampai I)
+    {s: {r: 7, c: 3}, e: {r: 7, c: 9}}
   ];
-
-  // Buat workbook
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Outbound Report");
-
-  // Export
   XLSX.writeFile(wb, `Outbound_Achievement_Report.xlsx`);
 };
+
+// ================= INIT =================
+(async function init() {
+  const auth = getAuth(app);
+  await signInAnonymously(auth);
+  initDatepicker();
+  populateUserProfileData();
+  autoSetBusinessDateIfNightWindow();
+})();
