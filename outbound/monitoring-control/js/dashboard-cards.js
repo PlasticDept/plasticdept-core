@@ -209,8 +209,6 @@ function setupPICListRealtime() {
   });
 }
 
-
-
 // ========== Outbound Progress Card Functions ==========
 function setupOutboundProgressRealtime() {
   const outboundProgressContent = document.getElementById('outboundProgressContent');
@@ -276,9 +274,14 @@ async function updateOutboundProgressData() {
       return;
     }
     
-      // Calculate actual target for each team (rounded to integer)
-      teams.forEach(team => {
-        const planTarget = planTargets[team] || 0;
+    // Track total plan target and actual values for Assigned Job section
+    let totalPlanTarget = 0;
+    let totalActualTarget = 0;
+    
+    // Calculate actual target for each team (rounded to integer)
+    teams.forEach(team => {
+      const planTarget = planTargets[team] || 0;
+      totalPlanTarget += planTarget; // Add to total
       
       // Calculate actual target - sum qty for jobs assigned to this team and current shift with status "Packed" or "Completed"
       let actualTarget = 0;
@@ -291,8 +294,17 @@ async function updateOutboundProgressData() {
         }
       });
       
+      // Untuk total assigned job, hitung semua job yang di-assign terlepas dari statusnya
+      Object.values(jobs).forEach(job => {
+        if (job.team === team && job.shift === activeShift) {
+          // Convert qty to number and add to total
+          const qty = parseFloat(job.qty) || 0;
+          totalActualTarget += qty;
+        }
+      });
+      
       // Calculate progress percentage
-        const percentage = planTarget > 0 ? Math.round((actualTarget / planTarget) * 100) : 0;
+      const percentage = planTarget > 0 ? Math.round((actualTarget / planTarget) * 100) : 0;
       
       // Create progress item
       const progressItem = document.createElement('div');
@@ -320,6 +332,36 @@ async function updateOutboundProgressData() {
       
       outboundProgressContent.appendChild(progressItem);
     });
+    
+    // Calculate total percentage
+    const totalPercentage = totalPlanTarget > 0 ? Math.round((totalActualTarget / totalPlanTarget) * 100) : 0;
+    
+    
+    // Add new "Assigned Job" section showing totals - dengan styling yang diseragamkan
+    const totalProgressItem = document.createElement('div');
+    totalProgressItem.className = 'progress-item'; // menghapus kelas total-progress untuk menyeragamkan style
+    
+    totalProgressItem.innerHTML = `
+        <div class="progress-header">
+          <div class="team-name">Assigned Job</div>
+          <div class="progress-metrics">
+            <div class="progress-metric">
+              <span class="progress-label">Plan Target:</span>
+              <span class="progress-value">${formatNumber(totalPlanTarget)}</span>
+            </div>
+            <div class="progress-metric">
+              <span class="progress-label">Actual:</span>
+              <span class="progress-value">${formatNumber(totalActualTarget)}</span>
+            </div>
+          </div>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" style="width: ${totalPercentage}%"></div>
+        </div>
+        <div class="progress-percentage">${totalPercentage}% Completed</div>
+    `;
+    
+    outboundProgressContent.appendChild(totalProgressItem);
     
     // Add last updated indicator
     const lastUpdated = document.createElement('div');
@@ -461,7 +503,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.addEventListener('beforeunload', cleanupListeners);
 });
 
-// Add this CSS to show the last updated timestamp
+// Simplified CSS untuk memastikan tampilan seragam
 const style = document.createElement('style');
 style.textContent = `
   .last-updated {
@@ -472,6 +514,12 @@ style.textContent = `
     margin-top: 10px;
     padding-top: 5px;
     border-top: 1px dashed #eee;
+  }
+  
+  .progress-separator {
+    margin: 15px 0;
+    border: 0;
+    border-top: 1px dashed #ccc;
   }
 `;
 document.head.appendChild(style);

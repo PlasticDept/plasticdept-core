@@ -9,7 +9,6 @@ let miniDonutRegulerChart;
 // --- DOM Elements (dashboard matrix) ---
 const outstandingJobValue = document.getElementById("outstandingJobValue");
 const planTargetValue = document.getElementById("planTargetValue");
-const actualTargetValue = document.getElementById("actualTargetValue");
 const actualAchievedValue = document.getElementById("actualAchievedValue");
 const actualRemainingValue = document.getElementById("actualRemainingValue");
 
@@ -229,7 +228,6 @@ async function loadDashboardData() {
 
   // --- Isi Matrix Dashboard ---
   if (planTargetValue) planTargetValue.textContent = formatNumber(totalPlanTarget) + " kg";
-  if (actualTargetValue) actualTargetValue.textContent = formatNumber(totalActual) + " kg";
   if (actualAchievedValue) actualAchievedValue.textContent = formatNumber(totalAchieved) + " kg";
   if (actualRemainingValue) actualRemainingValue.textContent = formatNumber(totalRemaining) + " kg";
 
