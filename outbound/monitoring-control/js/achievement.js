@@ -38,6 +38,8 @@ const matrixQtyOvertime = document.getElementById('matrixQtyOvertime');
 let selectedDate = null;
 let dataTable = null;
 let flatpickrInstance = null;
+let availableShifts = [];
+let availableTeams = {};
 
 // ==================== FUNGSI UTILITAS ====================
 function showNotif(type, message) {
@@ -119,10 +121,12 @@ async function loadShifts() {
     
     const data = snapshot.val();
     const shifts = Object.keys(data);
+    availableShifts = shifts; // Store available shifts
     console.log(`Shift yang tersedia: ${shifts.join(', ')}`);
     
-    // Populate shift dropdown
+    // Populate shift dropdown with All Shift option
     shiftSelect.innerHTML = '<option value="">Pilih shift</option>';
+    shiftSelect.innerHTML += '<option value="AllShift">All Shift</option>';
     shifts.forEach(shift => {
       shiftSelect.innerHTML += `<option value="${shift}">${shift.replace(/Shift$/, ' Shift')}</option>`;
     });
@@ -141,31 +145,76 @@ async function loadTeams() {
   if (!selectedDate || !shiftSelect.value) return false;
   
   try {
-    const path = buildDatabasePath(selectedDate, shiftSelect.value);
-    console.log(`Loading teams dari path: ${path}`);
+    // Reset teams map
+    availableTeams = {};
     
-    const dataRef = ref(db, path);
-    const snapshot = await get(dataRef);
-    
-    if (!snapshot.exists()) {
-      console.log(`Tidak ada team untuk shift ${shiftSelect.value}`);
-      showNotif('error', 'Tidak ada team untuk shift ini.');
-      return false;
+    if (shiftSelect.value === "AllShift") {
+      // Load teams for all shifts
+      for (const shift of availableShifts) {
+        const path = buildDatabasePath(selectedDate, shift);
+        console.log(`Loading teams untuk shift ${shift} dari path: ${path}`);
+        
+        const dataRef = ref(db, path);
+        const snapshot = await get(dataRef);
+        
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const teams = Object.keys(data);
+          availableTeams[shift] = teams;
+          console.log(`Teams untuk ${shift}: ${teams.join(', ')}`);
+        }
+      }
+      
+      // If no teams found
+      if (Object.keys(availableTeams).length === 0) {
+        showNotif('error', 'Tidak ada team untuk semua shift.');
+        return false;
+      }
+      
+      // Populate team dropdown with All Team option
+      teamSelect.innerHTML = '<option value="">Pilih team</option>';
+      teamSelect.innerHTML += '<option value="AllTeam">All Team</option>';
+      
+      // Add individual teams from all shifts
+      for (const shift in availableTeams) {
+        for (const team of availableTeams[shift]) {
+          teamSelect.innerHTML += `<option value="${team}-${shift}">${team} (${shift})</option>`;
+        }
+      }
+      
+      teamSelect.disabled = false;
+      showNotif('success', 'Data team untuk semua shift ditemukan.');
+      return true;
+    } else {
+      // Regular loading for specific shift
+      const path = buildDatabasePath(selectedDate, shiftSelect.value);
+      console.log(`Loading teams dari path: ${path}`);
+      
+      const dataRef = ref(db, path);
+      const snapshot = await get(dataRef);
+      
+      if (!snapshot.exists()) {
+        console.log(`Tidak ada team untuk shift ${shiftSelect.value}`);
+        showNotif('error', 'Tidak ada team untuk shift ini.');
+        return false;
+      }
+      
+      const data = snapshot.val();
+      const teams = Object.keys(data);
+      availableTeams[shiftSelect.value] = teams;
+      console.log(`Teams yang tersedia: ${teams.join(', ')}`);
+      
+      // Populate team dropdown with All Team option
+      teamSelect.innerHTML = '<option value="">Pilih team</option>';
+      teamSelect.innerHTML += '<option value="AllTeam">All Team</option>';
+      teams.forEach(team => {
+        teamSelect.innerHTML += `<option value="${team}">${team}</option>`;
+      });
+      teamSelect.disabled = false;
+      
+      showNotif('success', 'Data team ditemukan.');
+      return true;
     }
-    
-    const data = snapshot.val();
-    const teams = Object.keys(data);
-    console.log(`Teams yang tersedia: ${teams.join(', ')}`);
-    
-    // Populate team dropdown
-    teamSelect.innerHTML = '<option value="">Pilih team</option>';
-    teams.forEach(team => {
-      teamSelect.innerHTML += `<option value="${team}">${team}</option>`;
-    });
-    teamSelect.disabled = false;
-    
-    showNotif('success', 'Data team ditemukan.');
-    return true;
   } catch (error) {
     console.error('Error loading teams:', error);
     showNotif('error', `Gagal memuat data team: ${error.message}`);
@@ -180,45 +229,166 @@ async function loadJobData() {
   }
   
   try {
-    const path = buildDatabasePath(selectedDate, shiftSelect.value, teamSelect.value);
-    console.log(`Loading job data dari path: ${path}`);
+    let allJobs = [];
     
-    const dataRef = ref(db, path);
-    const snapshot = await get(dataRef);
-    
-    if (!snapshot.exists()) {
-      console.log('Tidak ada data job yang ditemukan');
-      showNotif('error', 'Tidak ada data job yang ditemukan.');
-      resetSummaryToZero();
-      clearTable();
-      return false;
+    // Case 1: All Shift and All Team
+    if (shiftSelect.value === "AllShift" && teamSelect.value === "AllTeam") {
+      console.log("Loading all jobs for all shifts and all teams");
+      showNotif('info', 'Memuat semua data job...');
+      
+      for (const shift in availableTeams) {
+        for (const team of availableTeams[shift]) {
+          const path = buildDatabasePath(selectedDate, shift, team);
+          console.log(`Loading dari path: ${path}`);
+          
+          const dataRef = ref(db, path);
+          const snapshot = await get(dataRef);
+          
+          if (snapshot.exists()) {
+            const rawData = snapshot.val();
+            let jobsData = [];
+            
+            // Process the data like before
+            if (typeof rawData === 'object' && !Array.isArray(rawData)) {
+              Object.keys(rawData).forEach(jobId => {
+                const job = rawData[jobId];
+                
+                // Add job metadata
+                if (!job.jobNo && jobId.includes('-')) {
+                  job.jobNo = jobId;
+                }
+                if (!job.shift) job.shift = shift;
+                if (!job.team) job.team = team;
+                
+                jobsData.push(job);
+              });
+            } else if (Array.isArray(rawData)) {
+              jobsData = rawData.filter(job => job !== null).map(job => {
+                if (!job.shift) job.shift = shift;
+                if (!job.team) job.team = team;
+                return job;
+              });
+            }
+            
+            allJobs = allJobs.concat(jobsData);
+          }
+        }
+      }
     }
-    
-    // Proses data job
-    const rawData = snapshot.val();
-    let jobs = [];
-    
-    // Cek apakah data adalah object dengan job-job di dalamnya
-    if (typeof rawData === 'object' && !Array.isArray(rawData)) {
-      // Iterasi tiap job (key adalah job ID)
-      Object.keys(rawData).forEach(jobId => {
-        const job = rawData[jobId];
+    // Case 2: Specific Shift and All Team
+    else if (shiftSelect.value !== "AllShift" && teamSelect.value === "AllTeam") {
+      console.log(`Loading all jobs for ${shiftSelect.value} and all teams`);
+      
+      const teams = availableTeams[shiftSelect.value] || [];
+      for (const team of teams) {
+        const path = buildDatabasePath(selectedDate, shiftSelect.value, team);
+        console.log(`Loading dari path: ${path}`);
         
-        // Tambahkan jobId jika tidak ada
-        if (!job.jobNo && jobId.includes('-')) {
-          job.jobNo = jobId;
+        const dataRef = ref(db, path);
+        const snapshot = await get(dataRef);
+        
+        if (snapshot.exists()) {
+          const rawData = snapshot.val();
+          let jobsData = [];
+          
+          if (typeof rawData === 'object' && !Array.isArray(rawData)) {
+            Object.keys(rawData).forEach(jobId => {
+              const job = rawData[jobId];
+              
+              if (!job.jobNo && jobId.includes('-')) {
+                job.jobNo = jobId;
+              }
+              if (!job.shift) job.shift = shiftSelect.value;
+              if (!job.team) job.team = team;
+              
+              jobsData.push(job);
+            });
+          } else if (Array.isArray(rawData)) {
+            jobsData = rawData.filter(job => job !== null).map(job => {
+              if (!job.shift) job.shift = shiftSelect.value;
+              if (!job.team) job.team = team;
+              return job;
+            });
+          }
+          
+          allJobs = allJobs.concat(jobsData);
+        }
+      }
+    }
+    // Case 3: All Shift and Specific Team (format: "team-shift")
+    else if (shiftSelect.value === "AllShift" && teamSelect.value.includes('-')) {
+      const [team, shift] = teamSelect.value.split('-');
+      
+      const path = buildDatabasePath(selectedDate, shift, team);
+      console.log(`Loading specific team from all shifts: ${path}`);
+      
+      const dataRef = ref(db, path);
+      const snapshot = await get(dataRef);
+      
+      if (snapshot.exists()) {
+        const rawData = snapshot.val();
+        let jobsData = [];
+        
+        if (typeof rawData === 'object' && !Array.isArray(rawData)) {
+          Object.keys(rawData).forEach(jobId => {
+            const job = rawData[jobId];
+            
+            if (!job.jobNo && jobId.includes('-')) {
+              job.jobNo = jobId;
+            }
+            if (!job.shift) job.shift = shift;
+            if (!job.team) job.team = team;
+            
+            jobsData.push(job);
+          });
+        } else if (Array.isArray(rawData)) {
+          jobsData = rawData.filter(job => job !== null).map(job => {
+            if (!job.shift) job.shift = shift;
+            if (!job.team) job.team = team;
+            return job;
+          });
         }
         
-        jobs.push(job);
-      });
-    } else if (Array.isArray(rawData)) {
-      // Jika data adalah array, gunakan langsung
-      jobs = rawData.filter(job => job !== null);
+        allJobs = jobsData;
+      }
+    }
+    // Case 4: Normal - Specific Shift and Specific Team
+    else {
+      const path = buildDatabasePath(selectedDate, shiftSelect.value, teamSelect.value);
+      console.log(`Loading job data dari path: ${path}`);
+      
+      const dataRef = ref(db, path);
+      const snapshot = await get(dataRef);
+      
+      if (snapshot.exists()) {
+        // Proses data job
+        const rawData = snapshot.val();
+        
+        if (typeof rawData === 'object' && !Array.isArray(rawData)) {
+          Object.keys(rawData).forEach(jobId => {
+            const job = rawData[jobId];
+            
+            if (!job.jobNo && jobId.includes('-')) {
+              job.jobNo = jobId;
+            }
+            if (!job.shift) job.shift = shiftSelect.value;
+            if (!job.team) job.team = teamSelect.value;
+            
+            allJobs.push(job);
+          });
+        } else if (Array.isArray(rawData)) {
+          allJobs = rawData.filter(job => job !== null).map(job => {
+            if (!job.shift) job.shift = shiftSelect.value;
+            if (!job.team) job.team = teamSelect.value;
+            return job;
+          });
+        }
+      }
     }
     
-    console.log(`Ditemukan ${jobs.length} job`);
+    console.log(`Ditemukan ${allJobs.length} job`);
     
-    if (jobs.length === 0) {
+    if (allJobs.length === 0) {
       showNotif('warning', 'Tidak ada job untuk ditampilkan.');
       resetSummaryToZero();
       clearTable();
@@ -226,8 +396,8 @@ async function loadJobData() {
     }
     
     // Update tabel dengan data job
-    updateDataTable(jobs);
-    showNotif('success', `Berhasil memuat ${jobs.length} job.`);
+    updateDataTable(allJobs);
+    showNotif('success', `Berhasil memuat ${allJobs.length} job.`);
     return true;
   } catch (error) {
     console.error('Error loading job data:', error);
@@ -397,7 +567,21 @@ function exportToExcel() {
     ['Qty Overtime', ':', matrixQtyOvertime.textContent]
   ];
   
-  const title = [['', '', '', 'Outbound Achievement Report (Business Date Basis)']];
+  // Build report title based on selections
+  let reportTitle = 'Outbound Achievement Report (Business Date Basis)';
+  if (selectedDate) {
+    reportTitle += ` - Date: ${selectedDate}`;
+  }
+  if (shiftSelect.value) {
+    reportTitle += ` - Shift: ${shiftSelect.value === 'AllShift' ? 'All Shifts' : shiftSelect.value}`;
+  }
+  if (teamSelect.value && teamSelect.value !== 'AllTeam') {
+    reportTitle += ` - Team: ${teamSelect.value}`;
+  } else if (teamSelect.value === 'AllTeam') {
+    reportTitle += ` - Team: All Teams`;
+  }
+  
+  const title = [['', '', '', reportTitle]];
   
   const tableHeaders = [
     ['Job No', 'Delivery Date', 'Delivery Note', 'Remark', 'Finish At', 'Job Type', 'Shift', 'Team', 'Team Name', 'Created By', 'Business Date', 'Actual Time (WIB)', 'Qty']
@@ -412,10 +596,17 @@ function exportToExcel() {
   // Merge cell untuk judul
   ws['!merges'] = [{s: {r: 7, c: 3}, e: {r: 7, c: 9}}];
   
+  // Generate filename based on selections
+  let filename = 'Outbound_Achievement_Report';
+  if (selectedDate) filename += `_${selectedDate}`;
+  if (shiftSelect.value && shiftSelect.value !== 'AllShift') filename += `_${shiftSelect.value}`;
+  if (teamSelect.value && teamSelect.value !== 'AllTeam') filename += `_${teamSelect.value}`;
+  filename += '.xlsx';
+  
   // Buat workbook dan export
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Outbound Report");
-  XLSX.writeFile(wb, `Outbound_Achievement_Report.xlsx`);
+  XLSX.writeFile(wb, filename);
 }
 
 // ==================== INISIALISASI & EVENT HANDLERS ====================
