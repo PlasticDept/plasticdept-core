@@ -125,7 +125,7 @@ async function loadShifts() {
     console.log(`Shift yang tersedia: ${shifts.join(', ')}`);
     
     // Populate shift dropdown with All Shift option
-    shiftSelect.innerHTML = '<option value="">Pilih shift</option>';
+    shiftSelect.innerHTML = '<option value="">Select shift</option>';
     shiftSelect.innerHTML += '<option value="AllShift">All Shift</option>';
     shifts.forEach(shift => {
       shiftSelect.innerHTML += `<option value="${shift}">${shift.replace(/Shift$/, ' Shift')}</option>`;
@@ -172,13 +172,13 @@ async function loadTeams() {
       }
       
       // Populate team dropdown with All Team option
-      teamSelect.innerHTML = '<option value="">Pilih team</option>';
+      teamSelect.innerHTML = '<option value="">select team</option>';
       teamSelect.innerHTML += '<option value="AllTeam">All Team</option>';
       
       // Add individual teams from all shifts
       for (const shift in availableTeams) {
         for (const team of availableTeams[shift]) {
-          teamSelect.innerHTML += `<option value="${team}-${shift}">${team} (${shift})</option>`;
+          teamSelect.innerHTML += `<option value="${team}-${shift}">${team}</option>`;
         }
       }
       
@@ -205,7 +205,7 @@ async function loadTeams() {
       console.log(`Teams yang tersedia: ${teams.join(', ')}`);
       
       // Populate team dropdown with All Team option
-      teamSelect.innerHTML = '<option value="">Pilih team</option>';
+      teamSelect.innerHTML = '<option value="">Select team</option>';
       teamSelect.innerHTML += '<option value="AllTeam">All Team</option>';
       teams.forEach(team => {
         teamSelect.innerHTML += `<option value="${team}">${team}</option>`;
@@ -619,9 +619,9 @@ function initializeDatePicker() {
       selectedDate = dateStr;
       
       // Reset UI
-      shiftSelect.innerHTML = '<option value="">Pilih shift</option>';
+      shiftSelect.innerHTML = '<option value="">Select shift</option>';
       shiftSelect.disabled = true;
-      teamSelect.innerHTML = '<option value="">Team</option>';
+      teamSelect.innerHTML = '<option value="">Select team</option>';
       teamSelect.disabled = true;
       resetSummaryCards();
       clearTable();
@@ -661,7 +661,7 @@ function initializeEventListeners() {
     if (flatpickrInstance) flatpickrInstance.clear();
     selectedDate = null;
     dateInput.value = '';
-    shiftSelect.innerHTML = '<option value="">Pilih shift</option>';
+    shiftSelect.innerHTML = '<option value="">Select shift</option>';
     shiftSelect.disabled = true;
     teamSelect.innerHTML = '<option value="">Team</option>';
     teamSelect.disabled = true;
@@ -692,36 +692,6 @@ function autoSetBusinessDateIfNightWindow() {
     }
   }
 }
-
-// ==================== DEBUGGING TOOLS ====================
-// Fungsi untuk membantu debug struktur database
-window.inspectDatabasePath = async function(path) {
-  console.group(`Inspeksi path: ${path}`);
-  try {
-    const dataRef = ref(db, path);
-    const snapshot = await get(dataRef);
-    
-    if (snapshot.exists()) {
-      console.log('✓ Data ditemukan');
-      const data = snapshot.val();
-      
-      console.log('Data:', data);
-      if (typeof data === 'object') {
-        console.log('Keys:', Object.keys(data));
-      }
-      
-      return data;
-    } else {
-      console.log('✗ Tidak ada data di path ini');
-      return null;
-    }
-  } catch (error) {
-    console.error('Error inspecting path:', error);
-    return null;
-  } finally {
-    console.groupEnd();
-  }
-};
 
 // Fungsi untuk membantu debug seluruh hierarki data tanggal tertentu
 window.inspectDate = async function(dateStr) {
