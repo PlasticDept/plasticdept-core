@@ -125,6 +125,12 @@ document.getElementById("loginForm").addEventListener("submit", async function(e
     if (!userSnap.exists()) throw new Error("User ID tidak ditemukan!");
 
     const user = userSnap.val();
+    
+    // Periksa status user - KODE BARU
+    if (user.status === 'inactive') {
+      throw new Error("Akun Anda telah dinonaktifkan. Silakan hubungi administrator.");
+    }
+    
     if (String(user.Password) !== String(password)) throw new Error("Password salah!");
 
     // Simpan info ke localStorage/sessionStorage
@@ -135,6 +141,15 @@ document.getElementById("loginForm").addEventListener("submit", async function(e
     localStorage.setItem("pic", user.Name || username);
     localStorage.setItem("team", user.Shift || "");
     sessionStorage.setItem("userId", username);
+
+    // Update last login - KODE BARU
+    try {
+      const lastLoginRef = ref(db, `users/${username}/lastLogin`);
+      await set(lastLoginRef, new Date().toISOString());
+    } catch (updateErr) {
+      console.error("Gagal update lastLogin:", updateErr);
+      // Tidak menghentikan proses login jika update lastLogin gagal
+    }
 
     // Jika Operator
     if ((user.Position || "").toLowerCase().includes("operator")) {
