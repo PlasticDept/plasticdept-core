@@ -874,24 +874,7 @@ button.success:hover {
   padding: 0 10px;
   box-sizing: border-box;
 }
-#setMpOvertimeBtn {
-  height: 40px;
-  min-width: 125px;
-  padding: 0 18px;
-  font-size: 1rem;
-  border-radius: 6px;
-  font-weight: 600;
-  background: #2176ae;
-  color: #fff;
-  border: none;
-  transition: background 0.18s;
-  box-shadow: 0 1px 5px rgba(33,118,174,0.10);
-  cursor: pointer;
-  white-space: nowrap;
-}
-#setMpOvertimeBtn:hover {
-  background: #185a89;
-}
+
 
 /* OVERRIDE: Agar header tabel MP PIC tidak sticky/ikut scroll */
 .mp-pic-list-table thead th {
