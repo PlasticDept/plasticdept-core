@@ -151,10 +151,13 @@ body {
 }
 
 .report-table th {
-  background: #f8f9fa;
-  color: #5f6368;
+  background: #2176ae; /* Mengubah warna background menjadi #2176ae seperti diminta */
+  color: #ffffff; /* Mengubah warna text menjadi putih untuk kontras yang lebih baik */
   font-weight: 600;
   white-space: nowrap;
+  padding: 12px 15px;
+  text-align: center;
+  border-bottom: 1px solid #1a5e8a;
 }
 
 .report-table th:first-child,
@@ -249,3 +252,4 @@ body {
     font-size: 0.8rem;
   }
 }
+
