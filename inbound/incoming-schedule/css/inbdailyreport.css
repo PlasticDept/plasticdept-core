@@ -1,34 +1,34 @@
-/* Variables - Dengan skema warna yang diperbarui */
+/* Variables - Updated to match report.css color scheme */
 :root {
-    --primary-color: #3f51b5; /* Warna utama yang lebih modern */
-    --primary-hover: #303f9f;
+    --primary-color: #1a73e8; /* Changed to match report.css blue */
+    --primary-hover: #1765cc;
     --secondary-color: #f8f9fa;
     --secondary-hover: #e8eaed;
-    --success-color: #4caf50;
-    --danger-color: #f44336;
-    --warning-color: #ff9800;
-    --info-color: #2196f3;
+    --success-color: #34a853; /* Google green */
+    --danger-color: #ea4335; /* Google red */
+    --warning-color: #fbbc05; /* Google yellow */
+    --info-color: #4285f4; /* Google blue */
     --light-color: #ffffff;
     --dark-color: #202124;
     --text-color: #3c4043;
     --text-secondary: #5f6368;
     --text-light: #ffffff;
-    --background-color: #f1f3f4;
-    --border-color: #dadce0;
+    --background-color: #f8f9fa;
+    --border-color: #e0e6ed;
     --card-background: #ffffff;
     --shadow-color: rgba(0, 0, 0, 0.1);
     --shadow-light: rgba(0, 0, 0, 0.05);
     
-    --table-header-bg: #3f51b5; /* Warna header tabel yang lebih kuat */
+    --table-header-bg: #2176ae; /* Changed to match report.css */
     --table-header-text: #ffffff;
-    --card-header-bg: #3f51b5; /* Warna header kartu yang selaras */
+    --card-header-bg: #2176ae; /* Changed to match report.css */
     --card-header-text: #ffffff;
     
-    /* Warna untuk dashboard summary */
+    /* Colors for dashboard summary - Using Google colors */
     --inbound-color: #4285f4;
-    --qty-color: #0f9d58;
-    --uid-color: #f4b400;
-    --owner-color: #db4437;
+    --qty-color: #34a853;
+    --uid-color: #fbbc05;
+    --owner-color: #ea4335;
     
     --radius-sm: 4px;
     --radius-md: 8px;
@@ -126,7 +126,7 @@ p {
 }
 
 .header-container {
-    max-width: 1440px;
+    max-width: 85%;
     margin: 0 auto;
     padding: var(--spacing-md);
     display: flex;
@@ -200,14 +200,14 @@ p {
 
 /* Main Content */
 main {
-    max-width: 1440px;
+    max-width: 85%;
     margin: 0 auto;
     padding: var(--spacing-xl);
     flex-grow: 1;
     width: 100%;
 }
 
-/* Dashboard Summary Cards - Dengan warna yang lebih mencolok */
+/* Dashboard Summary Cards - Updated to match report.css style */
 .dashboard-summary {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -225,6 +225,7 @@ main {
     transition: transform var(--transition-fast), box-shadow var(--transition-fast);
     overflow: hidden;
     position: relative;
+    min-height: 100px;
 }
 
 .summary-card:hover {
@@ -232,13 +233,14 @@ main {
     box-shadow: 0 6px 12px var(--shadow-light);
 }
 
+/* Adding colored top indicators like in report.css */
 .summary-card::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
-    width: 4px;
-    height: 100%;
+    right: 0;
+    height: 4px;
 }
 
 .total-inbound::before {
@@ -274,17 +276,17 @@ main {
 }
 
 .total-qty .summary-icon {
-    background-color: rgba(15, 157, 88, 0.15);
+    background-color: rgba(52, 168, 83, 0.15);
     color: var(--qty-color);
 }
 
 .total-uid .summary-icon {
-    background-color: rgba(244, 180, 0, 0.15);
+    background-color: rgba(251, 188, 5, 0.15);
     color: var(--uid-color);
 }
 
 .total-owner .summary-icon {
-    background-color: rgba(219, 68, 55, 0.15);
+    background-color: rgba(234, 67, 53, 0.15);
     color: var(--owner-color);
 }
 
@@ -346,7 +348,7 @@ main {
     padding: var(--spacing-lg);
 }
 
-/* Button Styles */
+/* Button Styles - Updated to match report.css */
 .btn {
     padding: var(--spacing-md) var(--spacing-lg);
     border: none;
@@ -380,7 +382,7 @@ main {
 }
 
 .btn-primary:disabled {
-    background-color: rgba(63, 81, 181, 0.5);
+    background-color: rgba(26, 115, 232, 0.5);
     cursor: not-allowed;
     box-shadow: none;
 }
@@ -503,7 +505,7 @@ main {
 #searchInput:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(63, 81, 181, 0.2);
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
     width: 280px;
 }
 
@@ -521,7 +523,7 @@ main {
     align-items: center;
 }
 
-/* Table Styles - Dengan header yang lebih berwarna */
+/* Table Styles - Updated to match report.css */
 .table-responsive {
     overflow-x: auto;
     margin-bottom: var(--spacing-md);
@@ -532,18 +534,19 @@ table {
     width: 100%;
     border-collapse: collapse;
     font-size: var(--font-size-sm);
+    border-spacing: 0;
 }
 
 th, td {
     padding: var(--spacing-md);
     text-align: left;
+    border-bottom: 1px solid var(--border-color);
 }
 
 table td:nth-child(5), 
 table td:nth-child(6) {
     text-align: left;
 }
-
 
 th {
     background-color: var(--table-header-bg);
@@ -557,7 +560,7 @@ th {
 }
 
 th:hover {
-    background-color: var(--primary-hover);
+    background-color: #1a5e8a; /* Darker blue on hover, matching report.css */
 }
 
 th i {
@@ -572,7 +575,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-    background-color: rgba(63, 81, 181, 0.04);
+    background-color: rgba(26, 115, 232, 0.04);
 }
 
 .table-footer {
@@ -865,7 +868,7 @@ tbody tr:hover {
 
 .date-option.active {
     border-color: var(--primary-color);
-    background-color: rgba(63, 81, 181, 0.05);
+    background-color: rgba(26, 115, 232, 0.05);
 }
 
 .date-option i {
@@ -1084,166 +1087,55 @@ footer {
     }
 }
 
-
-/* Tambahkan kode berikut di bagian akhir file CSS Anda, setelah media queries yang ada */
-
-/* Override untuk tampilan mobile */
+/* Override for mobile screens - Kept from original while improving layout */
 @media screen and (max-width: 768px) {
-    /* Mempertahankan layout dashboard dengan 4 card dalam satu baris */
+    /* Improved layout for dashboard summary cards */
     .dashboard-summary {
-        display: flex;
-        flex-wrap: wrap;
-        grid-template-columns: repeat(4, 1fr);
-        gap: var(--spacing-xs);
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-md);
     }
     
     .summary-card {
-        flex: 0 0 calc(25% - var(--spacing-xs));
-        padding: var(--spacing-xs);
-        min-width: 80px;
+        padding: var(--spacing-md);
+    }
+}
+
+/* Extra small screens */
+@media screen and (max-width: 480px) {
+    .dashboard-summary {
+        grid-template-columns: 1fr;
+    }
+    
+    .summary-card {
+        flex-direction: row;
+        align-items: center;
+        padding: var(--spacing-sm);
+    }
+    
+    /* Improved accessibility for small screens */
+    .summary-content h3 {
+        font-size: 12px;
+    }
+    
+    .summary-content p {
+        font-size: var(--font-size-md);
     }
     
     .summary-icon {
         width: 36px;
         height: 36px;
         font-size: var(--font-size-md);
-        margin-right: var(--spacing-xs);
     }
     
-    .summary-content h3 {
-        font-size: calc(var(--font-size-xs) - 1px);
-        white-space: nowrap;
-    }
-    
-    .summary-content p {
-        font-size: var(--font-size-md);
-    }
-    
-    /* Menyusun tombol action secara horizontal di bawah search */
-    .card-header {
-        flex-direction: column;
-        padding: var(--spacing-sm);
-    }
-    
-    .card-actions {
-        width: 100%;
-        justify-content: space-between;
-        flex-wrap: nowrap;
-    }
-    
-    .actions-group {
-        width: 100%;
-        justify-content: flex-end;
-    }
-    
+    /* Improved button layout */
     .btn {
-        padding: var(--spacing-xs) var(--spacing-sm);
-        font-size: calc(var(--font-size-xs) + 1px);
+        padding: 8px 12px;
+        font-size: 13px;
     }
     
-    /* Mengatur search bar */
-    .search-container {
-        width: 100%;
-        margin-bottom: var(--spacing-sm);
-    }
-    
-    #searchInput {
-        width: 100%;
-    }
-    
-    /* Tabel lebih compact */
-    th, td {
-        padding: var(--spacing-sm);
-        white-space: nowrap;
-    }
-    
-    /* Override footer tabel untuk tetap dalam satu baris */
-    .table-footer {
-        flex-direction: row;
-        font-size: var(--font-size-xs);
-    }
-    
-    /* Memastikan konten utama memiliki padding yang konsisten */
-    main {
-        padding: var(--spacing-sm);
-    }
-    
-    /* Membuat header tabel tetap terlihat bagus */
-    .card-body {
-        padding: var(--spacing-sm);
-        overflow-x: auto;
-    }
-    
-    /* Fix untuk pagination */
-    .pagination {
-        flex-shrink: 0;
-    }
-    
-    /* Membuat tampilan modal lebih baik di mobile */
-    .modal-content {
-        max-width: 95%;
-        width: 95%;
-    }
-    
-    /* Membuat form dalam modal lebih baik pada mobile */
-    .date-filter-options {
-        gap: var(--spacing-sm);
-    }
-    
-    .date-option {
-        padding: var(--spacing-sm);
-    }
-    
-    /* Memastikan header tidak terlalu besar pada mobile */
-    .header-container {
-        padding: var(--spacing-sm);
-        flex-direction: row;
-    }
-    
-    /* Mengurangi margin bawah dari dashboard summary */
-    .dashboard-summary {
-        margin-bottom: var(--spacing-md);
-    }
-}
-
-/* Tambahkan override khusus untuk layar sangat kecil */
-@media screen and (max-width: 480px) {
-    /* Menjaga layout 4 kartu, namun dengan penyesuaian lebih compact */
-    .dashboard-summary {
-        gap: var(--spacing-xxs);
-    }
-    
-    .summary-card {
-        flex: 0 0 calc(25% - var(--spacing-xxs));
-        padding: var(--spacing-xs) var(--spacing-xxs);
-    }
-    
-    /* Menyesuaikan ukuran font dan spacing */
-    .summary-content h3 {
-        font-size: 9px;
-        margin-bottom: 0;
-    }
-    
-    .summary-content p {
-        font-size: var(--font-size-sm);
-    }
-    
-    .summary-icon {
-        width: 28px;
-        height: 28px;
-        font-size: var(--font-size-sm);
-        margin-right: var(--spacing-xxs);
-    }
-    
-    /* Menyesuaikan tombol aksi */
     .btn i {
-        margin-right: 2px;
-    }
-    
-    /* Memastikan tombol pagination tidak terlalu besar */
-    .pagination .btn {
-        padding: 2px 4px;
-        min-width: 24px;
+        margin-right: 4px;
     }
 }
 
@@ -1355,7 +1247,7 @@ footer {
 }
 
 .day.today {
-    background-color: rgba(63, 81, 181, 0.2);
+    background-color: rgba(26, 115, 232, 0.2);
     font-weight: var(--font-weight-bold);
     border: 1px solid var(--primary-color);
 }
