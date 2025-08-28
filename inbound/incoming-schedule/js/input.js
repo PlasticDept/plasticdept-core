@@ -123,7 +123,8 @@ function getContainerType(row) {
 
 function renderRowArray(row, index, id) {
   const feet = row["FEET"] || row["Feet"] || "";
-  const containerNo = row["NO CONTAINER"] || row["No Container"] || row["Container No"] || "";
+  // PATCH: gunakan normalizeContainerNo untuk tampilan
+  const containerNo = normalizeContainerNo(row["NO CONTAINER"] || row["No Container"] || row["Container No"] || "");
   const invoiceNo = row["INVOICE NO"] || row["Invoice No"] || "";
   const packageVal = row["PACKAGE"] || row["Package"] || "";
   const incomingPlan = row["INCOMING PLAN"] || row["Incoming Plan"] || row["Incoming Date"] || "";
@@ -154,7 +155,7 @@ function renderRowArray(row, index, id) {
     `<span contenteditable class="editable time-in">${timeIn}</span>`,
     `<span contenteditable class="editable unloading-time">${unloadingTime}</span>`,
     `<span contenteditable class="editable finish">${finish}</span>`,
-    noteBtn // <--- ini kolom note baru!
+    noteBtn
   ];
 }
 
@@ -201,11 +202,28 @@ function deleteAllFirebaseRecords() {
   return remove(dbRef);
 }
 
+function normalizeContainerNo(containerNo) {
+  if (!containerNo) return "";
+  // Hilangkan spasi, pastikan string
+  containerNo = String(containerNo).trim().replace(/\s+/g, "");
+  // Jika sudah ada strip di posisi ke-5, kembalikan saja
+  if (/^[A-Z]{4}-\d{7}$/.test(containerNo)) return containerNo;
+  // Jika format 4 huruf + 7 angka, tambahkan strip setelah 4 huruf
+  if (/^[A-Z]{4}\d{7}$/.test(containerNo)) {
+    return containerNo.slice(0, 4) + '-' + containerNo.slice(4);
+  }
+  return containerNo;
+}
+
+// --- PATCH: Normalisasi NO CONTAINER pada upload daily ---
 function uploadToFirebase(records) {
   const updates = {};
   records.forEach((row, index) => {
-    const id = (row["NO CONTAINER"] || row["No Container"] || row["Container No"] || `id_${Date.now()}_${index}`).toString().replace(/\./g, "_");
-    updates[id] = row;
+    let rawContainerNo = row["NO CONTAINER"] || row["No Container"] || row["Container No"] || `id_${Date.now()}_${index}`;
+    // PATCH: Normalisasi format
+    let containerNo = normalizeContainerNo(rawContainerNo);
+    row["NO CONTAINER"] = containerNo; // PATCH: update row value
+    updates[containerNo.toString().replace(/\./g, "_")] = row;
   });
   const dbRef = ref(db, "incoming_schedule");
   return update(dbRef, updates);
@@ -293,24 +311,22 @@ function uploadMonthlyToFirebase(records) {
   const updates = {};
 
   records.forEach((row, index) => {
-    // Lewatkan baris yang semua field-nya kosong
     if (
       (!row["Date"] && !row["Container Number"] && !row["Process Type"] && !row["Feet"]) ||
       Object.values(row).every(val => (val ?? "").toString().trim() === "")
     ) return;
 
-    // Flexible field name
     let dateStr = row["Date"] || row["DATE"] || row["Tanggal"] || row["tanggal"] || "";
-    let containerNo = row["Container Number"] || row["CONTAINER NUMBER"] || row["Container No"] || row["No Container"] || row["NO CONTAINER"] || `id_${Date.now()}_${index}`;
-    containerNo = String(containerNo).trim().replace(/[.#$/\[\]\s]/g, "_"); // <-- PATCH HERE
+    let rawContainerNo = row["Container Number"] || row["CONTAINER NUMBER"] || row["Container No"] || row["No Container"] || row["NO CONTAINER"] || `id_${Date.now()}_${index}`;
+    // PATCH: Normalisasi format
+    let containerNo = normalizeContainerNo(rawContainerNo);
+    containerNo = String(containerNo).trim().replace(/[.#$/\[\]\s]/g, "_");
     let processType = row["Process Type"] || row["PROCESS TYPE"] || row["Process"] || "";
     let feet = row["Feet"] || row["FEET"] || "";
-    let biz = row["Biz"] || row["BIZ"] || ""; // Menambahkan field Biz
+    let biz = row["Biz"] || row["BIZ"] || "";
 
-    // Handle Excel serial date
     dateStr = normalizeMonthlyDateField(dateStr);
 
-    // Parsing tanggal D-MMM-YY
     let year = "", monthKey = "", day = "";
     if (dateStr && typeof dateStr === "string" && dateStr.includes("-")) {
       const [d, m, y] = dateStr.split("-");
@@ -336,7 +352,7 @@ function uploadMonthlyToFirebase(records) {
       "Container Number": containerNo,
       "Process Type": processType,
       "Feet": feet,
-      "Biz": biz // Menambahkan field Biz ke objek database
+      "Biz": biz
     };
 
     updates[`${year}/${monthKey}/${day}/${containerNo}`] = dataObj;
