@@ -342,7 +342,7 @@ h2 {
 .data-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 1000px;
+    min-width: 1200px; /* Increased min-width for more columns */
 }
 
 .data-table th, 
@@ -350,6 +350,7 @@ h2 {
     padding: 12px 15px;
     text-align: left;
     border-bottom: 1px solid #e0e0e0;
+    white-space: nowrap; /* Prevent text wrapping */
 }
 
 .data-table th {
@@ -475,7 +476,7 @@ h2 {
 }
 
 .notification-bar.show {
-  top: 75px; /* Slide in to view */
+  top: 20px; /* Slide in to view */
 }
 
 .notification-bar.success {
@@ -681,6 +682,7 @@ h2 {
     border: 1px solid #ced4da;
     border-radius: 4px;
     transition: border-color 0.15s;
+    font-size: 14px; /* Ensure consistent font size */
 }
 
 .form-group input:focus, 
@@ -738,45 +740,165 @@ h2 {
     100% { transform: rotate(360deg); }
 }
 
-/* Responsive Styles */
-@media (max-width: 768px) {
+/* =================================================================== */
+/* ===== RESPONSIVE STYLES (TARGETING TRUE MOBILE DEVICES) ===== */
+/* =================================================================== */
+
+/* 
+  Kondisi ini menargetkan perangkat dengan layar sentuh (pointer: coarse),
+  yang tidak memiliki kemampuan hover (hover: none), dan memiliki lebar
+  maksimum 768px. Ini secara efektif mengabaikan "Mode Desktop" di browser mobile.
+*/
+@media (max-width: 768px) and (pointer: coarse) and (hover: none) {
+    .container {
+        width: 100%;
+        padding: 0 10px;
+    }
+
+    /* --- Header --- */
+    .main-header {
+        flex-direction: column;
+        height: auto;
+        padding: 10px;
+        gap: 15px;
+    }
+    
+    .logo-container {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .main-nav {
+        display: none; /* Hide complex nav on mobile, can be replaced with a hamburger menu later */
+    }
+
+    .user-section {
+        width: 100%;
+        justify-content: space-between;
+        background-color: #f9f9f9;
+        padding: 8px;
+        border-radius: 5px;
+    }
+
+    /* --- Page Title --- */
+    h1 {
+        font-size: 22px;
+    }
+
+    /* --- Action Toolbar --- */
+    .action-toolbar {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch; /* Make buttons full-width */
+    }
+    
+    .toolbar-left, .toolbar-right {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .btn-action, .btn-secondary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* --- Table --- */
+    .table-container {
+        /* Add a visual cue for horizontal scrolling */
+        box-shadow: 
+            -10px 0 10px -10px rgba(0,0,0,0.1) inset, 
+             10px 0 10px -10px rgba(0,0,0,0.1) inset;
+    }
+    
+    .data-table {
+        font-size: 13px; /* Slightly smaller font for mobile */
+    }
+
+    .data-table th, 
+    .data-table td {
+        padding: 10px 8px; /* Reduce padding */
+    }
+
+    .action-btn-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+    }
+
+    /* --- Pagination --- */
+    .pagination {
+        flex-direction: column;
+        gap: 12px;
+        align-items: center;
+    }
+
+    /* --- Modals --- */
+    .modal-content {
+        width: 95%;
+        max-height: 85vh;
+    }
+
+    .modal-body {
+        padding: 15px;
+    }
+
+    .modal-footer {
+        padding: 12px 15px;
+        flex-wrap: wrap; /* Allow buttons to wrap */
+    }
+
+    .close {
+        top: 10px;
+        right: 12px;
+        color: #eee;
+    }
+
+    /* --- Forms in Modals --- */
     .form-row {
         flex-direction: column;
         gap: 15px;
     }
-    
-    .action-toolbar {
-        flex-direction: column;
-        gap: 10px;
-        align-items: stretch;
-    }
-    
-    .toolbar-left, .toolbar-right {
-        justify-content: center;
+
+    .form-group input, 
+    .form-group select {
+        width: 100%;
     }
 
-    .pagination {
-        flex-direction: column;
-        gap: 10px;
-        align-items: flex-start;
+    /* --- Notification Bar --- */
+    .notification-bar {
+        width: 90%;
+        top: -150px;
+    }
+    .notification-bar.show {
+        top: 10px;
+    }
+}
+
+/* Specific adjustments for very small screens */
+@media (max-width: 480px) and (pointer: coarse) and (hover: none) {
+    body {
+        font-size: 14px;
+    }
+
+    h1 {
+        font-size: 20px;
+    }
+
+    .logo-container h1 {
+        font-size: 18px;
+    }
+
+    .btn {
+        padding: 10px 12px;
+        font-size: 14px;
     }
     
-    .main-header {
-        flex-direction: column;
-        height: auto;
-        padding: 12px;
+    .data-table {
+        font-size: 12px;
     }
-    
-    .logo-container {
-        margin-bottom: 12px;
-    }
-    
-    .main-nav ul {
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-    
-    .user-section {
-        margin-top: 12px;
+
+    .data-table th, 
+    .data-table td {
+        padding: 8px 6px;
     }
 }

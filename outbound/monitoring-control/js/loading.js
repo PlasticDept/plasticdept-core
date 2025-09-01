@@ -1,5 +1,5 @@
 import { db, authPromise } from './config.js';
-import { ref, get, update, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import { ref, get, update, remove, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 // Global state
 let allJobsData = [];
@@ -40,18 +40,19 @@ function showConfirmModal({ title, message, okText = 'OK', onConfirm }) {
 
 function formatDate(dateString) {
     if (!dateString) return '';
+    const date = new Date(dateString);
     const options = { day: '2-digit', month: 'short', year: 'numeric' };
-    return new Date(dateString).toLocaleDateString('en-GB', options).replace(/ /g, '-');
+    return date.toLocaleDateString('en-GB', options).replace(/ /g, '-');
 }
+
 
 function formatDateTime(dateTimeString) {
     if (!dateTimeString) return '';
-    // Check if it's already just a time string
     if (typeof dateTimeString === 'string' && /^\d{2}:\d{2}$/.test(dateTimeString)) {
         return dateTimeString;
     }
     const date = new Date(dateTimeString);
-    if (isNaN(date)) return dateTimeString; // Return original if invalid
+    if (isNaN(date)) return dateTimeString;
     const dateOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
     const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
     return `${date.toLocaleDateString('id-ID', dateOptions)} ${date.toLocaleTimeString('id-ID', timeOptions)}`;
@@ -61,19 +62,18 @@ function formatTimeOnly(value) {
     if (value instanceof Date) {
         return value.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
     }
-    if (typeof value === 'number') { // Excel time is a fraction of a day
+    if (typeof value === 'number') {
         const totalSeconds = value * 24 * 60 * 60;
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     }
     if (typeof value === 'string' && value.includes(':')) {
-        return value.substring(0, 5); // Ensure HH:mm format
+        return value.substring(0, 5);
     }
-    return value; // Return as is if it's already a string or other type
+    return value;
 }
 
-// Fungsi untuk normalisasi Delivery Note (menghapus leading zeros)
 function normalizeDeliveryNote(dn) {
     if (!dn) return '';
     return String(dn).trim().replace(/^0+/, '');
@@ -185,14 +185,9 @@ async function handleExcelUpload(file) {
                     const jobNo = deliveryNoteMap.get(normalizedDN);
                     
                     if (jobNo) {
-                        const loadingTime = formatTimeOnly(row['Loading Schedule']);
-                        const etdTime = formatTimeOnly(row['ETD']);
-                        const etaTime = formatTimeOnly(row['ETA']);
-
-                        // PERUBAHAN: Simpan hanya waktu (HH:mm)
-                        updates[`/PhxOutboundJobs/${jobNo}/loadingSchedule`] = loadingTime;
-                        updates[`/PhxOutboundJobs/${jobNo}/etd`] = etdTime;
-                        updates[`/PhxOutboundJobs/${jobNo}/eta`] = etaTime;
+                        updates[`/PhxOutboundJobs/${jobNo}/loadingSchedule`] = formatTimeOnly(row['Loading Schedule']);
+                        updates[`/PhxOutboundJobs/${jobNo}/etd`] = formatTimeOnly(row['ETD']);
+                        updates[`/PhxOutboundJobs/${jobNo}/eta`] = formatTimeOnly(row['ETA']);
                         updatedCount++;
                     } else {
                         notFound.push(deliveryNoteRaw);
@@ -225,6 +220,53 @@ async function handleExcelUpload(file) {
     } catch (error) {
         console.error("Firebase error during upload process:", error);
         showNotification("Gagal terhubung ke database.", true);
+        loadingOverlay.style.display = 'none';
+    }
+}
+
+async function handleAddDataSubmit(event) {
+    event.preventDefault();
+    const form = document.getElementById('deliveryForm');
+    const formData = new FormData(form);
+
+    const deliveryDate = formData.get('deliveryDate');
+    if (!deliveryDate) {
+        showNotification("Delivery Date wajib diisi.", true);
+        return;
+    }
+
+    const newJobNo = `MANUAL-${Date.now()}`;
+    const newJobData = {
+        jobNo: newJobNo,
+        deliveryDate: formatDate(new Date(deliveryDate)),
+        deliveryNote: formData.get('deliveryNote') || '',
+        owner: formData.get('owner') || '',
+        remark: formData.get('remark') || '',
+        qty: formData.get('qty') || '',
+        loadingSchedule: formData.get('loadingSchedule') || '',
+        etd: formData.get('etd') || '',
+        eta: formData.get('eta') || '',
+        palletOut: formData.get('palletOut') || '',
+        truckNo: formData.get('truckNo') || '',
+        loadingStart: formData.get('loadingStart') || '',
+        loadingFinish: formData.get('loadingFinish') || '',
+        status: 'Pending', // Default status for manual entry
+        createdBy: 'Manual'
+    };
+
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    loadingOverlay.style.display = 'flex';
+
+    try {
+        await set(ref(db, `PhxOutboundJobs/${newJobNo}`), newJobData);
+        showNotification(`Data baru dengan Job No ${newJobNo} berhasil disimpan.`);
+        document.getElementById('addModal').style.display = 'none';
+        form.reset();
+        loadJobsFromFirebase();
+    } catch (error) {
+        console.error("Gagal menyimpan data baru:", error);
+        showNotification("Gagal menyimpan data baru ke database.", true);
+    } finally {
         loadingOverlay.style.display = 'none';
     }
 }
@@ -302,7 +344,7 @@ function deleteRowData(jobNo) {
             try {
                 await remove(ref(db, `PhxOutboundJobs/${jobNo}`));
                 showNotification(`Job ${jobNo} berhasil dihapus.`);
-                loadJobsFromFirebase(); // Reload data to reflect deletion
+                loadJobsFromFirebase();
             } catch (error) {
                 console.error("Gagal menghapus data:", error);
                 showNotification(`Gagal menghapus Job ${jobNo}.`, true);
@@ -318,6 +360,24 @@ function setupTableEventListeners() {
 }
 
 function setupModals() {
+    // Add Modal
+    const addModal = document.getElementById('addModal');
+    const openAddModalBtn = document.getElementById('openAddModalBtn');
+    const closeAddModal = document.getElementById('closeAddModal');
+    const cancelAddBtn = document.getElementById('cancelAddBtn');
+    const submitAddBtn = document.getElementById('submitAddBtn');
+    
+    openAddModalBtn.addEventListener('click', () => {
+        addModal.style.display = 'flex';
+        document.getElementById('deliveryForm').reset();
+    });
+
+    const closeAddModalHandler = () => addModal.style.display = 'none';
+    closeAddModal.addEventListener('click', closeAddModalHandler);
+    cancelAddBtn.addEventListener('click', closeAddModalHandler);
+    submitAddBtn.addEventListener('click', handleAddDataSubmit);
+
+    // Upload Modal
     const uploadModal = document.getElementById('uploadModal');
     const openUploadModalBtn = document.getElementById('openUploadModalBtn');
     const closeUploadModal = document.getElementById('closeUploadModal');
@@ -333,9 +393,9 @@ function setupModals() {
         uploadExcelBtn.disabled = true;
     });
 
-    const closeModal = () => uploadModal.style.display = 'none';
-    closeUploadModal.addEventListener('click', closeModal);
-    cancelUploadBtn.addEventListener('click', closeModal);
+    const closeUploadModalHandler = () => uploadModal.style.display = 'none';
+    closeUploadModal.addEventListener('click', closeUploadModalHandler);
+    cancelUploadBtn.addEventListener('click', closeUploadModalHandler);
 
     excelFileInput.addEventListener('change', () => {
         if (excelFileInput.files.length > 0) {
