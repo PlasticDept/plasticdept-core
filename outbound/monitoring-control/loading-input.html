@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <script src="js/auth-check.js"></script>
+  <title>Monitoring Control Delivery</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,700&display=swap" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="icon" type="image/png" href="img/reverse-logistic.png"/>
+  <link rel="stylesheet" href="css/loading.css" />
+  <!-- XLSX Library -->
+  <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+  /* Critical CSS untuk memperbaiki dropdown */
+  .nav-dropdown-content {
+    position: absolute !important;
+    display: none;
+    z-index: 99999 !important;
+    background-color: white;
+    border: 1px solid #e0e6ed;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+    min-width: 200px;
+    border-radius: 4px;
+    padding: 5px 0;
+    margin-top: 0;
+  }
+  
+  .main-nav, .nav-dropdown {
+    position: relative !important;
+    z-index: 9999 !important;
+    overflow: visible !important;
+  }
+</style>    
+
+
+</head>
+<body>
+  <div class="enterprise-container">
+    <!-- HEADER SECTION -->
+    <header class="main-header">
+      <div class="logo-container">
+        <img src="img/reverse-logistic.png" alt="Plastic Dept Logo" class="logo">
+        <span class="logo-divider"></span>
+        <h1>PLASTIC<span>DEPT.</span></h1>
+      </div>
+
+      <nav class="main-nav">
+        <ul>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link active"><i class="fas fa-box"></i> Outbound <i class="fas fa-chevron-down"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="dashboard-outbound.html" class="dropdown-item"><i class="fas fa-chart-line"></i> Outbound Dashboard</a>
+              <a href="loading-input.html" class="dropdown-item"><i class="fas fa-truck"></i> Loading Delivery</a>
+              <a href="plastic.html" class="dropdown-item"><i class="fas fa-tasks"></i> Assignment Job</a>
+            </div>
+          </li>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link"><i class="fas fa-users"></i> Team Monitoring <i class="fas fa-chevron-down"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="team-sugity.html" class="dropdown-item"><i class="fas fa-user-friends"></i> Team Sugity</a>
+              <a href="team-reguler.html" class="dropdown-item"><i class="fas fa-user-friends"></i> Team Reguler</a>
+            </div>
+          </li>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link"><i class="fas fa-truck-loading"></i> Inbound <i class="fas fa-chevron-down"></i> <i class="fa-container-storage"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="../../inbound/incoming-schedule/input.html" class="dropdown-item"><i class="fas fa-file-import"></i> Input Data Incoming</a>
+              <a href="../../inbound/incoming-schedule/display.html" class="dropdown-item"><i class="fas fa-calendar-alt"></i> Schedule Incoming Container</a>
+              <a href="../../inbound/container-dashboard.html" class="dropdown-item"><i class="fas fa-cubes"></i> Incoming Container Dashboard</a>
+            </div>
+          </li>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link"><i class="fas fa-warehouse"></i> Inventory <i class="fas fa-chevron-down"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="../../inventory/occupancy.html" class="dropdown-item"><i class="fas fa-chart-pie"></i> Occupancy</a>
+              <a href="../../inventory/part-master.html" class="dropdown-item"><i class="fas fa-cogs"></i> Part Master</a>
+            </div>
+          </li>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link"><i class="fas fa-chart-bar"></i> Reports <i class="fas fa-chevron-down"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="achievement.html" class="dropdown-item"><i class="fas fa-chart-line"></i> Achievement Report</a>
+              <a href="report.html" class="dropdown-item"><i class="fas fa-calendar-day"></i>Daily Outbound Report</a>
+              <a href="../../inbound/incoming-schedule/dailyreport.html" class="dropdown-item"><i class="fas fa-clipboard-check"></i> Daily Inbound Report</a>
+            </div>
+          </li>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link"><i class="fas fa-cogs"></i> Master <i class="fas fa-chevron-down"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="user.html" class="dropdown-item"><i class="fas fa-user"></i> User</a>
+            </div>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="user-section">
+        <div class="user-info">
+          <span class="username" id="userFullName">Administrator</span>
+          <span class="user-role" id="userShift">-</span>
+        </div>
+        <div class="avatar" id="userAvatar">A</div>
+        <button id="headerLogoutBtn"><i class="fas fa-sign-out-alt"></i></button>
+      </div>
+    </header>
+
+    <!-- NOTIFICATION BAR -->
+    <div id="notification" class="notification-bar"></div>
+
+    <div class="container">
+        <header>
+            <h1>Monitoring Control Delivery</h1>
+        </header>
+
+        <!-- Action Toolbar -->
+        <div class="action-toolbar">
+            <div class="toolbar-left">
+                <button id="openAddModalBtn" class="btn btn-action"><i class="fas fa-plus"></i> Tambah Data Baru</button>
+                <button id="openUploadModalBtn" class="btn btn-action"><i class="fas fa-upload"></i> Upload Loading Time</button>
+            </div>
+            <div class="toolbar-right">
+                <button id="exportBtn" class="btn btn-secondary"><i class="fas fa-file-export"></i> Export Data</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2">NO</th>
+                        <th rowspan="2">Date</th>
+                        <th rowspan="2">Delivery Note</th>
+                        <th rowspan="2">Owner</th>
+                        <th rowspan="2">Remark</th>
+                        <th rowspan="2">Qty</th>
+                        <th colspan="3" class="text-center">Plan</th>
+                        <th rowspan="2">Pallet Out</th>
+                        <th rowspan="2">Truck No</th>
+                        <th colspan="2" class="text-center">Actual</th>
+                        <th rowspan="2">Action</th>
+                    </tr>
+                    <tr>
+                        <th>Loading Schedule</th>
+                        <th>ETD</th>
+                        <th>ETA</th>
+                        <th>Loading Start</th>
+                        <th>Loading Finish</th>
+                    </tr>
+                </thead>
+                <tbody id="deliveryTableEditable">
+                    <!-- Data akan ditampilkan di sini dari Firebase -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination">
+            <div class="pagination-info">Menampilkan 1-10 dari 0 data</div>
+            <div class="pagination-controls">
+                <button class="btn btn-page" id="prevPageBtn">Previous</button>
+                <span id="pageIndicator">Page 1</span>
+                <button class="btn btn-page" id="nextPageBtn">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tambah Data -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeAddModal">&times;</span>
+            <div class="modal-header">
+                <h3><i class="fas fa-plus-circle"></i> Tambah Data Baru</h3>
+            </div>
+            <div class="modal-body">
+                <form id="deliveryForm" class="input-form">
+                    <!-- Form fields for adding new data manually -->
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelAddBtn">Batal</button>
+                <button type="button" class="btn btn-success" id="submitAddBtn">Simpan Data</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Upload File -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content upload-modal-content">
+            <span class="close" id="closeUploadModal">&times;</span>
+            <div class="modal-header">
+                <h3><i class="fas fa-cloud-upload-alt"></i> Upload Loading Time</h3>
+            </div>
+            <div class="modal-body">
+                <div class="upload-instructions">
+                    <p>Pilih file Excel (.xlsx, .csv) dengan kolom: <strong>Delivery Note, Loading Schedule, ETD, ETA</strong>.</p>
+                    <p class="text-muted">Sistem akan mencocokkan "Delivery Note" dan mengupdate jadwal di database.</p>
+                </div>
+                <div class="upload-container">
+                    <div class="file-upload">
+                        <input type="file" id="excelFile" accept=".csv, .xlsx, .xls" hidden/>
+                        <label for="excelFile" class="upload-label">
+                            <i class="fas fa-file-excel"></i> Pilih File Excel
+                        </label>
+                        <span id="fileName">Tidak ada file dipilih</span>
+                    </div>
+                </div>
+                <div class="upload-status">
+                    <div id="progressBar" class="progress-bar">
+                        <div class="progress" style="width: 0%"></div>
+                    </div>
+                    <p id="statusMessage"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelUploadBtn">Batal</button>
+                <button id="uploadExcel" class="btn btn-primary" disabled>
+                    <i class="fas fa-cloud-upload-alt"></i> Upload & Update
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Universal -->
+    <div id="confirmModal" class="modal">
+      <div class="modal-content">
+        <h3 id="confirmModalTitle">Konfirmasi</h3>
+        <p id="confirmModalMessage"></p>
+        <div class="modal-footer" style="justify-content: center;">
+          <button id="cancelConfirmBtn" class="btn btn-secondary">Batal</button>
+          <button id="okConfirmBtn" class="btn btn-danger">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div>Memproses data, mohon tunggu...</div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script type="module" src="js/loading.js"></script>
+</body>
+</html>
