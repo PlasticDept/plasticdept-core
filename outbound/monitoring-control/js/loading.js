@@ -138,16 +138,22 @@ function standardizeTimeForComparison(timeStr) {
         if (!isNaN(date)) return date;
     }
     
-    // Menangani format waktu HH:MM
-    if (typeof timeStr === 'string' && /^\d{2}:\d{2}$/.test(timeStr)) {
-        const today = new Date();
-        const [hours, minutes] = timeStr.split(':').map(Number);
-        today.setHours(hours, minutes, 0, 0);
-        return today;
+    // Menangani format waktu HH:MM atau "HH:MM" (dalam quotes)
+    let timeValue = timeStr;
+    if (typeof timeStr === 'string') {
+        // Hapus tanda kutip jika ada
+        timeValue = timeStr.replace(/^"|"$/g, '');
+        
+        if (/^\d{2}:\d{2}$/.test(timeValue)) {
+            const today = new Date();
+            const [hours, minutes] = timeValue.split(':').map(Number);
+            today.setHours(hours, minutes, 0, 0);
+            return today;
+        }
     }
     
     // Menangani format lainnya
-    const date = new Date(timeStr);
+    const date = new Date(timeValue);
     return isNaN(date) ? null : date;
 }
 
@@ -167,27 +173,31 @@ function normalizeDeliveryNote(dn) {
  * @returns {string} Status delivery yang ditentukan
  */
 function determineDeliveryStatus(job) {
-    // Kasus 4: Jika status job adalah "Completed"
+    // Kasus 1: Jika status job adalah "Completed"
     if (job.status === 'Completed') {
         return 'Delivered';
     }
     
     const now = new Date();
     const loadingScheduleTime = standardizeTimeForComparison(job.loadingSchedule);
-    const finishAtTime = standardizeTimeForComparison(job.loadingFinish);
     
     // Tidak bisa menentukan status jika tidak ada loadingSchedule
     if (!loadingScheduleTime) {
         return '';
     }
     
-    // Kasus 1 & 2: Berdasarkan waktu finishAt vs loadingSchedule
-    if (finishAtTime) {
-        if (finishAtTime > loadingScheduleTime) {
-            return 'Delay process';
-        } else {
-            return 'Material Ready';
+    // Kasus 2: Berdasarkan finishAt vs loadingSchedule
+    // finishAt adalah field yang diisi oleh backend
+    if (job.finishAt) {
+        const finishAtTime = standardizeTimeForComparison(job.finishAt);
+        if (finishAtTime && finishAtTime > loadingScheduleTime) {
+            return 'Delay process'; // finishAt melewati/lebih besar dari loadingSchedule
+        } else if (finishAtTime) {
+            return 'Material Ready'; // finishAt belum melewati/lebih kecil dari loadingSchedule
         }
+    } else {
+        // Jika finishAt tidak ada atau kosong
+        return 'Delay process';
     }
     
     // Kasus 3: Jika status "Packed" dan waktu sekarang > loadingSchedule
@@ -195,7 +205,6 @@ function determineDeliveryStatus(job) {
         return 'Delay trucking';
     }
     
-    // Default, tidak ada status khusus
     return '';
 }
 
