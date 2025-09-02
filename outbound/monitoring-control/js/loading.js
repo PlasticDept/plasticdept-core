@@ -8,57 +8,12 @@ const editableColumns = ['loadingSchedule', 'etd', 'eta', 'palletOut', 'truckNo'
 // Status yang diperbolehkan untuk ditampilkan
 const allowedStatuses = ['Pending Pick', 'Packed', 'Completed', 'Pending'];
 
-// Mendefinisikan tanggal hari ini dan kemarin dengan format yang sama persis dengan di Firebase
-const datesToShow = (() => {
-    try {
-        // Format tanggal khusus untuk mencocokkan format di Firebase: "dd-MMM-yyyy"
-        // PENTING: Firebase menggunakan "Sep" (bukan "Sept") untuk bulan September
-        const today = new Date();
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        // Fungsi untuk memformat tanggal sesuai dengan Firebase (dd-MMM-yyyy)
-        const formatDateForFirebase = (date) => {
-            const day = String(date.getDate()).padStart(2, '0');
-            
-            // Daftar bulan persis seperti di Firebase (3 huruf: "Jan", "Feb", dst.)
-            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            const month = months[date.getMonth()];
-            
-            const year = date.getFullYear();
-            return `${day}-${month}-${year}`;
-        };
-        
-        const todayFormatted = formatDateForFirebase(today);
-        const yesterdayFormatted = formatDateForFirebase(yesterday);
-        
-        console.log(`Tanggal hari ini (format Firebase): ${todayFormatted}`);
-        console.log(`Tanggal kemarin (format Firebase): ${yesterdayFormatted}`);
-        
-        return [todayFormatted, yesterdayFormatted];
-    } catch (error) {
-        console.error("Error saat memformat tanggal:", error);
-        // Fallback jika ada error
-        const today = new Date();
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        
-        const todayFormatted = `${String(today.getDate()).padStart(2, '0')}-${months[today.getMonth()]}-${today.getFullYear()}`;
-        const yesterdayFormatted = `${String(yesterday.getDate()).padStart(2, '0')}-${months[yesterday.getMonth()]}-${yesterday.getFullYear()}`;
-        
-        return [todayFormatted, yesterdayFormatted];
-    }
-})();
-
-// Variabel today untuk kompatibilitas dengan kode yang sudah ada
-const today = datesToShow[0];
+// Status yang memerlukan efek visual khusus (blinking)
+const blinkingStatuses = ['Delay process', 'Delay trucking'];
 
 // Informasi user untuk log aktivitas
 const currentUser = (() => {
     try {
-        // Mencoba mendapatkan informasi dari elemen HTML
         const usernameElement = document.getElementById('userFullName');
         return usernameElement ? usernameElement.textContent : 'PlasticDept';
     } catch (e) {
@@ -170,6 +125,33 @@ function formatTimeOnly(value) {
 }
 
 /**
+ * Menstandarkan waktu ke format yang sama untuk perbandingan
+ * @param {string} timeStr - String waktu dalam berbagai format
+ * @returns {Date} Objek Date untuk perbandingan atau null jika invalid
+ */
+function standardizeTimeForComparison(timeStr) {
+    if (!timeStr) return null;
+    
+    // Menangani format ISO
+    if (typeof timeStr === 'string' && timeStr.includes('T')) {
+        const date = new Date(timeStr);
+        if (!isNaN(date)) return date;
+    }
+    
+    // Menangani format waktu HH:MM
+    if (typeof timeStr === 'string' && /^\d{2}:\d{2}$/.test(timeStr)) {
+        const today = new Date();
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        today.setHours(hours, minutes, 0, 0);
+        return today;
+    }
+    
+    // Menangani format lainnya
+    const date = new Date(timeStr);
+    return isNaN(date) ? null : date;
+}
+
+/**
  * Normalisasi nomor Delivery Note (menghilangkan leading zeros)
  * @param {string} dn - Nomor Delivery Note
  * @returns {string} Nomor Delivery Note yang sudah dinormalisasi
@@ -180,32 +162,96 @@ function normalizeDeliveryNote(dn) {
 }
 
 /**
+ * Menentukan delivery status berdasarkan data job
+ * @param {Object} job - Data job
+ * @returns {string} Status delivery yang ditentukan
+ */
+function determineDeliveryStatus(job) {
+    // Kasus 4: Jika status job adalah "Completed"
+    if (job.status === 'Completed') {
+        return 'Delivered';
+    }
+    
+    const now = new Date();
+    const loadingScheduleTime = standardizeTimeForComparison(job.loadingSchedule);
+    const finishAtTime = standardizeTimeForComparison(job.loadingFinish);
+    
+    // Tidak bisa menentukan status jika tidak ada loadingSchedule
+    if (!loadingScheduleTime) {
+        return '';
+    }
+    
+    // Kasus 1 & 2: Berdasarkan waktu finishAt vs loadingSchedule
+    if (finishAtTime) {
+        if (finishAtTime > loadingScheduleTime) {
+            return 'Delay process';
+        } else {
+            return 'Material Ready';
+        }
+    }
+    
+    // Kasus 3: Jika status "Packed" dan waktu sekarang > loadingSchedule
+    if (job.status === 'Packed' && now > loadingScheduleTime) {
+        return 'Delay trucking';
+    }
+    
+    // Default, tidak ada status khusus
+    return '';
+}
+
+/**
  * Membuat badge HTML untuk status dengan warna yang sesuai
- * Warna diubah sesuai permintaan:
- * Pending Pick = Merah, Packed = Hijau, Completed = Abu-abu
  * @param {string} status - Status yang akan ditampilkan
+ * @param {boolean} isDeliveryStatus - Apakah status ini untuk kolom Delivery Status
  * @returns {string} HTML untuk badge status
  */
-function getStatusBadge(status) {
+function getStatusBadge(status, isDeliveryStatus = false) {
     if (!status) return '';
+    
     let color, backgroundColor;
-    switch (status) {
-        case 'Pending Pick':
-            backgroundColor = '#ffebee'; // Latar belakang merah muda
-            color = '#d32f2f'; // Teks merah
-            break;
-        case 'Packed':
-            backgroundColor = '#e8f5e9'; // Latar belakang hijau muda
-            color = '#2e7d32'; // Teks hijau
-            break;
-        case 'Completed':
-            backgroundColor = '#f5f5f5'; // Latar belakang abu-abu muda
-            color = '#616161'; // Teks abu-abu
-            break;
-        default:
-            backgroundColor = '#e9ecef'; // Abu-abu muda
-            color = '#495057'; // Abu-abu
+    
+    // Warna untuk delivery status
+    if (isDeliveryStatus) {
+        switch (status) {
+            case 'Delay process':
+            case 'Delay trucking':
+                backgroundColor = '#ffebee'; // Latar belakang merah muda
+                color = '#d32f2f'; // Teks merah
+                break;
+            case 'Material Ready':
+                backgroundColor = '#e8f5e9'; // Latar belakang hijau muda
+                color = '#2e7d32'; // Teks hijau
+                break;
+            case 'Delivered':
+                backgroundColor = '#e3f2fd'; // Latar belakang biru muda
+                color = '#1565c0'; // Teks biru
+                break;
+            default:
+                backgroundColor = '#f5f5f5'; // Abu-abu muda
+                color = '#616161'; // Abu-abu
+        }
+    } 
+    // Warna untuk job status
+    else {
+        switch (status) {
+            case 'Pending Pick':
+                backgroundColor = '#ffebee'; // Latar belakang merah muda
+                color = '#d32f2f'; // Teks merah
+                break;
+            case 'Packed':
+                backgroundColor = '#e8f5e9'; // Latar belakang hijau muda
+                color = '#2e7d32'; // Teks hijau
+                break;
+            case 'Completed':
+                backgroundColor = '#f5f5f5'; // Latar belakang abu-abu muda
+                color = '#616161'; // Teks abu-abu
+                break;
+            default:
+                backgroundColor = '#e9ecef'; // Abu-abu muda
+                color = '#495057'; // Abu-abu
+        }
     }
+    
     return `<span class="status-badge" style="background-color: ${backgroundColor}; color: ${color}; padding: 3px 8px; border-radius: 4px; font-weight: 500;">${status}</span>`;
 }
 
@@ -215,69 +261,37 @@ function getStatusBadge(status) {
 
 /**
  * Memuat data pekerjaan dari Firebase dan menampilkannya
- * Difilter berdasarkan tanggal hari ini dan kemarin, dan status yang diizinkan
+ * Difilter hanya berdasarkan status yang diizinkan, tanpa filter tanggal
  */
 async function loadJobsFromFirebase() {
     const loadingOverlay = document.getElementById('loadingOverlay');
     loadingOverlay.style.display = 'flex';
     try {
-        console.log("Memulai proses load data dari Firebase...");
         await authPromise;
-        console.log("Autentikasi berhasil, mengambil data...");
         
         const snapshot = await get(ref(db, "PhxOutboundJobs"));
         
         if (snapshot.exists()) {
-            console.log("Data ditemukan di Firebase");
             const rawData = Object.entries(snapshot.val()).map(([key, value]) => ({
                  jobNo: key,
                  ...value
              }));
              
-            console.log(`Total data dari Firebase: ${rawData.length}`);
-            console.log(`Filter tanggal yang akan digunakan: ${datesToShow.join(', ')}`);
-            console.log(`Status yang diizinkan: ${allowedStatuses.join(', ')}`);
-            
-            // Debugging: Tampilkan beberapa data pertama untuk melihat format deliveryDate
-            console.log("Sampel data dari Firebase:");
-            rawData.slice(0, 3).forEach(item => {
-                console.log(`JobNo: ${item.jobNo}, Delivery Date: "${item.deliveryDate}", Status: "${item.status}"`);
-            });
-            
-            // Filter data berdasarkan tanggal (hari ini dan kemarin) dan status yang diizinkan
-            allJobsData = rawData.filter(item => {
-                const dateMatch = datesToShow.includes(item.deliveryDate);
-                const statusMatch = allowedStatuses.includes(item.status);
-                
-                // Debug setiap item untuk melihat mana yang cocok/tidak
-                if (dateMatch && statusMatch) {
-                    console.log(`✓ Item cocok - JobNo: ${item.jobNo}, Date: ${item.deliveryDate}, Status: ${item.status}`);
-                } else if (!dateMatch) {
-                    console.log(`✗ Date tidak cocok - JobNo: ${item.jobNo}, Date: ${item.deliveryDate} (dicari: ${datesToShow.join(', ')})`);
-                } else if (!statusMatch) {
-                    console.log(`✗ Status tidak cocok - JobNo: ${item.jobNo}, Status: ${item.status}`);
-                }
-                
-                return dateMatch && statusMatch;
-            });
-            
-            console.log(`Data yang akan ditampilkan: ${allJobsData.length}`);
+            // Filter data hanya berdasarkan status yang diizinkan
+            allJobsData = rawData.filter(item => allowedStatuses.includes(item.status));
             
             if (allJobsData.length === 0) {
-                console.log("Tidak ada data untuk tanggal yang dipilih");
-                document.getElementById('deliveryTableEditable').innerHTML = '<tr><td colspan="16" style="text-align:center;">Tidak ada data untuk tanggal hari ini dan kemarin.</td></tr>';
-                showNotification("Tidak ada data untuk tanggal hari ini dan kemarin.", true);
+                document.getElementById('deliveryTableEditable').innerHTML = '<tr><td colspan="16" style="text-align:center;">Tidak ada data dengan status yang sesuai.</td></tr>';
+                showNotification("Tidak ada data dengan status yang sesuai.", true);
             } else {
                 displayJobsData();
                 showNotification(`Berhasil memuat ${allJobsData.length} data.`, false);
             }
         } else {
-            console.log("Tidak ada data di Firebase");
             document.getElementById('deliveryTableEditable').innerHTML = '<tr><td colspan="16" style="text-align:center;">Tidak ada data ditemukan.</td></tr>';
             showNotification("Tidak ada data di database.", true);
         }
     } catch (error) {
-        console.error("Error loading data from Firebase:", error);
         document.getElementById('deliveryTableEditable').innerHTML = `<tr><td colspan="16" style="text-align:center;">Error: ${error.message}</td></tr>`;
         showNotification(`Gagal memuat data dari database: ${error.message}`, true);
     } finally {
@@ -297,10 +311,25 @@ function displayJobsData() {
         tableBody.innerHTML = '<tr><td colspan="16" style="text-align:center;">Tidak ada data ditemukan.</td></tr>';
         return;
     }
+    
+    // Tambahkan CSS untuk efek blinking jika belum ada
+    addBlinkingEffect();
 
     allJobsData.forEach((item, index) => {
+        // Menentukan delivery status untuk item ini
+        const deliveryStatus = determineDeliveryStatus(item);
+        
+        // Menentukan apakah row perlu efek blinking
+        const needsBlinking = blinkingStatuses.includes(deliveryStatus);
+        
         const row = document.createElement('tr');
         row.setAttribute('data-id', item.jobNo);
+        
+        // Tambahkan class 'blinking' jika perlu efek blinking
+        if (needsBlinking) {
+            row.classList.add('blinking');
+        }
+        
         row.innerHTML = `
             <td>${index + 1}</td>
             <td>${item.deliveryDate || ''}</td>
@@ -316,7 +345,7 @@ function displayJobsData() {
             <td data-field="truckNo">${item.truckNo || ''}</td>
             <td data-field="loadingStart">${formatDateTime(item.loadingStart) || ''}</td>
             <td data-field="loadingFinish">${formatDateTime(item.loadingFinish) || ''}</td>
-            <td data-field="deliveryStatus"></td>
+            <td data-field="deliveryStatus">${getStatusBadge(deliveryStatus, true)}</td>
             <td>
                 <div class="action-buttons">
                     <button class="action-btn-icon btn-edit" data-tooltip="Edit"><i class="fas fa-pencil-alt"></i></button>
@@ -333,6 +362,79 @@ function displayJobsData() {
     const paginationInfo = document.querySelector('.pagination-info');
     if (paginationInfo) {
         paginationInfo.textContent = `Menampilkan 1-${allJobsData.length} dari ${allJobsData.length} data`;
+    }
+}
+
+/**
+ * Menambahkan CSS untuk efek blinking jika belum ada
+ */
+function addBlinkingEffect() {
+    // Cek jika style untuk blinking sudah ada
+    if (!document.getElementById('blinkingStyle')) {
+        const style = document.createElement('style');
+        style.id = 'blinkingStyle';
+        style.textContent = `
+            @keyframes blink {
+                0% { background-color: rgba(255, 0, 0, 0); }
+                50% { background-color: rgba(255, 0, 0, 0.2); }
+                100% { background-color: rgba(255, 0, 0, 0); }
+            }
+            
+            .blinking {
+                animation: blink 2s linear infinite;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
+/**
+ * Menyimpan semua data ke node DeliveryList di Firebase dengan struktur hirarkis
+ * berdasarkan tahun, bulan, dan tanggal saat ini
+ * Fungsi ini dipanggil saat tombol "Save Data" ditekan
+ */
+async function saveAllDataToDeliveryList() {
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    loadingOverlay.style.display = 'flex';
+    
+    try {
+        await authPromise;
+        
+        if (allJobsData.length === 0) {
+            showNotification("Tidak ada data untuk disimpan.", true);
+            loadingOverlay.style.display = 'none';
+            return;
+        }
+        
+        // Mendapatkan tanggal saat ini untuk membuat struktur path
+        const now = new Date();
+        const year = now.getFullYear().toString();
+        const month = String(now.getMonth() + 1).padStart(2, '0');  // Bulan dimulai dari 0
+        const day = String(now.getDate()).padStart(2, '0');
+        
+        // Data yang akan disimpan di DeliveryList
+        const deliveryListData = {};
+        
+        allJobsData.forEach(item => {
+            // Menambahkan delivery status ke data yang akan disimpan
+            const deliveryStatus = determineDeliveryStatus(item);
+            
+            deliveryListData[item.jobNo] = {
+                ...item,
+                deliveryStatus,
+                savedBy: currentUser,
+                savedAt: currentDateTime
+            };
+        });
+        
+        // Simpan ke node DeliveryList dengan struktur tahun/bulan/hari
+        await set(ref(db, `DeliveryList/${year}/${month}/${day}/data`), deliveryListData);
+        
+        showNotification(`Data berhasil disimpan ke DeliveryList/${year}/${month}/${day}/data.`, false);
+    } catch (error) {
+        showNotification(`Gagal menyimpan data: ${error.message}`, true);
+    } finally {
+        loadingOverlay.style.display = 'none';
     }
 }
 
@@ -405,12 +507,10 @@ async function handleExcelUpload(file) {
                 }
 
                 if (notFound.length > 0) {
-                    console.warn("Delivery Notes not found in DB:", notFound);
                     showNotification(`${notFound.length} Delivery Note tidak ditemukan: ${notFound.slice(0, 3).join(', ')}...`, true);
                 }
 
             } catch (err) {
-                console.error("Error processing Excel file:", err);
                 showNotification(`Gagal memproses file: ${err.message}`, true);
             } finally {
                 loadingOverlay.style.display = 'none';
@@ -420,7 +520,6 @@ async function handleExcelUpload(file) {
         reader.readAsArrayBuffer(file);
 
     } catch (error) {
-        console.error("Firebase error during upload process:", error);
         showNotification("Gagal terhubung ke database.", true);
         loadingOverlay.style.display = 'none';
     }
@@ -471,7 +570,6 @@ async function handleAddDataSubmit(event) {
         form.reset();
         loadJobsFromFirebase();
     } catch (error) {
-        console.error("Gagal menyimpan data baru:", error);
         showNotification("Gagal menyimpan data baru ke database.", true);
     } finally {
         loadingOverlay.style.display = 'none';
@@ -559,8 +657,25 @@ async function saveRowData(jobNo, row) {
         await update(ref(db, `PhxOutboundJobs/${jobNo}`), updates);
         showNotification(`Job ${jobNo} berhasil diupdate.`);
         toggleEditMode(row, false);
+        
+        // Update juga tampilan Delivery Status
+        const jobData = allJobsData.find(item => item.jobNo === jobNo);
+        if (jobData) {
+            // Update data di memori
+            Object.assign(jobData, updates);
+            
+            // Update Delivery Status di row
+            const deliveryStatus = determineDeliveryStatus(jobData);
+            const deliveryStatusCell = row.querySelector('td[data-field="deliveryStatus"]');
+            if (deliveryStatusCell) {
+                deliveryStatusCell.innerHTML = getStatusBadge(deliveryStatus, true);
+            }
+            
+            // Update efek blinking jika diperlukan
+            const needsBlinking = blinkingStatuses.includes(deliveryStatus);
+            row.classList.toggle('blinking', needsBlinking);
+        }
     } catch (error) {
-        console.error("Gagal update data:", error);
         showNotification(`Gagal update Job ${jobNo}.`, true);
     }
 }
@@ -580,7 +695,6 @@ function deleteRowData(jobNo) {
                 showNotification(`Job ${jobNo} berhasil dihapus.`);
                 loadJobsFromFirebase();
             } catch (error) {
-                console.error("Gagal menghapus data:", error);
                 showNotification(`Gagal menghapus Job ${jobNo}.`, true);
             }
         }
@@ -659,6 +773,12 @@ function setupModals() {
             showNotification('Silakan pilih file terlebih dahulu.', true);
         }
     });
+    
+    // Setup Save Data Button
+    const saveDataBtn = document.getElementById('saveDataBtn');
+    if (saveDataBtn) {
+        saveDataBtn.addEventListener('click', saveAllDataToDeliveryList);
+    }
 }
 
 /**
@@ -675,21 +795,26 @@ function setupExportButton() {
 
             try {
                 // Buat data untuk ekspor
-                const exportData = allJobsData.map(item => ({
-                    'Date': item.deliveryDate || '',
-                    'Delivery Note': item.deliveryNote || '',
-                    'Owner': item.owner || '',
-                    'Remark': item.remark || '',
-                    'Qty': item.qty || '',
-                    'Job Status': item.status || '',
-                    'Loading Schedule': item.loadingSchedule || '',
-                    'ETD': item.etd || '',
-                    'ETA': item.eta || '',
-                    'Pallet Out': item.palletOut || '',
-                    'Truck No': item.truckNo || '',
-                    'Loading Start': formatDateTime(item.loadingStart) || '',
-                    'Loading Finish': formatDateTime(item.loadingFinish) || '',
-                }));
+                const exportData = allJobsData.map(item => {
+                    const deliveryStatus = determineDeliveryStatus(item);
+                    
+                    return {
+                        'Date': item.deliveryDate || '',
+                        'Delivery Note': item.deliveryNote || '',
+                        'Owner': item.owner || '',
+                        'Remark': item.remark || '',
+                        'Qty': item.qty || '',
+                        'Job Status': item.status || '',
+                        'Loading Schedule': item.loadingSchedule || '',
+                        'ETD': item.etd || '',
+                        'ETA': item.eta || '',
+                        'Pallet Out': item.palletOut || '',
+                        'Truck No': item.truckNo || '',
+                        'Loading Start': formatDateTime(item.loadingStart) || '',
+                        'Loading Finish': formatDateTime(item.loadingFinish) || '',
+                        'Delivery Status': deliveryStatus || ''
+                    };
+                });
 
                 // Buat workbook dan worksheet
                 const ws = XLSX.utils.json_to_sheet(exportData);
@@ -704,7 +829,6 @@ function setupExportButton() {
                 XLSX.writeFile(wb, fileName);
                 showNotification(`Data berhasil diekspor ke ${fileName}`, false);
             } catch (error) {
-                console.error('Error exporting data:', error);
                 showNotification('Gagal mengekspor data: ' + error.message, true);
             }
         });
@@ -715,15 +839,10 @@ function setupExportButton() {
  * Inisialisasi saat dokumen dimuat
  */
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Halaman dimuat, mempersiapkan aplikasi...");
-    console.log(`Tanggal yang akan ditampilkan: ${datesToShow.join(', ')}`);
-    
     // Cek apakah firebase config diload dengan benar
     if (typeof db === 'undefined') {
-        console.error("Firebase DB tidak ditemukan. Cek path import config.js");
         showNotification("Koneksi database tidak tersedia. Harap refresh halaman.", true);
     } else {
-        console.log("Firebase config ditemukan, mencoba load data...");
         loadJobsFromFirebase();
     }
     
