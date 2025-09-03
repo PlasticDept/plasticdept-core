@@ -22,9 +22,18 @@ body {
 }
 
 .container {
-    width: 95%;
-    margin: 20px auto;
-    padding: 0 15px;
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0 24px;
+}
+
+header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0056b3;
+    text-align: center;
+    margin: 20px 0;
 }
 
 /* =====================================================
@@ -331,18 +340,16 @@ h2 {
    ACTION TOOLBAR
 ===================================================== */
 .action-toolbar {
-    background-color: #fff;
-    padding: 16px 20px;
+    background-color: #f8fafc;
+    padding: 10px 24px;
     display: flex;
     justify-content: center;
-    align-items: center;
     flex-wrap: wrap;
-    gap: 20px;
-    border: 1px solid #e0e6ed;
-    margin: 0 auto 20px;
-    max-width: 900px;
-    border-radius: 8px;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+    gap: 10px;
+    border-bottom: 1px solid #e0e6ed;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 .toolbar-left, .toolbar-right {
@@ -355,12 +362,11 @@ h2 {
    TABLE STYLES - WITH BORDERS
 ===================================================== */
 .table-container {
-    overflow-x: auto;
-    background-color: white;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-    border: 1px solid #dee2e6;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    margin-bottom: 0;
+    background-color: transparent;
 }
 
 .data-table {
@@ -379,12 +385,10 @@ h2 {
 
 .data-table th {
     background-color: #2176ae;
-    font-weight: bold;
     color: white;
-    position: sticky;
-    top: 0;
-    text-align: center !important;
-    border: 1px solid #1a5f8a;
+    text-align: center;
+    padding: 12px;
+    font-weight: 500;
 }
 
 .data-table tbody tr:hover {
@@ -892,13 +896,7 @@ h2 {
         justify-content: center;
     }
 
-    /* --- Table --- */
-    .table-container {
-        /* Add a visual cue for horizontal scrolling */
-        box-shadow: 
-            -10px 0 10px -10px rgba(0,0,0,0.1) inset, 
-             10px 0 10px -10px rgba(0,0,0,0.1) inset;
-    }
+    
     
     .data-table {
         font-size: 13px; /* Slightly smaller font for mobile */
