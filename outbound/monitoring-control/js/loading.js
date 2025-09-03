@@ -175,34 +175,29 @@ function normalizeDeliveryNote(dn) {
 function determineDeliveryStatus(job) {
     const now = new Date(); // Waktu saat ini
     const loadingScheduleTime = standardizeTimeForComparison(job.loadingSchedule);
-    
-    // Tidak bisa menentukan status jika tidak ada loadingSchedule
-    if (!loadingScheduleTime) {
-        return '';
-    }
-    
-    // Mendapatkan waktu loadingFinish (diisi manual oleh user)
     const hasLoadingFinish = job.loadingFinish && job.loadingFinish.trim && job.loadingFinish.trim() !== '';
     
-    // Kasus 4: Status "Packed" atau "Completed" dengan finishAt dan loadingFinish
+    // Kasus 5 & 6: Status "Packed" atau "Completed" dengan finishAt dan loadingFinish,
+    // ATAU "Packed" dengan loadingFinish tanpa loadingSchedule
     if ((job.status === 'Packed' || job.status === 'Completed') && 
-        job.finishAt && 
-        hasLoadingFinish) {
+        ((job.finishAt && hasLoadingFinish) || 
+         (job.status === 'Packed' && hasLoadingFinish))) {
         return 'Delivered';
     }
     
     // Kasus 1: Status "Pending Pick" dan Loading Schedule melewati waktu saat ini
-    if (job.status === 'Pending Pick' && loadingScheduleTime < now) {
+    if (job.status === 'Pending Pick' && loadingScheduleTime && loadingScheduleTime < now) {
         return 'Delay process';
     }
     
-    // Kasus 2 & 3: Status "Packed" dengan kondisi waktu berbeda
+    // Kasus untuk status "Packed"
     if (job.status === 'Packed') {
-        if (loadingScheduleTime < now) {
-            // Kasus 3: Loading Schedule melewati waktu saat ini
+        // Kasus 4: Loading Schedule melewati waktu saat ini
+        if (loadingScheduleTime && loadingScheduleTime < now) {
             return 'Delay trucking';
-        } else {
-            // Kasus 2: Loading Schedule tidak melewati waktu saat ini
+        } 
+        // Kasus 2 & 3: Loading Schedule tidak melewati waktu saat ini atau tidak ada nilai
+        else {
             return 'Material Ready';
         }
     }
@@ -404,7 +399,7 @@ function displayJobsData() {
             <td>${item.deliveryNote || ''}</td>
             <td>${item.owner || ''}</td>
             <td>${item.remark || ''}</td>
-            <td>${item.qty || ''}</td>
+            <td data-field="qty">${item.qty || ''}</td>
             <td data-field="jobStatus">${getStatusBadge(item.status)}</td>
             <td data-field="loadingSchedule">${item.loadingSchedule || ''}</td>
             <td data-field="etd">${item.etd || ''}</td>

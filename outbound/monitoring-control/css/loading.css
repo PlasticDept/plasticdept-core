@@ -1,4 +1,6 @@
-/* Reset CSS */
+/* =====================================================
+   RESET & BASE STYLES
+===================================================== */
 * {
     margin: 0;
     padding: 0;
@@ -25,7 +27,9 @@ body {
     padding: 0 15px;
 }
 
-/* HEADER SECTION */
+/* =====================================================
+   HEADER SECTION
+===================================================== */
 .main-header {
     display: flex;
     align-items: center;
@@ -68,7 +72,9 @@ body {
     font-weight: 400;
 }
 
-/* Main Navigation */
+/* =====================================================
+   NAVIGATION STYLES
+===================================================== */
 .main-nav ul {
     display: flex;
     list-style: none;
@@ -147,7 +153,9 @@ body {
     text-align: center;
 }
 
-/* User Section */
+/* =====================================================
+   USER SECTION
+===================================================== */
 .user-section {
     display: flex;
     align-items: center;
@@ -199,7 +207,9 @@ body {
     color: #e74c3c;
 }
 
-/* Header Styles */
+/* =====================================================
+   HEADER & TYPOGRAPHY
+===================================================== */
 header {
     margin-bottom: 30px;
 }
@@ -225,29 +235,38 @@ h2 {
     margin-bottom: 15px;
 }
 
-/* Button Styles */
+/* =====================================================
+   BUTTON STYLES - STANDARDIZED
+===================================================== */
 .btn {
-    padding: 8px 16px;
+    padding: 10px 18px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-weight: 500;
-    transition: background-color 0.2s;
+    font-weight: 600;
+    transition: all 0.2s ease;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
     text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    min-width: 130px;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .btn-primary {
-    background-color: #0056b3;
+    background-color: #0078d4;
     color: white;
 }
 
 .btn-primary:hover {
-    background-color: #004494;
+    background-color: #0056b3;
 }
 
 .btn-success {
@@ -277,11 +296,21 @@ h2 {
     background-color: #c82333;
 }
 
+.btn-action {
+    background-color: #0078d4;
+    color: white;
+}
+
+.btn-action:hover {
+    background-color: #0056b3;
+}
+
 .btn-page {
     padding: 5px 10px;
     background-color: #f8f9fa;
     color: #333;
     border: 1px solid #dee2e6;
+    min-width: auto;
 }
 
 .btn-page:hover {
@@ -289,68 +318,63 @@ h2 {
 }
 
 .btn-page.active {
-    background-color: #0056b3;
+    background-color: #0078d4;
     color: white;
-    border-color: #0056b3;
+    border-color: #0078d4;
 }
 
-/* Action toolbar styling */
+.btn i {
+    margin-right: 8px;
+}
+
+/* =====================================================
+   ACTION TOOLBAR
+===================================================== */
 .action-toolbar {
     background-color: #fff;
-    padding: 12px 16px;
+    padding: 16px 20px;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 20px;
     border: 1px solid #e0e6ed;
-    margin-bottom: 20px;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin: 0 auto 20px;
+    max-width: 900px;
+    border-radius: 8px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
 }
 
 .toolbar-left, .toolbar-right {
     display: flex;
-    gap: 10px;
+    gap: 15px;
     align-items: center;
 }
 
-.btn-action {
-    background-color: #0078d4;
-    color: white;
-    border: none;
-    border-radius: 3px;
-    padding: 8px 14px;
-    font-size: 13px;
-    font-weight: 500;
-    transition: background-color 0.2s;
-}
-
-.btn-action:hover {
-    background-color: #0056b3;
-}
-
-/* Table Styles */
+/* =====================================================
+   TABLE STYLES - WITH BORDERS
+===================================================== */
 .table-container {
     overflow-x: auto;
     background-color: white;
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     margin-bottom: 20px;
+    border: 1px solid #dee2e6;
 }
 
 .data-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 1200px; /* Increased min-width for more columns */
+    min-width: 1200px;
 }
 
 .data-table th, 
 .data-table td {
     padding: 12px 15px;
     text-align: left;
-    border-bottom: 1px solid #e0e0e0;
-    white-space: nowrap; /* Prevent text wrapping */
+    border: 1px solid #dee2e6;
+    white-space: nowrap;
 }
 
 .data-table th {
@@ -360,17 +384,40 @@ h2 {
     position: sticky;
     top: 0;
     text-align: center !important;
+    border: 1px solid #1a5f8a;
 }
 
 .data-table tbody tr:hover {
     background-color: #f5f5f5;
 }
 
+.data-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.data-table tbody td {
+    font-weight: bold;
+}
+
 .text-center {
     text-align: center;
 }
 
-/* Editable Fields */
+/* Text align center untuk kolom yang spesifik */
+.data-table td[data-field="loadingSchedule"],
+.data-table td[data-field="etd"],
+.data-table td[data-field="eta"],
+.data-table td[data-field="palletOut"],
+.data-table td[data-field="truckNo"],
+.data-table td[data-field="loadingStart"],
+.data-table td[data-field="loadingFinish"],
+.data-table td[data-field="deliveryStatus"] {
+    text-align: center;
+}
+
+/* =====================================================
+   EDITABLE FIELDS
+===================================================== */
 .editable {
     padding: 5px;
     border: 1px dashed #0078d4;
@@ -385,7 +432,9 @@ h2 {
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
-/* Action Buttons in Table */
+/* =====================================================
+   ACTION BUTTONS IN TABLE
+===================================================== */
 .action-buttons {
     display: flex;
     gap: 10px;
@@ -439,8 +488,17 @@ h2 {
     visibility: visible;
 }
 
+/* Status badges */
+.status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+}
 
-/* Pagination Styles */
+/* =====================================================
+   PAGINATION
+===================================================== */
 .pagination {
     display: flex;
     justify-content: space-between;
@@ -458,37 +516,40 @@ h2 {
     gap: 5px;
 }
 
-/* NOTIFICATION BAR */
+/* =====================================================
+   NOTIFICATION BAR
+===================================================== */
 .notification-bar {
-  padding: 12px 20px;
-  color: white;
-  text-align: center;
-  font-weight: 500;
-  position: fixed;
-  top: -100px; /* Start off-screen */
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10000;
-  border-radius: 5px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  transition: top 0.5s ease-in-out;
-  min-width: 300px;
+    padding: 12px 20px;
+    color: white;
+    text-align: center;
+    font-weight: 500;
+    position: fixed;
+    top: -100px; /* Start off-screen */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    border-radius: 5px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transition: top 0.5s ease-in-out;
+    min-width: 300px;
 }
 
 .notification-bar.show {
-  top: 20px; /* Slide in to view */
+    top: 20px; /* Slide in to view */
 }
 
 .notification-bar.success {
-  background-color: #28a745;
+    background-color: #28a745;
 }
 
 .notification-bar.error {
-  background-color: #dc3545;
+    background-color: #dc3545;
 }
 
-
-/* Modal Styling */
+/* =====================================================
+   MODAL STYLING
+===================================================== */
 .modal {
     display: none;
     position: fixed;
@@ -574,7 +635,9 @@ h2 {
     border: none;
 }
 
-/* Upload Modal Styling */
+/* =====================================================
+   UPLOAD MODAL STYLING
+===================================================== */
 .upload-modal-content {
     max-width: 550px;
     padding: 0;
@@ -652,7 +715,9 @@ h2 {
     margin-bottom: 0;
 }
 
-/* Form Styling */
+/* =====================================================
+   FORM STYLING
+===================================================== */
 .input-form {
     display: flex;
     flex-direction: column;
@@ -692,7 +757,9 @@ h2 {
     box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
-/* Loading Indicator */
+/* =====================================================
+   LOADING INDICATORS
+===================================================== */
 .loading-indicator {
     display: none;
     margin-top: 16px;
@@ -740,15 +807,38 @@ h2 {
     100% { transform: rotate(360deg); }
 }
 
-/* =================================================================== */
-/* ===== RESPONSIVE STYLES (TARGETING TRUE MOBILE DEVICES) ===== */
-/* =================================================================== */
+/* Blinking effect for status rows */
+@keyframes blink {
+    0% { background-color: rgba(255, 0, 0, 0); }
+    50% { background-color: rgba(255, 0, 0, 0.2); }
+    100% { background-color: rgba(255, 0, 0, 0); }
+}
 
-/* 
-  Kondisi ini menargetkan perangkat dengan layar sentuh (pointer: coarse),
-  yang tidak memiliki kemampuan hover (hover: none), dan memiliki lebar
-  maksimum 768px. Ini secara efektif mengabaikan "Mode Desktop" di browser mobile.
-*/
+.blinking {
+    animation: blink 2s linear infinite;
+}
+
+/* =====================================================
+   RESPONSIVE STYLES
+===================================================== */
+@media (max-width: 768px) {
+    .action-toolbar {
+        flex-direction: column;
+        padding: 12px;
+        gap: 12px;
+    }
+    
+    .toolbar-left, .toolbar-right {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .action-toolbar .btn {
+        width: 100%;
+    }
+}
+
+/* Targeting true mobile devices */
 @media (max-width: 768px) and (pointer: coarse) and (hover: none) {
     .container {
         width: 100%;
