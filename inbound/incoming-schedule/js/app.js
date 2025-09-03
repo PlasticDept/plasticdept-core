@@ -62,14 +62,14 @@ let isAuthenticated = false;
 
 // Authenticate anonymously with Firebase
 function authenticateAnonymously() {
-    showModal(loadingModal);
+    showLoading("Melakukan autentikasi...");
     
     if (typeof firebase.auth === 'function') {
         firebase.auth().signInAnonymously()
             .then(() => {
                 console.log('Authenticated anonymously');
                 isAuthenticated = true;
-                hideModal(loadingModal);
+                hideLoading();
                 
                 // Set user info in the header
                 if (userInfoEl) {
@@ -80,14 +80,34 @@ function authenticateAnonymously() {
                 loadDataFromFirebase();
             })
             .catch((error) => {
-                hideModal(loadingModal);
+                hideLoading();
                 showErrorModal(`Authentication failed: ${error.message}. Please refresh the page.`);
                 console.error('Authentication Error:', error);
             });
     } else {
-        hideModal(loadingModal);
+        hideLoading();
         showErrorModal('Firebase Authentication is not available. Please ensure Firebase Auth library is loaded properly.');
         console.error('Firebase Auth not available');
+    }
+}
+
+// Fungsi yang ditingkatkan untuk menampilkan loading modal dengan pesan khusus
+function showLoading(message = "Memuat data inbound...") {
+    const loadingMessage = document.querySelector('.loading-message');
+    if (loadingMessage) {
+        loadingMessage.textContent = message;
+    }
+    const loadingModal = document.getElementById('loadingModal');
+    if (loadingModal) {
+        loadingModal.style.display = 'flex';
+    }
+}
+
+// Fungsi untuk menyembunyikan loading
+function hideLoading() {
+    const loadingModal = document.getElementById('loadingModal');
+    if (loadingModal) {
+        loadingModal.style.display = 'none';
     }
 }
 
@@ -154,7 +174,7 @@ if (uploadBtn) {
         const file = csvFileInput ? csvFileInput.files[0] : null;
         if (!file) return;
         
-        showModal(loadingModal);
+        showLoading("Memuat data inbound...");
         
         const reader = new FileReader();
         
@@ -163,7 +183,7 @@ if (uploadBtn) {
                 const data = e.target.result;
                 processData(data, file.name);
             } catch (error) {
-                hideModal(loadingModal);
+                hideLoading();
                 showErrorModal('Error reading file: ' + error.message);
             }
         };
@@ -658,7 +678,7 @@ function loadDataFromFirebase(filterParams = {}) {
         return;
     }
     
-    showModal(loadingModal);
+    showLoading("Memuat data dari database...");
     
     // Default: load data dari 30 hari terakhir jika tidak ada filter
     const now = new Date();
@@ -732,10 +752,10 @@ function loadDataFromFirebase(filterParams = {}) {
             updateTable();
             updateSummary();
             updateTableInfo();
-            hideModal(loadingModal);
+            hideLoading();
         })
         .catch(error => {
-            hideModal(loadingModal);
+            hideLoading();
             showErrorModal('Failed to load data from database: ' + error.message);
         });
 }
