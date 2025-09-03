@@ -173,12 +173,6 @@ function normalizeDeliveryNote(dn) {
  * @returns {string} Status delivery yang ditentukan
  */
 function determineDeliveryStatus(job) {
-    // Kasus 1: Jika status job adalah "Completed"
-    if (job.status === 'Completed') {
-        return 'Delivered';
-    }
-    
-    const now = new Date();
     const loadingScheduleTime = standardizeTimeForComparison(job.loadingSchedule);
     
     // Tidak bisa menentukan status jika tidak ada loadingSchedule
@@ -186,25 +180,42 @@ function determineDeliveryStatus(job) {
         return '';
     }
     
-    // Kasus 2: Berdasarkan finishAt vs loadingSchedule
-    // finishAt adalah field yang diisi oleh backend
-    if (job.finishAt) {
-        const finishAtTime = standardizeTimeForComparison(job.finishAt);
-        if (finishAtTime && finishAtTime > loadingScheduleTime) {
-            return 'Delay process'; // finishAt melewati/lebih besar dari loadingSchedule
-        } else if (finishAtTime) {
-            return 'Material Ready'; // finishAt belum melewati/lebih kecil dari loadingSchedule
+    // Mendapatkan waktu finishAt (diisi oleh backend)
+    const finishAtTime = standardizeTimeForComparison(job.finishAt);
+    
+    // Mendapatkan waktu loadingFinish (diisi manual oleh user)
+    const hasLoadingFinish = job.loadingFinish && job.loadingFinish.trim && job.loadingFinish.trim() !== '';
+    
+    // Kasus 4: Status "Packed" atau "Completed" dengan finishAt dan loadingFinish
+    if ((job.status === 'Packed' || job.status === 'Completed') && 
+        job.finishAt && finishAtTime && 
+        hasLoadingFinish) {
+        return 'Delivered';
+    }
+    
+    // Kasus 2 & 3: Material Ready
+    if (job.finishAt && finishAtTime) {
+        // Jika finishAt > loadingSchedule tetapi juga memiliki loadingFinish
+        if (finishAtTime > loadingScheduleTime && hasLoadingFinish) {
+            return 'Material Ready';
         }
-    } else {
-        // Jika finishAt tidak ada atau kosong
+        
+        // Jika finishAt < loadingSchedule
+        if (finishAtTime <= loadingScheduleTime) {
+            return 'Material Ready';
+        }
+    }
+    
+    // Kasus 1: Delay process - default ketika tidak memenuhi kondisi di atas
+    // - Tidak ada finishAt
+    // - finishAt kosong
+    // - finishAt > loadingSchedule tanpa loadingFinish
+    if (!job.finishAt || !finishAtTime || 
+        (finishAtTime > loadingScheduleTime && !hasLoadingFinish)) {
         return 'Delay process';
     }
     
-    // Kasus 3: Jika status "Packed" dan waktu sekarang > loadingSchedule
-    if (job.status === 'Packed' && now > loadingScheduleTime) {
-        return 'Delay trucking';
-    }
-    
+    // Default: tidak ada status khusus
     return '';
 }
 
