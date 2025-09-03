@@ -173,6 +173,7 @@ function normalizeDeliveryNote(dn) {
  * @returns {string} Status delivery yang ditentukan
  */
 function determineDeliveryStatus(job) {
+    const now = new Date(); // Waktu saat ini
     const loadingScheduleTime = standardizeTimeForComparison(job.loadingSchedule);
     
     // Tidak bisa menentukan status jika tidak ada loadingSchedule
@@ -180,43 +181,87 @@ function determineDeliveryStatus(job) {
         return '';
     }
     
-    // Mendapatkan waktu finishAt (diisi oleh backend)
-    const finishAtTime = standardizeTimeForComparison(job.finishAt);
-    
     // Mendapatkan waktu loadingFinish (diisi manual oleh user)
     const hasLoadingFinish = job.loadingFinish && job.loadingFinish.trim && job.loadingFinish.trim() !== '';
     
     // Kasus 4: Status "Packed" atau "Completed" dengan finishAt dan loadingFinish
     if ((job.status === 'Packed' || job.status === 'Completed') && 
-        job.finishAt && finishAtTime && 
+        job.finishAt && 
         hasLoadingFinish) {
         return 'Delivered';
     }
     
-    // Kasus 2 & 3: Material Ready
-    if (job.finishAt && finishAtTime) {
-        // Jika finishAt > loadingSchedule tetapi juga memiliki loadingFinish
-        if (finishAtTime > loadingScheduleTime && hasLoadingFinish) {
-            return 'Material Ready';
-        }
-        
-        // Jika finishAt < loadingSchedule
-        if (finishAtTime <= loadingScheduleTime) {
-            return 'Material Ready';
-        }
+    // Kasus 1: Status "Pending Pick" dan Loading Schedule melewati waktu saat ini
+    if (job.status === 'Pending Pick' && loadingScheduleTime < now) {
+        return 'Delay process';
     }
     
-    // Kasus 1: Delay process - default ketika tidak memenuhi kondisi di atas
-    // - Tidak ada finishAt
-    // - finishAt kosong
-    // - finishAt > loadingSchedule tanpa loadingFinish
-    if (!job.finishAt || !finishAtTime || 
-        (finishAtTime > loadingScheduleTime && !hasLoadingFinish)) {
-        return 'Delay process';
+    // Kasus 2 & 3: Status "Packed" dengan kondisi waktu berbeda
+    if (job.status === 'Packed') {
+        if (loadingScheduleTime < now) {
+            // Kasus 3: Loading Schedule melewati waktu saat ini
+            return 'Delay trucking';
+        } else {
+            // Kasus 2: Loading Schedule tidak melewati waktu saat ini
+            return 'Material Ready';
+        }
     }
     
     // Default: tidak ada status khusus
     return '';
+}
+
+/**
+ * Mengurutkan data pekerjaan berdasarkan tanggal delivery dan loading schedule
+ * @param {Array} data - Array data pekerjaan yang akan diurutkan
+ * @returns {Array} Data yang sudah diurutkan
+ */
+function sortJobsData(data) {
+    return [...data].sort((a, b) => {
+        // Parsing deliveryDate dari format "dd-MMM-yyyy"
+        const dateA = parseDeliveryDate(a.deliveryDate);
+        const dateB = parseDeliveryDate(b.deliveryDate);
+        
+        // Jika tanggal delivery sama, bandingkan waktu loading schedule
+        if (dateA.getTime() === dateB.getTime()) {
+            const scheduleA = standardizeTimeForComparison(a.loadingSchedule) || new Date(8640000000000000); // Nilai maksimum jika kosong
+            const scheduleB = standardizeTimeForComparison(b.loadingSchedule) || new Date(8640000000000000);
+            return scheduleA - scheduleB;
+        }
+        
+        // Jika tanggal berbeda, urutkan berdasarkan tanggal
+        return dateA - dateB;
+    });
+}
+
+/**
+ * Mengkonversi string tanggal dengan format "dd-MMM-yyyy" menjadi objek Date
+ * @param {string} dateString - String tanggal dalam format "dd-MMM-yyyy"
+ * @returns {Date} Objek Date hasil konversi atau tanggal default jika invalid
+ */
+function parseDeliveryDate(dateString) {
+    if (!dateString) return new Date(0); // Default ke tanggal paling awal jika kosong
+    
+    try {
+        // Format tanggal: "dd-MMM-yyyy" (misalnya "01-Jan-2025")
+        const parts = dateString.split('-');
+        if (parts.length !== 3) return new Date(0);
+        
+        const day = parseInt(parts[0], 10);
+        const monthMap = {
+            "Jan": 0, "Feb": 1, "Mar": 2, "Apr": 3, "May": 4, "Jun": 5,
+            "Jul": 6, "Aug": 7, "Sep": 8, "Oct": 9, "Nov": 10, "Dec": 11
+        };
+        const month = monthMap[parts[1]];
+        const year = parseInt(parts[2], 10);
+        
+        if (isNaN(day) || month === undefined || isNaN(year)) return new Date(0);
+        
+        return new Date(year, month, day);
+    } catch (e) {
+        console.error("Error parsing date:", dateString, e);
+        return new Date(0);
+    }
 }
 
 /**
@@ -298,7 +343,10 @@ async function loadJobsFromFirebase() {
              }));
              
             // Filter data hanya berdasarkan status yang diizinkan
-            allJobsData = rawData.filter(item => allowedStatuses.includes(item.status));
+            let filteredData = rawData.filter(item => allowedStatuses.includes(item.status));
+            
+            // Urutkan data berdasarkan tanggal dan loading schedule
+            allJobsData = sortJobsData(filteredData);
             
             if (allJobsData.length === 0) {
                 document.getElementById('deliveryTableEditable').innerHTML = '<tr><td colspan="16" style="text-align:center;">Tidak ada data dengan status yang sesuai.</td></tr>';
