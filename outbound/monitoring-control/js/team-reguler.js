@@ -180,7 +180,14 @@ function loadTeamJobs() {
       pageLength: -1,
       lengthMenu: [[-1], ["All"]],
       columnDefs: [
-        { targets: 0, orderable: false, searchable: false } // kolom "No"
+        { targets: 0, orderable: false, searchable: false, width: "10px" }, // kolom "No"
+        { targets: 1, width: "120px" }, // Job No
+        { targets: 2, width: "100px" }, // Delivery Date
+        { targets: 3, width: "150px" }, // Delivery Note
+        { targets: 4, width: "300px" }, // Remark
+        { targets: 5, width: "75px" }, // Status
+        { targets: 6, width: "65px" }, // Qty
+        { targets: 7, width: "75px" }  // Job Type
       ],
       order: []
     });
