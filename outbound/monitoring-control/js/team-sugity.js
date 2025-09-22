@@ -166,15 +166,46 @@ function renderChart(achievedQty, totalQty) {
 }
 
 /**
- * Load data outbound jobs untuk team Sugity, isi tabel dan update chart & metrics.
+ * Load data outbound jobs untuk team Sugity/Reguler, isi tabel dan update chart & metrics.
  */
 function loadTeamJobs() {
+  // Inisialisasi DataTable jika belum
+  let dataTable;
+  if (!$.fn.DataTable.isDataTable("#teamTable")) {
+    dataTable = $("#teamTable").DataTable({
+      paging: true,
+      searching: true,
+      ordering: true,
+      info: true,
+      pageLength: -1,
+      lengthMenu: [[-1], ["All"]],
+      columnDefs: [
+        { targets: 0, orderable: false, searchable: false } // kolom "No"
+      ],
+      order: []
+    });
+  } else {
+    dataTable = $("#teamTable").DataTable();
+  }
+
+  // Fungsi untuk update nomor urut
+  function updateRowNumbers() {
+    dataTable.column(0, { search: "applied", order: "applied" })
+      .nodes()
+      .each(function(cell, i) {
+        cell.textContent = i + 1;
+      });
+  }
+
+  // Listener untuk perubahan data di Firebase
   onValue(ref(db, "PhxOutboundJobs"), snapshot => {
     const data = snapshot.val();
-    teamTable.innerHTML = "";
     let totalJobs = 0;
     let totalQty = 0;
     let achievedQty = 0;
+
+    // Clear DataTable setiap kali ada update
+    dataTable.clear();
 
     if (data) {
       Object.values(data).forEach(job => {
@@ -187,24 +218,32 @@ function loadTeamJobs() {
             achievedQty += qty;
           }
 
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td></td> <!-- No -->
-            <td>${job.jobNo}</td>
-            <td>${job.deliveryDate}</td>
-            <td>${job.deliveryNote}</td>
-            <td>${job.remark}</td>
-            <td></td>
-            <td>${qty.toLocaleString()}</td>
-            <td>${job.jobType ? `<span class="job-type ${job.jobType}">${job.jobType}</span>` : ""}</td>
-          `;
-          // ✅ kolom Status sekarang di kolom ke-6 setelah penambahan "No"
-          row.querySelector("td:nth-child(6)").appendChild(createStatusLabel(job.status));
-          teamTable.appendChild(row);
+          // Buat status label
+          const statusCell = document.createElement("div");
+          statusCell.appendChild(createStatusLabel(job.status));
+
+          // Tambahkan baris baru ke DataTable
+          dataTable.row.add([
+            "", // No (akan diisi otomatis)
+            job.jobNo,
+            job.deliveryDate,
+            job.deliveryNote,
+            job.remark,
+            $(statusCell).html(), // Konversi ke HTML untuk cell status
+            qty.toLocaleString(),
+            job.jobType ? `<span class="job-type ${job.jobType}">${job.jobType}</span>` : ""
+          ]);
         }
       });
     }
 
+    // Draw table setelah semua data ditambahkan
+    dataTable.draw();
+    
+    // Update nomor urut
+    updateRowNumbers();
+
+    // Update metrics dan chart
     const remainingQty = totalQty - achievedQty;
     document.getElementById("planTarget").textContent = `${PLAN_TARGET_QTY.toLocaleString()} kg`;
     document.getElementById("actualTarget").textContent = `${totalQty.toLocaleString()} kg`;
@@ -212,35 +251,11 @@ function loadTeamJobs() {
     document.getElementById("remainingTarget").textContent = `${remainingQty.toLocaleString()} kg`;
 
     renderChart(achievedQty, PLAN_TARGET_QTY);
+  });
 
-    // ✅ Inisialisasi DataTable + penomoran otomatis
-    if (!$.fn.DataTable.isDataTable("#teamTable")) {
-      const dt = $("#teamTable").DataTable({
-        paging: true,
-        searching: true,
-        ordering: true,
-        info: true,
-        pageLength: -1,
-        lengthMenu: [[-1], ["All"]],
-        columnDefs: [
-          { targets: 0, orderable: false, searchable: false } // kolom "No"
-        ],
-        order: [] // tidak set default order; user bebas klik header mana pun
-      });
-
-      // Isi ulang nomor setiap order/search/draw
-      dt.on("order.dt search.dt draw.dt", function () {
-        let i = 1;
-        dt.column(0, { search: "applied", order: "applied", page: "current" })
-          .nodes()
-          .each(function (cell) {
-            cell.textContent = i++;
-          });
-      }).draw();
-    } else {
-      // Jika sudah terinisialisasi, redraw agar nomor ter-update
-      $("#teamTable").DataTable().draw(false);
-    }
+  // Event listener untuk update nomor saat paging/search/ordering
+  dataTable.on("order.dt search.dt", function() {
+    updateRowNumbers();
   });
 }
 
