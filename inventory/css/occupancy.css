@@ -95,10 +95,36 @@ body {
     background-color: #fff;
 }
 
+/* Customer Code Colors - Easy to modify */
 .location-cell.occupied {
-    background-color: #f8d7da;
+    background-color: #f8d7da; /* Default occupied color */
 }
 
+.location-cell.customer-pl-auto {
+    background-color: #cfe2ff; /* Light blue */
+}
+
+.location-cell.customer-pl-auto-2 {
+    background-color: #d1e7dd; /* Light green */
+}
+
+.location-cell.customer-sc-2 {
+    background-color: #fff3cd; /* Light yellow */
+}
+
+.location-cell.customer-t-tec {
+    background-color: #f8d7da; /* Light red */
+}
+
+.location-cell.customer-tti-pp {
+    background-color: #e2d9f3; /* Light purple */
+}
+
+.location-cell.customer-tti-machinery {
+    background-color: #fde0dc; /* Light orange */
+}
+
+/* Legacy status colors - keep for backward compatibility */
 .location-cell.status-putaway {
     background-color: #cfe2ff;
 }
@@ -134,14 +160,46 @@ body {
     border: 1px solid #dee2e6;
 }
 
-.legend-color.occupied {
+.legend-color.available {
+    background-color: #fff;
+    border-color: #dee2e6;
+}
+
+/* Customer Code Legend Colors */
+.legend-color.customer-pl-auto {
+    background-color: #cfe2ff;
+    border-color: #9ec5fe;
+}
+
+.legend-color.customer-pl-auto-2 {
+    background-color: #d1e7dd;
+    border-color: #a3cfbb;
+}
+
+.legend-color.customer-sc-2 {
+    background-color: #fff3cd;
+    border-color: #ffecb5;
+}
+
+.legend-color.customer-t-tec {
     background-color: #f8d7da;
     border-color: #f5c2c7;
 }
 
-.legend-color.available {
-    background-color: #fff;
-    border-color: #dee2e6;
+.legend-color.customer-tti-pp {
+    background-color: #e2d9f3;
+    border-color: #c5b3e6;
+}
+
+.legend-color.customer-tti-machinery {
+    background-color: #fde0dc;
+    border-color: #fbbeb5;
+}
+
+/* Legacy legend colors - keep for backward compatibility */
+.legend-color.occupied {
+    background-color: #f8d7da;
+    border-color: #f5c2c7;
 }
 
 .legend-color.status-putaway {

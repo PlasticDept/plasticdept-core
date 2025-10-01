@@ -11,6 +11,7 @@ const firebaseConfig = {
 
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 const db = firebase.firestore();
 const storage = firebase.storage();
 
@@ -23,10 +24,51 @@ let allRackPrefixes = []; // All available rack prefixes (DA, DB, DC, etc.)
 let currentRackPrefix = ""; // Current selected rack prefix for high rack areas
 let locationCache = {}; // Cache for location data
 
+// Customer code colors
+const customerColors = {
+  'PL AUTO': '#FFD580', // Light Orange
+  'PL AUTO 2': '#FFA500', // Orange
+  'SC-2': '#90EE90', // Light Green
+  'T-TEC': '#87CEEB', // Sky Blue
+  'TTI-PP': '#E6E6FA', // Lavender
+  'TTI-MACHINERY': '#FFC0CB' // Pink
+};
+
+// Function for anonymous authentication
+async function authenticateAnonymously() {
+  try {
+    // Check if already authenticated
+    if (!auth.currentUser) {
+      await auth.signInAnonymously();
+      console.log("Successfully logged in anonymously");
+    }
+    return true;
+  } catch (error) {
+    console.error("Authentication error:", error);
+    alert("Failed to authenticate. Please reload the page.");
+    return false;
+  }
+}
+
 // Main App
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize application
-    initializeApp();
+    // Update legend container with customer codes
+    updateCustomerLegend();
+    
+    // Listen for auth state changes
+    auth.onAuthStateChanged(function(user) {
+        if (user) {
+            // User is signed in, initialize the app
+            initializeApp();
+        } else {
+            // No user is signed in, try to authenticate anonymously
+            authenticateAnonymously().then(success => {
+                if (success) {
+                    initializeApp();
+                }
+            });
+        }
+    });
     
     // Event listeners
     document.getElementById('uploadMasterBtn').addEventListener('click', handleMasterLocationUpload);
@@ -46,8 +88,68 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Update the legend container with customer codes
+function updateCustomerLegend() {
+    const legendContainer = document.querySelector('.legend-container');
+    if (!legendContainer) return;
+    
+    // Clear existing content
+    legendContainer.innerHTML = '';
+    
+    // Add available status
+    const availableSpan = document.createElement('span');
+    availableSpan.className = 'legend-item';
+    availableSpan.innerHTML = `<span class="legend-color available"></span> Available`;
+    legendContainer.appendChild(availableSpan);
+    
+    // Add customer codes
+    Object.keys(customerColors).forEach(customer => {
+        const span = document.createElement('span');
+        span.className = 'legend-item ms-3';
+        span.innerHTML = `<span class="legend-color customer-${customer.replace(/\s+/g, '-').toLowerCase()}" style="background-color: ${customerColors[customer]}"></span> ${customer}`;
+        legendContainer.appendChild(span);
+    });
+    
+    // Add dynamic styles for customer colors
+    let styleEl = document.getElementById('customer-styles');
+    if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'customer-styles';
+        document.head.appendChild(styleEl);
+    }
+    
+    let cssRules = '';
+    Object.keys(customerColors).forEach(customer => {
+        const cssClass = `.customer-${customer.replace(/\s+/g, '-').toLowerCase()}`;
+        cssRules += `${cssClass} { background-color: ${customerColors[customer]}; border-color: ${adjustBorderColor(customerColors[customer])}; }\n`;
+    });
+    
+    styleEl.textContent = cssRules;
+}
+
+// Adjust border color to be slightly darker than background
+function adjustBorderColor(hexColor) {
+    // Convert hex to RGB
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
+    
+    // Darken by 10%
+    const darkenFactor = 0.9;
+    const newR = Math.floor(r * darkenFactor);
+    const newG = Math.floor(g * darkenFactor);
+    const newB = Math.floor(b * darkenFactor);
+    
+    // Convert back to hex
+    return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+}
+
 // Initialize Application
-function initializeApp() {
+async function initializeApp() {
+    // Authenticate anonymously first
+    const authenticated = await authenticateAnonymously();
+    if (!authenticated) return;
+    
     // Load all locations and analyze structure
     loadMasterLocations().then(() => {
         // After loading master locations, initialize rack sections
@@ -67,6 +169,12 @@ function initializeApp() {
 // Load Master Locations from Firebase
 async function loadMasterLocations() {
     try {
+        // Ensure we're authenticated
+        if (!auth.currentUser) {
+            await authenticateAnonymously();
+            if (!auth.currentUser) throw new Error("Cannot load data without authentication");
+        }
+        
         const querySnapshot = await db.collection('locations').get();
         allLocations = [];
         
@@ -87,7 +195,7 @@ async function loadMasterLocations() {
         return allLocations;
     } catch (error) {
         console.error("Error loading master locations: ", error);
-        alert("Gagal memuat data master lokasi. Silakan coba lagi.");
+        alert("Failed to load master location data. Please try again.");
         return [];
     }
 }
@@ -254,15 +362,8 @@ function displayRackArea(rackPrefix) {
             pos1Cell.setAttribute('data-location', pos1Code);
             pos1Cell.addEventListener('click', () => showLocationDetails(pos1Code));
             
-            // Update cell appearance based on occupancy
-            if (locationCache[pos1Code] && locationCache[pos1Code].isOccupied) {
-                pos1Cell.classList.add('occupied');
-                if (locationCache[pos1Code].status) {
-                    pos1Cell.classList.add(`status-${locationCache[pos1Code].status}`);
-                }
-            } else {
-                pos1Cell.classList.add('available');
-            }
+            // Update cell appearance based on occupancy and customer code
+            updateCellAppearance(pos1Cell, pos1Code);
             
             row.appendChild(pos1Cell);
             
@@ -273,15 +374,8 @@ function displayRackArea(rackPrefix) {
             pos2Cell.setAttribute('data-location', pos2Code);
             pos2Cell.addEventListener('click', () => showLocationDetails(pos2Code));
             
-            // Update cell appearance based on occupancy
-            if (locationCache[pos2Code] && locationCache[pos2Code].isOccupied) {
-                pos2Cell.classList.add('occupied');
-                if (locationCache[pos2Code].status) {
-                    pos2Cell.classList.add(`status-${locationCache[pos2Code].status}`);
-                }
-            } else {
-                pos2Cell.classList.add('available');
-            }
+            // Update cell appearance based on occupancy and customer code
+            updateCellAppearance(pos2Cell, pos2Code);
             
             row.appendChild(pos2Cell);
         });
@@ -299,6 +393,27 @@ function displayRackArea(rackPrefix) {
     // Show high rack area, hide floor area
     document.getElementById('highRackArea').style.display = 'block';
     document.getElementById('floorArea').style.display = 'none';
+}
+
+// Update cell appearance based on occupancy and customer code
+function updateCellAppearance(cell, locationCode) {
+    const locationData = locationCache[locationCode];
+    
+    if (locationData && locationData.isOccupied) {
+        cell.classList.add('occupied');
+        
+        // Check for customer code
+        if (locationData.customerCode && customerColors[locationData.customerCode]) {
+            cell.style.backgroundColor = customerColors[locationData.customerCode];
+            cell.classList.add(`customer-${locationData.customerCode.replace(/\s+/g, '-').toLowerCase()}`);
+        } 
+        // Fall back to status if no customer code
+        else if (locationData.status) {
+            cell.classList.add(`status-${locationData.status}`);
+        }
+    } else {
+        cell.classList.add('available');
+    }
 }
 
 // Display Floor Area
@@ -366,15 +481,8 @@ function displayFloorArea(floorPrefix) {
             locationCell.setAttribute('data-location', locationCode);
             locationCell.addEventListener('click', () => showLocationDetails(locationCode));
             
-            // Update cell appearance based on occupancy
-            if (locationCache[locationCode] && locationCache[locationCode].isOccupied) {
-                locationCell.classList.add('occupied');
-                if (locationCache[locationCode].status) {
-                    locationCell.classList.add(`status-${locationCache[locationCode].status}`);
-                }
-            } else {
-                locationCell.classList.add('available');
-            }
+            // Update cell appearance based on occupancy and customer code
+            updateCellAppearance(locationCell, locationCode);
             
             row.appendChild(locationCell);
         }
@@ -544,7 +652,7 @@ function showLocationDetails(locationCode) {
         locationModal.show();
     }).catch(error => {
         console.error("Error getting location details: ", error);
-        alert("Gagal memuat detail lokasi. Silakan coba lagi.");
+        alert("Failed to load location details. Please try again.");
     });
 }
 
@@ -732,6 +840,11 @@ function displaySearchResults(results) {
         resultItem.classList.add(location.isOccupied ? 'occupied' : 'available');
         resultItem.addEventListener('click', () => showLocationDetails(location.locationCode));
         
+        // Apply customer code styling if available
+        if (location.customerCode && customerColors[location.customerCode]) {
+            resultItem.style.borderLeftColor = customerColors[location.customerCode];
+        }
+        
         const locationCode = document.createElement('div');
         locationCode.className = 'result-location-code';
         locationCode.textContent = location.locationCode;
@@ -743,6 +856,14 @@ function displaySearchResults(results) {
             (location.status ? location.status.charAt(0).toUpperCase() + location.status.slice(1) : 'Occupied') : 
             'Available';
         resultItem.appendChild(locationStatus);
+        
+        // Add customer code if available
+        if (location.customerCode) {
+            const customerInfo = document.createElement('div');
+            customerInfo.className = 'result-customer-info';
+            customerInfo.textContent = location.customerCode;
+            resultItem.appendChild(customerInfo);
+        }
         
         if (location.isOccupied && location.partNo) {
             const partInfo = document.createElement('div');
@@ -765,7 +886,7 @@ function handleFileUpload() {
     const file = fileInput.files[0];
 
     if (!file) {
-        alert('Silakan pilih file occupancy terlebih dahulu.');
+        alert('Please select an occupancy file first.');
         return;
     }
 
@@ -786,7 +907,7 @@ function handleFileUpload() {
             .then(() => {
                 bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
                 fileInput.value = '';
-                alert('Data occupancy berhasil diupload dan diproses!');
+                alert('Occupancy data successfully uploaded and processed!');
                 loadMasterLocations().then(() => {
                     // Re-render current view
                     const activeAreaBtn = document.querySelector('.rack-area-btn.active');
@@ -804,7 +925,7 @@ function handleFileUpload() {
             })
             .catch(error => {
                 console.error("Error processing uploaded data:", error);
-                alert('Terjadi kesalahan saat memproses data occupancy. Silakan coba lagi.');
+                alert('Error processing occupancy data. Please try again.');
             })
             .finally(() => {
                 uploadBtn.disabled = false;
@@ -814,12 +935,12 @@ function handleFileUpload() {
     reader.readAsArrayBuffer(file);
 }
 
-// Fungsi Upload Master Lokasi CSV
+// Upload Master Location CSV
 function handleMasterLocationUpload() {
     const fileInput = document.getElementById('fileUpload');
     const file = fileInput.files[0];
     if (!file) {
-        alert('Silakan pilih file master lokasi CSV terlebih dahulu.');
+        alert('Please select a master location CSV file first.');
         return;
     }
 
@@ -835,17 +956,17 @@ function handleMasterLocationUpload() {
         csv = csv.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
         const lines = csv.split('\n').map(l => l.trim()).filter(Boolean);
 
-        // Ambil index kolom "Location" dari header
+        // Get "Location" column index from header
         const header = lines[0].split(',');
         const locationIdx = header.findIndex(h => h.trim().toLowerCase() === 'location');
         if (locationIdx === -1) {
-            alert('File CSV tidak valid! Pastikan ada header "Location"');
+            alert('Invalid CSV file! Make sure it has a "Location" header');
             uploadBtn.disabled = false;
             uploadBtn.innerHTML = originalText;
             return;
         }
 
-        // Batch Firestore untuk efisiensi
+        // Batch Firestore for efficiency
         const batch = db.batch();
         let count = 0;
         for (let i = 1; i < lines.length; i++) {
@@ -863,7 +984,7 @@ function handleMasterLocationUpload() {
         }
 
         batch.commit().then(() => {
-            alert(`Master lokasi berhasil diupload! Total lokasi: ${count}`);
+            alert(`Master location uploaded successfully! Total locations: ${count}`);
             fileInput.value = '';
             uploadBtn.disabled = false;
             uploadBtn.innerHTML = originalText;
@@ -872,7 +993,7 @@ function handleMasterLocationUpload() {
             // Reload application to incorporate new master data
             initializeApp();
         }).catch(err => {
-            alert('Upload gagal: ' + err.message);
+            alert('Upload failed: ' + err.message);
             uploadBtn.disabled = false;
             uploadBtn.innerHTML = originalText;
         });
@@ -909,7 +1030,7 @@ async function processUploadedData(data) {
                 partNo: row.PartNo || row.partNo || row['Part No'] || '',
                 productDescription: row.ProductDescription || row['Product Description'] || row.Description || '',
                 invoiceNo: row.InvoiceNo || row.invoiceNo || row['Invoice No'] || '',
-                lotNo: row.LotNo || row.lotNo || row['Lot No'] || row['Lot No.'] || '', // Added "Lot No." with period
+                lotNo: row.LotNo || row.lotNo || row['Lot No'] || row['Lot No.'] || '',
                 receiveDate: row.ReceiveDate || row.receiveDate || row['Receive Date'] || row['Received Date'] || '',
                 status: row.Status || row.status || 'putaway',
                 quantity: parseInt(row.Quantity || row.quantity || row.QTY || row.Qty || '0', 10),
@@ -957,7 +1078,7 @@ function refreshData() {
         })
         .catch(error => {
             console.error("Error refreshing data:", error);
-            alert('Terjadi kesalahan saat memuat ulang data. Silakan coba lagi.');
+            alert('Error refreshing data. Please try again.');
         })
         .finally(() => {
             // Reset button state
@@ -967,28 +1088,33 @@ function refreshData() {
 }
 
 // Update Statistics
-function updateStatistics() {
-    db.collection('locations').get()
-        .then((querySnapshot) => {
-            const total = querySnapshot.size;
-            let occupied = 0;
-            
-            querySnapshot.forEach((doc) => {
-                if (doc.data().isOccupied) {
-                    occupied++;
-                }
-            });
-            
-            const available = total - occupied;
-            const percentage = total > 0 ? Math.round((occupied / total) * 100) : 0;
-            
-            // Update UI
-            document.getElementById('totalLocations').textContent = formatNumber(total);
-            document.getElementById('occupiedLocations').textContent = formatNumber(occupied);
-            document.getElementById('availableLocations').textContent = formatNumber(available);
-            document.getElementById('occupancyPercentage').textContent = `${percentage}%`;
-        })
-        .catch((error) => {
-            console.error("Error calculating statistics: ", error);
+async function updateStatistics() {
+    try {
+        // Ensure we're authenticated
+        if (!auth.currentUser) {
+            await authenticateAnonymously();
+            if (!auth.currentUser) return;
+        }
+        
+        const querySnapshot = await db.collection('locations').get();
+        const total = querySnapshot.size;
+        let occupied = 0;
+        
+        querySnapshot.forEach((doc) => {
+            if (doc.data().isOccupied) {
+                occupied++;
+            }
         });
+        
+        const available = total - occupied;
+        const percentage = total > 0 ? Math.round((occupied / total) * 100) : 0;
+        
+        // Update UI
+        document.getElementById('totalLocations').textContent = formatNumber(total);
+        document.getElementById('occupiedLocations').textContent = formatNumber(occupied);
+        document.getElementById('availableLocations').textContent = formatNumber(available);
+        document.getElementById('occupancyPercentage').textContent = `${percentage}%`;
+    } catch (error) {
+        console.error("Error calculating statistics: ", error);
+    }
 }

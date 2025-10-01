@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,33 +20,20 @@
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav">
-                        <li class="nav-item">
-                            <a class="nav-link active" href="#">Dashboard</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">Laporan</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">Pengaturan</a>
-                        </li>
-                    </ul>
-                </div>
             </div>
         </nav>
 
         <div class="content-container my-3">
             <div class="row mb-4">
                 <div class="col-md-6">
-                    <h2 class="page-title">Monitoring Occupancy Rack</h2>
-                    <p class="text-muted">Visualisasi status occupancy rack area dan floor area</p>
+                    <h2 class="page-title">Rack Occupancy Monitoring</h2>
+                    <p class="text-muted">Visualization of rack area and floor area occupancy status</p>
                 </div>
                 <div class="col-md-6">
                     <div class="d-flex justify-content-end">
                         <div class="input-group me-2 search-container">
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" id="searchInput" class="form-control" placeholder="Cari lokasi, part no, dsb...">
+                            <input type="text" id="searchInput" class="form-control" placeholder="Search location, part no, etc...">
                         </div>
                         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">
                             <i class="bi bi-upload me-2"></i> Upload
@@ -60,22 +47,28 @@
 
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Status Occupancy</h5>
+                    <h5 class="mb-0">Key Indicators</h5>
                     <div class="legend-container">
                         <span class="legend-item">
-                            <span class="legend-color available"></span> Tersedia
+                            <span class="legend-color available"></span> Available
                         </span>
                         <span class="legend-item ms-3">
-                            <span class="legend-color occupied"></span> Terisi
+                            <span class="legend-color customer-pl-auto"></span> PL AUTO
                         </span>
                         <span class="legend-item ms-3">
-                            <span class="legend-color status-putaway"></span> Putaway
+                            <span class="legend-color customer-pl-auto-2"></span> PL AUTO 2
                         </span>
                         <span class="legend-item ms-3">
-                            <span class="legend-color status-allocated"></span> Allocated
+                            <span class="legend-color customer-sc-2"></span> SC-2
                         </span>
                         <span class="legend-item ms-3">
-                            <span class="legend-color status-hold"></span> Hold
+                            <span class="legend-color customer-t-tec"></span> T-TEC
+                        </span>
+                        <span class="legend-item ms-3">
+                            <span class="legend-color customer-tti-pp"></span> TTI-PP
+                        </span>
+                        <span class="legend-item ms-3">
+                            <span class="legend-color customer-tti-machinery"></span> TTI-MACHINERY
                         </span>
                     </div>
                 </div>
@@ -125,31 +118,31 @@
 
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h5 class="mb-0">Statistik Occupancy</h5>
+                    <h5 class="mb-0">Occupancy Statistics</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3">
                             <div class="stat-card">
-                                <div class="stat-title">Total Lokasi</div>
+                                <div class="stat-title">Total Locations</div>
                                 <div class="stat-value" id="totalLocations">-</div>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="stat-card">
-                                <div class="stat-title">Lokasi Terpakai</div>
+                                <div class="stat-title">Occupied Locations</div>
                                 <div class="stat-value text-danger" id="occupiedLocations">-</div>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="stat-card">
-                                <div class="stat-title">Lokasi Tersedia</div>
+                                <div class="stat-title">Available Locations</div>
                                 <div class="stat-value text-success" id="availableLocations">-</div>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="stat-card">
-                                <div class="stat-title">Persentase Occupancy</div>
+                                <div class="stat-title">Occupancy Percentage</div>
                                 <div class="stat-value text-primary" id="occupancyPercentage">-</div>
                             </div>
                         </div>
@@ -159,12 +152,12 @@
         </div>
     </div>
 
-    <!-- Modal Detail Lokasi -->
+    <!-- Location Detail Modal -->
     <div class="modal fade" id="locationModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Detail Lokasi: <span id="locationCode"></span></h5>
+                    <h5 class="modal-title">Location Detail: <span id="locationCode"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -208,42 +201,42 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal Upload -->
+    <!-- Upload Modal -->
     <div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Upload Data Occupancy</h5>
+                    <h5 class="modal-title">Upload Occupancy Data</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="uploadForm">
                         <div class="mb-3">
-                            <label for="fileUpload" class="form-label">Pilih File (Excel/CSV)</label>
+                            <label for="fileUpload" class="form-label">Select File (Excel/CSV)</label>
                             <input class="form-control" type="file" id="fileUpload" accept=".xlsx, .xls, .csv">
-                            <div class="form-text">Format file: Excel (.xlsx, .xls) atau CSV</div>
+                            <div class="form-text">File format: Excel (.xlsx, .xls) or CSV</div>
                         </div>
                     </form>
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle me-2"></i>
-                        <b>Pilih jenis upload:</b><br>
-                        <span class="text-primary">Upload Master Lokasi:</span> untuk file CSV berisi daftar lokasi.<br>
-                        <span class="text-success">Upload Data Occupancy:</span> untuk data detail lokasi (part/invoice/status, dsb).
+                        <b>Choose upload type:</b><br>
+                        <span class="text-primary">Upload Master Locations:</span> for CSV file containing location list.<br>
+                        <span class="text-success">Upload Occupancy Data:</span> for location details (parts/invoice/status, etc).
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary" id="uploadMasterBtn">
-                        <i class="bi bi-cloud-upload"></i> Upload Master Lokasi
+                        <i class="bi bi-cloud-upload"></i> Upload Master Locations
                     </button>
                     <button type="button" class="btn btn-success" id="uploadOccupancyBtn">
-                        <i class="bi bi-upload"></i> Upload Data Occupancy
+                        <i class="bi bi-upload"></i> Upload Occupancy Data
                     </button>
                 </div>
             </div>
@@ -256,6 +249,7 @@
 
     <!-- Firebase Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     
