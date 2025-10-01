@@ -1,28 +1,21 @@
-// Firebase Configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyDDw17I5NwibE9BXl0YoILPQqoPQfCKH4Q",
-  authDomain: "inbound-d8267.firebaseapp.com",
-  databaseURL: "https://inbound-d8267-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "inbound-d8267",
-  storageBucket: "inbound-d8267.firebasestorage.app",
-  messagingSenderId: "852665126418",
-  appId: "1:852665126418:web:e4f029b83995e29f3052cb"
-};
+// Configuration and Global Variables
+const API_URL = 'http://127.0.0.1:8000'; // Base URL to your FastAPI backend
+const GITHUB_REPO = 'PlasticDept/plasticdept-core';
+const GITHUB_BRANCH = 'main';
+const GITHUB_FILE_PATH = 'occupancy.json';
+const GITHUB_MASTER_LOC_FILE = 'master_locations.json';
+const RAW_GITHUB_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/${GITHUB_FILE_PATH}`;
+const RAW_MASTER_GITHUB_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/${GITHUB_MASTER_LOC_FILE}`;
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-const storage = firebase.storage();
-
-// Global variables
-const BLOCKS_PER_PAGE = 15; // Number of rack columns to display per page
-let allLocations = []; // Store all master locations
+let occupancyData = []; // Store all occupancy data from GitHub
+let masterLocations = []; // Store all master locations
+let allLocations = []; // Store merged locations (for UI)
 let currentPage = 1; // Current page for pagination
 let currentArea = "highRackArea"; // Current selected area
 let allRackPrefixes = []; // All available rack prefixes (DA, DB, DC, etc.)
 let currentRackPrefix = ""; // Current selected rack prefix for high rack areas
 let locationCache = {}; // Cache for location data
+const BLOCKS_PER_PAGE = 15; // Number of rack columns to display per page
 
 // Customer code colors
 const customerColors = {
@@ -34,51 +27,17 @@ const customerColors = {
   'TTI-MACHINERY': '#FFC0CB' // Pink
 };
 
-// Function for anonymous authentication
-async function authenticateAnonymously() {
-  try {
-    // Check if already authenticated
-    if (!auth.currentUser) {
-      await auth.signInAnonymously();
-      console.log("Successfully logged in anonymously");
-    }
-    return true;
-  } catch (error) {
-    console.error("Authentication error:", error);
-    alert("Failed to authenticate. Please reload the page.");
-    return false;
-  }
-}
-
-// Main App
 document.addEventListener('DOMContentLoaded', function() {
-    // Update legend container with customer codes
     updateCustomerLegend();
-    
-    // Listen for auth state changes
-    auth.onAuthStateChanged(function(user) {
-        if (user) {
-            // User is signed in, initialize the app
-            initializeApp();
-        } else {
-            // No user is signed in, try to authenticate anonymously
-            authenticateAnonymously().then(success => {
-                if (success) {
-                    initializeApp();
-                }
-            });
-        }
-    });
-    
-    // Event listeners
+    initializeApp();
+
     document.getElementById('uploadMasterBtn').addEventListener('click', handleMasterLocationUpload);
     document.getElementById('uploadOccupancyBtn').addEventListener('click', handleFileUpload);
     document.getElementById('refreshBtn').addEventListener('click', refreshData);
     document.getElementById('searchInput').addEventListener('input', handleSearch);
     document.getElementById('prevPage').addEventListener('click', () => changePage(-1));
     document.getElementById('nextPage').addEventListener('click', () => changePage(1));
-    
-    // Setup area selector buttons
+
     const areaButtons = document.querySelectorAll('.rack-selector .btn');
     areaButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -88,144 +47,209 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Initialize Application
+async function initializeApp() {
+    try {
+        showLoading(true);
+
+        await loadMasterLocations();      // 1. Load master locations
+        await loadOccupancyData();        // 2. Load occupancy data
+        mergeOccupancyWithMaster();       // 3. Merge occupancy with master for UI
+
+        analyzeLocationStructure();
+        generateRackAreaButtons();
+
+        if (allRackPrefixes.length > 0) {
+            displayRackArea(allRackPrefixes[0]);
+        }
+
+        updateStatistics();
+        showLoading(false);
+    } catch (error) {
+        console.error("Error initializing app:", error);
+        alert("Failed to initialize application. Please try again.");
+        showLoading(false);
+    }
+}
+
+// Show/hide loading indicator
+function showLoading(show) {
+    document.body.style.cursor = show ? 'wait' : 'default';
+}
+
 // Update the legend container with customer codes
 function updateCustomerLegend() {
     const legendContainer = document.querySelector('.legend-container');
     if (!legendContainer) return;
-    
-    // Clear existing content
+
     legendContainer.innerHTML = '';
-    
-    // Add available status
+
     const availableSpan = document.createElement('span');
     availableSpan.className = 'legend-item';
     availableSpan.innerHTML = `<span class="legend-color available"></span> Available`;
     legendContainer.appendChild(availableSpan);
-    
-    // Add customer codes
+
     Object.keys(customerColors).forEach(customer => {
         const span = document.createElement('span');
         span.className = 'legend-item ms-3';
         span.innerHTML = `<span class="legend-color customer-${customer.replace(/\s+/g, '-').toLowerCase()}" style="background-color: ${customerColors[customer]}"></span> ${customer}`;
         legendContainer.appendChild(span);
     });
-    
-    // Add dynamic styles for customer colors
+
     let styleEl = document.getElementById('customer-styles');
     if (!styleEl) {
         styleEl = document.createElement('style');
         styleEl.id = 'customer-styles';
         document.head.appendChild(styleEl);
     }
-    
+
     let cssRules = '';
     Object.keys(customerColors).forEach(customer => {
         const cssClass = `.customer-${customer.replace(/\s+/g, '-').toLowerCase()}`;
         cssRules += `${cssClass} { background-color: ${customerColors[customer]}; border-color: ${adjustBorderColor(customerColors[customer])}; }\n`;
     });
-    
+
     styleEl.textContent = cssRules;
 }
 
 // Adjust border color to be slightly darker than background
 function adjustBorderColor(hexColor) {
-    // Convert hex to RGB
     const r = parseInt(hexColor.slice(1, 3), 16);
     const g = parseInt(hexColor.slice(3, 5), 16);
     const b = parseInt(hexColor.slice(5, 7), 16);
-    
-    // Darken by 10%
+
     const darkenFactor = 0.9;
     const newR = Math.floor(r * darkenFactor);
     const newG = Math.floor(g * darkenFactor);
     const newB = Math.floor(b * darkenFactor);
-    
-    // Convert back to hex
+
     return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
 }
 
-// Initialize Application
-async function initializeApp() {
-    // Authenticate anonymously first
-    const authenticated = await authenticateAnonymously();
-    if (!authenticated) return;
-    
-    // Load all locations and analyze structure
-    loadMasterLocations().then(() => {
-        // After loading master locations, initialize rack sections
-        analyzeLocationStructure();
-        generateRackAreaButtons();
-        
-        // Show the first rack prefix by default if available
-        if (allRackPrefixes.length > 0) {
-            displayRackArea(allRackPrefixes[0]);
-        }
-        
-        // Update statistics
-        updateStatistics();
-    });
-}
-
-// Load Master Locations from Firebase
+// Load Master Locations from GitHub
 async function loadMasterLocations() {
     try {
-        // Ensure we're authenticated
-        if (!auth.currentUser) {
-            await authenticateAnonymously();
-            if (!auth.currentUser) throw new Error("Cannot load data without authentication");
+        const timestamp = new Date().getTime();
+        const response = await fetch(`${RAW_MASTER_GITHUB_URL}?t=${timestamp}`);
+        if (!response.ok) {
+            if (response.status === 404) {
+                console.warn("Master locations file not found. It may need to be created first.");
+                masterLocations = [];
+                return [];
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
-        const querySnapshot = await db.collection('locations').get();
-        allLocations = [];
-        
-        querySnapshot.forEach((doc) => {
-            const locationData = doc.data();
-            allLocations.push({
-                locationCode: doc.id,
-                ...locationData
-            });
-            
-            // Cache the location data
-            locationCache[doc.id] = locationData;
-        });
-        
-        // Sort locations by code
-        allLocations.sort((a, b) => a.locationCode.localeCompare(b.locationCode));
-        
-        return allLocations;
+        const data = await response.json();
+        masterLocations = data;
+        return data;
     } catch (error) {
-        console.error("Error loading master locations: ", error);
-        alert("Failed to load master location data. Please try again.");
+        console.error("Error loading master locations:", error);
+        masterLocations = [];
         return [];
     }
 }
 
+// Load Occupancy Data from GitHub
+async function loadOccupancyData() {
+    try {
+        const timestamp = new Date().getTime();
+        const response = await fetch(`${RAW_GITHUB_URL}?t=${timestamp}`);
+        if (!response.ok) {
+            if (response.status === 404) {
+                console.warn("Occupancy data file not found. It may need to be created first.");
+                occupancyData = [];
+                return [];
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const text = await response.text();
+        try {
+            const cleanedText = text.replace(/:\s*NaN\s*,/g, ': null,')
+                                    .replace(/:\s*NaN\s*\}/g, ': null}');
+            const data = JSON.parse(cleanedText);
+            occupancyData = data;
+            return data;
+        } catch (jsonError) {
+            console.error("Invalid JSON format:", jsonError);
+            console.error("JSON content:", text.substring(0, 200) + "...");
+            throw new Error("Failed to parse response JSON: " + jsonError.message);
+        }
+    } catch (error) {
+        console.error("Error loading occupancy data:", error);
+        occupancyData = [];
+        return [];
+    }
+}
+
+function mergeOccupancyWithMaster() {
+    const occupancyLookup = {};
+    occupancyData.forEach(occ => {
+        const code = occ.Location || occ.locationCode || occ.location;
+        if (code) occupancyLookup[code] = occ;
+    });
+
+    allLocations = masterLocations.map(loc => {
+        const code = loc.locationCode;
+        if (occupancyLookup[code]) {
+            // Mapping field dari occupancy.json ke JS
+            const occ = occupancyLookup[code];
+            return {
+                ...loc,
+                isOccupied: true,
+                partNo: occ["Part No"] || occ.partNo || "",
+                productDescription: occ["Product Description"] || occ["Description"] || "",
+                invoiceNo: occ["Invoice No."] || occ["Invoice No"] || occ.invoiceNo || "",
+                lotNo: occ["Lot No."] || occ.lotNo || "",
+                receiveDate: occ["Received Date"] || occ["Receive Date"] || "",
+                status: occ["Status"] || occ.status || "",
+                quantity: occ["QTY"] || occ["Quantity"] || occ.quantity || 0,
+                customerCode: occ["Customer Code"] || occ.customerCode || "",
+                uidCount: occ["UID"] || occ["UID Count"] || occ.uidCount || 0
+            };
+        } else {
+            // Kosong
+            return {
+                ...loc,
+                isOccupied: false,
+                partNo: "",
+                productDescription: "",
+                invoiceNo: "",
+                lotNo: "",
+                receiveDate: "",
+                status: "",
+                quantity: 0,
+                customerCode: "",
+                uidCount: 0
+            };
+        }
+    });
+
+    locationCache = {};
+    allLocations.forEach(loc => {
+        locationCache[loc.locationCode] = loc;
+    });
+}
+
 // Analyze Location Structure to Identify Rack Types
 function analyzeLocationStructure() {
-    // Extract unique rack prefixes (DA, DB, etc.)
     const highRackPrefixes = new Set();
     const floorPrefixes = new Set();
-    
+
     allLocations.forEach(location => {
         const locationCode = location.locationCode;
-        
-        // High rack format: XX-NN-C-L (e.g. DA-01-1-1)
         if (/^[A-Z]{2}-\d{2}-\d-\d$/.test(locationCode)) {
             const prefix = locationCode.substring(0, 2);
             highRackPrefixes.add(prefix);
         }
-        // Floor format: X-NN-NN (e.g. A-01-01)
         else if (/^[A-Z]-\d{2}-\d{2}$/.test(locationCode)) {
             const prefix = locationCode.substring(0, 1);
             floorPrefixes.add(prefix);
         }
     });
-    
-    // Convert sets to sorted arrays
+
     allRackPrefixes = Array.from(highRackPrefixes).sort();
     const allFloorPrefixes = Array.from(floorPrefixes).sort();
-    
-    // Store these for later use
+
     window.rackPrefixes = {
         highRack: allRackPrefixes,
         floor: allFloorPrefixes
@@ -236,161 +260,220 @@ function analyzeLocationStructure() {
 function generateRackAreaButtons() {
     const rackAreaButtonsContainer = document.getElementById('rackAreaButtons');
     rackAreaButtonsContainer.innerHTML = '';
-    
-    // Create buttons for all rack prefixes
+
     window.rackPrefixes.highRack.forEach(prefix => {
         const button = document.createElement('button');
         button.className = 'rack-area-btn';
         button.textContent = prefix;
         button.addEventListener('click', () => {
-            // Deactivate all buttons
-            document.querySelectorAll('.rack-area-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            // Activate this button
+            document.querySelectorAll('.rack-area-btn').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-            // Display the selected rack area
             displayRackArea(prefix);
         });
         rackAreaButtonsContainer.appendChild(button);
     });
-    
-    // Create buttons for floor areas
+
     window.rackPrefixes.floor.forEach(prefix => {
         const button = document.createElement('button');
         button.className = 'rack-area-btn';
         button.textContent = prefix;
         button.addEventListener('click', () => {
-            // Deactivate all buttons
-            document.querySelectorAll('.rack-area-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            // Activate this button
+            document.querySelectorAll('.rack-area-btn').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-            // Display the selected floor area
             displayFloorArea(prefix);
         });
         rackAreaButtonsContainer.appendChild(button);
     });
-    
-    // Activate the first button by default
+
     if (rackAreaButtonsContainer.children.length > 0) {
         rackAreaButtonsContainer.children[0].classList.add('active');
     }
 }
 
+// Handle File Upload to Backend API (Occupancy)
+function handleFileUpload() {
+    const fileInput = document.getElementById('fileUpload');
+    const file = fileInput.files[0];
+    if (!file) {
+        alert('Please select an occupancy file first.');
+        return;
+    }
+
+    const uploadBtn = document.getElementById('uploadOccupancyBtn');
+    const originalText = uploadBtn.innerHTML;
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...';
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    fetch(`${API_URL}/upload`, {
+        method: 'POST',
+        body: formData,
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.detail || `HTTP error! status: ${response.status}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
+        fileInput.value = '';
+        alert(`Occupancy data successfully uploaded to GitHub! Processed ${data.rows_processed} records.`);
+        initializeApp();
+    })
+    .catch(error => {
+        alert(`Error uploading occupancy data: ${error.message}`);
+    })
+    .finally(() => {
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = originalText;
+    });
+}
+
+// Handle Master Location Upload (NEW)
+function handleMasterLocationUpload() {
+    const fileInput = document.getElementById('fileUpload');
+    const file = fileInput.files[0];
+    if (!file) {
+        alert('Please select a master location file first.');
+        return;
+    }
+
+    const uploadBtn = document.getElementById('uploadMasterBtn');
+    const originalText = uploadBtn.innerHTML;
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...';
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    fetch(`${API_URL}/upload-master-locations`, {
+        method: 'POST',
+        body: formData,
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.detail || `HTTP error! status: ${response.status}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        alert(`Master locations uploaded: ${data.rows_processed}`);
+        bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
+        fileInput.value = '';
+        // Optionally reload frontend master locations
+        initializeApp();
+    })
+    .catch(error => {
+        alert(`Error uploading master locations: ${error.message}`);
+    })
+    .finally(() => {
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = originalText;
+    });
+}
+
+// Refresh Data from GitHub
+function refreshData() {
+    const refreshBtn = document.getElementById('refreshBtn');
+    const originalHtml = refreshBtn.innerHTML;
+    refreshBtn.disabled = true;
+    refreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+
+    document.getElementById('searchInput').value = '';
+    initializeApp();
+
+    refreshBtn.disabled = false;
+    refreshBtn.innerHTML = originalHtml;
+}
+
 // Display Rack Area
 function displayRackArea(rackPrefix) {
     currentRackPrefix = rackPrefix;
-    currentPage = 1; // Reset to first page
-    
-    // Get all blocks for this rack prefix
+    currentPage = 1;
+
     const blocks = getBlocksForRackPrefix(rackPrefix);
-    
-    // Determine block range for current page
     const startIndex = (currentPage - 1) * BLOCKS_PER_PAGE;
     const endIndex = Math.min(startIndex + BLOCKS_PER_PAGE, blocks.length);
     const currentBlocks = blocks.slice(startIndex, endIndex);
-    
-    // Update the rack area title
+
     document.getElementById('rackAreaTitle').textContent = `Rack Area ${rackPrefix}`;
-    
-    // Clear the rack display container
     const rackContainer = document.getElementById('rackDisplayContainer');
     rackContainer.innerHTML = '';
-    
-    // Create the table structure
+
     const table = document.createElement('table');
     table.className = 'rack-table';
-    
-    // Create header row with block numbers
+
     const headerRow1 = document.createElement('tr');
     const rackHeaderCell = document.createElement('th');
     rackHeaderCell.textContent = 'RACK';
     rackHeaderCell.rowSpan = 1;
     headerRow1.appendChild(rackHeaderCell);
-    
-    // Add block number headers
+
     currentBlocks.forEach(block => {
         const blockHeaderCell = document.createElement('th');
         blockHeaderCell.colSpan = 2;
         blockHeaderCell.textContent = block;
         headerRow1.appendChild(blockHeaderCell);
     });
-    
-    // Add sub-header row with column numbers (1 and 2)
+
     const headerRow2 = document.createElement('tr');
     const rackLabel = document.createElement('th');
     rackLabel.textContent = rackPrefix;
     headerRow2.appendChild(rackLabel);
-    
     currentBlocks.forEach(() => {
         const col1 = document.createElement('th');
         col1.textContent = '1';
         headerRow2.appendChild(col1);
-        
         const col2 = document.createElement('th');
         col2.textContent = '2';
         headerRow2.appendChild(col2);
     });
-    
-    // Create the table head and append header rows
+
     const thead = document.createElement('thead');
     thead.appendChild(headerRow1);
     thead.appendChild(headerRow2);
     table.appendChild(thead);
-    
-    // Create table body
+
     const tbody = document.createElement('tbody');
-    
-    // Generate rows for levels 4 down to 1
     for (let level = 4; level >= 1; level--) {
         const row = document.createElement('tr');
-        
-        // Add level number
         const levelCell = document.createElement('td');
         levelCell.className = 'level-cell';
         levelCell.textContent = level;
         row.appendChild(levelCell);
-        
-        // Add cells for each block's positions
+
         currentBlocks.forEach(block => {
-            // Position 1
             const pos1Code = `${rackPrefix}-${block}-1-${level}`;
             const pos1Cell = document.createElement('td');
             pos1Cell.className = 'location-cell';
             pos1Cell.setAttribute('data-location', pos1Code);
             pos1Cell.addEventListener('click', () => showLocationDetails(pos1Code));
-            
-            // Update cell appearance based on occupancy and customer code
             updateCellAppearance(pos1Cell, pos1Code);
-            
             row.appendChild(pos1Cell);
-            
-            // Position 2
+
             const pos2Code = `${rackPrefix}-${block}-2-${level}`;
             const pos2Cell = document.createElement('td');
             pos2Cell.className = 'location-cell';
             pos2Cell.setAttribute('data-location', pos2Code);
             pos2Cell.addEventListener('click', () => showLocationDetails(pos2Code));
-            
-            // Update cell appearance based on occupancy and customer code
             updateCellAppearance(pos2Cell, pos2Code);
-            
             row.appendChild(pos2Cell);
         });
-        
         tbody.appendChild(row);
     }
-    
     table.appendChild(tbody);
     rackContainer.appendChild(table);
-    
-    // Update pagination info
+
     const totalPages = Math.ceil(blocks.length / BLOCKS_PER_PAGE);
     updatePaginationInfo(currentPage, totalPages);
-    
-    // Show high rack area, hide floor area
+
     document.getElementById('highRackArea').style.display = 'block';
     document.getElementById('floorArea').style.display = 'none';
 }
@@ -398,16 +481,13 @@ function displayRackArea(rackPrefix) {
 // Update cell appearance based on occupancy and customer code
 function updateCellAppearance(cell, locationCode) {
     const locationData = locationCache[locationCode];
-    
+
     if (locationData && locationData.isOccupied) {
         cell.classList.add('occupied');
-        
-        // Check for customer code
         if (locationData.customerCode && customerColors[locationData.customerCode]) {
             cell.style.backgroundColor = customerColors[locationData.customerCode];
             cell.classList.add(`customer-${locationData.customerCode.replace(/\s+/g, '-').toLowerCase()}`);
-        } 
-        // Fall back to status if no customer code
+        }
         else if (locationData.status) {
             cell.classList.add(`status-${locationData.status}`);
         }
@@ -419,137 +499,155 @@ function updateCellAppearance(cell, locationCode) {
 // Display Floor Area
 function displayFloorArea(floorPrefix) {
     currentRackPrefix = floorPrefix;
-    currentPage = 1; // Reset to first page
-    
-    // Get all blocks for this floor prefix
+    currentPage = 1;
+
     const blocks = getBlocksForFloorPrefix(floorPrefix);
-    
-    // Update the rack area title
+
     document.getElementById('floorAreaTitle').textContent = `Floor Area ${floorPrefix}`;
-    
-    // Clear the floor display container
     const floorContainer = document.getElementById('floorDisplayContainer');
     floorContainer.innerHTML = '';
-    
-    // Determine block range for current page
-    const startIndex = (currentPage - 1) * 10; // Show fewer blocks per page for floor area
+
+    const startIndex = (currentPage - 1) * 10;
     const endIndex = Math.min(startIndex + 10, blocks.length);
     const currentBlocks = blocks.slice(startIndex, endIndex);
-    
-    // Create the table structure
+
     const table = document.createElement('table');
     table.className = 'floor-table';
-    
-    // Create header row with position numbers
+
     const headerRow = document.createElement('tr');
     const floorHeaderCell = document.createElement('th');
     floorHeaderCell.textContent = floorPrefix;
     headerRow.appendChild(floorHeaderCell);
-    
-    // Add position numbers 01-21
     for (let i = 1; i <= 21; i++) {
         const posHeaderCell = document.createElement('th');
         posHeaderCell.textContent = i.toString().padStart(2, '0');
         headerRow.appendChild(posHeaderCell);
     }
-    
-    // Create the table head
+
     const thead = document.createElement('thead');
     thead.appendChild(headerRow);
     table.appendChild(thead);
-    
-    // Create table body
+
     const tbody = document.createElement('tbody');
-    
-    // Create row for each block
     currentBlocks.forEach(block => {
         const row = document.createElement('tr');
-        
-        // Add block number
         const blockCell = document.createElement('td');
         blockCell.className = 'block-cell';
         blockCell.textContent = block;
         row.appendChild(blockCell);
-        
-        // Add cells for each position
+
         for (let pos = 1; pos <= 21; pos++) {
             const posFormatted = pos.toString().padStart(2, '0');
             const locationCode = `${floorPrefix}-${block}-${posFormatted}`;
-            
             const locationCell = document.createElement('td');
             locationCell.className = 'location-cell';
             locationCell.setAttribute('data-location', locationCode);
             locationCell.addEventListener('click', () => showLocationDetails(locationCode));
-            
-            // Update cell appearance based on occupancy and customer code
             updateCellAppearance(locationCell, locationCode);
-            
             row.appendChild(locationCell);
         }
-        
         tbody.appendChild(row);
     });
-    
     table.appendChild(tbody);
     floorContainer.appendChild(table);
-    
-    // Update pagination info
+
     const totalPages = Math.ceil(blocks.length / 10);
     updatePaginationInfo(currentPage, totalPages);
-    
-    // Show floor area, hide high rack area
+
     document.getElementById('highRackArea').style.display = 'none';
     document.getElementById('floorArea').style.display = 'block';
 }
 
 // Get Blocks for Rack Prefix
 function getBlocksForRackPrefix(rackPrefix) {
-    // Extract all unique block numbers for this rack prefix
     const blockSet = new Set();
-    
     allLocations.forEach(location => {
         const locationCode = location.locationCode;
-        
-        // Match high rack format: XX-NN-C-L (e.g. DA-01-1-1)
         if (locationCode.startsWith(`${rackPrefix}-`)) {
             const match = locationCode.match(/^[A-Z]{2}-(\d{2})-\d-\d$/);
-            if (match) {
-                blockSet.add(match[1]);
-            }
+            if (match) blockSet.add(match[1]);
         }
     });
-    
-    // Convert to sorted array
     return Array.from(blockSet).sort((a, b) => parseInt(a) - parseInt(b));
 }
 
 // Get Blocks for Floor Prefix
 function getBlocksForFloorPrefix(floorPrefix) {
-    // Extract all unique block numbers for this floor prefix
     const blockSet = new Set();
-    
     allLocations.forEach(location => {
         const locationCode = location.locationCode;
-        
-        // Match floor format: X-NN-NN (e.g. A-01-01)
         if (locationCode.startsWith(`${floorPrefix}-`)) {
             const match = locationCode.match(/^[A-Z]-(\d{2})-\d{2}$/);
-            if (match) {
-                blockSet.add(match[1]);
-            }
+            if (match) blockSet.add(match[1]);
         }
     });
-    
-    // Convert to sorted array
     return Array.from(blockSet).sort((a, b) => parseInt(a) - parseInt(b));
+}
+
+// Show Location Details in Modal
+function showLocationDetails(locationCode) {
+    const locationData = locationCache[locationCode];
+    document.getElementById('locationCode').textContent = locationCode;
+
+    if (locationData && locationData.isOccupied) {
+        document.getElementById('locationStatus').textContent = locationData.status ?
+            locationData.status.charAt(0).toUpperCase() + locationData.status.slice(1) : 'Occupied';
+        document.getElementById('partNo').textContent = locationData.partNo || '-';
+        document.getElementById('productDescription').textContent = locationData.productDescription || '-';
+        document.getElementById('invoiceNo').textContent = locationData.invoiceNo || '-';
+        document.getElementById('lotNo').textContent = locationData.lotNo || '-';
+        const receiveDate = locationData.receiveDate ? formatExcelDate(locationData.receiveDate) : '-';
+        document.getElementById('receiveDate').textContent = receiveDate;
+        const quantity = locationData.quantity ? formatNumber(locationData.quantity) : '0';
+        document.getElementById('quantity').textContent = quantity;
+        document.getElementById('customerCode').textContent = locationData.customerCode || '-';
+        const uidCount = locationData.uidCount ? formatNumber(locationData.uidCount) : '0';
+        document.getElementById('uidCount').textContent = uidCount;
+
+        const statusElement = document.getElementById('locationStatus');
+        statusElement.className = 'detail-value';
+        if (locationData.status === 'putaway') {
+            statusElement.classList.add('text-primary');
+        } else if (locationData.status === 'allocated') {
+            statusElement.classList.add('text-warning');
+        } else if (locationData.status === 'hold') {
+            statusElement.classList.add('text-danger');
+        } else {
+            statusElement.classList.add('text-secondary');
+        }
+    } else {
+        document.getElementById('locationStatus').textContent = 'Available';
+        document.getElementById('locationStatus').className = 'detail-value text-success';
+        ['partNo', 'productDescription', 'invoiceNo', 'lotNo', 'receiveDate', 'quantity',
+         'customerCode', 'uidCount'].forEach(id => {
+            document.getElementById(id).textContent = '-';
+        });
+    }
+
+    const locationModal = new bootstrap.Modal(document.getElementById('locationModal'));
+    locationModal.show();
+}
+
+// Update Statistics
+function updateStatistics() {
+    const total = allLocations.length;
+    let occupied = 0;
+    allLocations.forEach(location => {
+        if (location.isOccupied) occupied++;
+    });
+    const available = total - occupied;
+    const percentage = total > 0 ? Math.round((occupied / total) * 100) : 0;
+
+    document.getElementById('totalLocations').textContent = formatNumber(total);
+    document.getElementById('occupiedLocations').textContent = formatNumber(occupied);
+    document.getElementById('availableLocations').textContent = formatNumber(available);
+    document.getElementById('occupancyPercentage').textContent = `${percentage}%`;
 }
 
 // Update Pagination Information
 function updatePaginationInfo(current, total) {
     document.getElementById('currentPage').textContent = current;
     document.getElementById('totalPages').textContent = total;
-    
-    // Enable/disable pagination buttons
     document.getElementById('prevPage').disabled = current <= 1;
     document.getElementById('nextPage').disabled = current >= total;
 }
@@ -557,12 +655,9 @@ function updatePaginationInfo(current, total) {
 // Change Page
 function changePage(direction) {
     const newPage = currentPage + direction;
-    
     if (newPage < 1) return;
-    
     currentPage = newPage;
-    
-    // Re-render current view
+
     if (document.getElementById('highRackArea').style.display !== 'none') {
         displayRackArea(currentRackPrefix);
     } else {
@@ -570,145 +665,8 @@ function changePage(direction) {
     }
 }
 
-// Show Location Details in Modal
-function showLocationDetails(locationCode) {
-    // Get location data from Firebase or cache
-    const getLocationData = async () => {
-        if (locationCache[locationCode]) {
-            return locationCache[locationCode];
-        } else {
-            const doc = await db.collection('locations').doc(locationCode).get();
-            if (doc.exists) {
-                locationCache[locationCode] = doc.data();
-                return doc.data();
-            }
-            return null;
-        }
-    };
-    
-    getLocationData().then(data => {
-        // Populate modal with data
-        document.getElementById('locationCode').textContent = locationCode;
-        
-        if (data && data.isOccupied) {
-            // Format status
-            document.getElementById('locationStatus').textContent = data.status ? 
-                data.status.charAt(0).toUpperCase() + data.status.slice(1) : 'Occupied';
-                
-            // Format part number
-            document.getElementById('partNo').textContent = data.partNo || '-';
-            
-            // Format product description (new field)
-            document.getElementById('productDescription').textContent = data.productDescription || '-';
-            
-            // Format invoice number
-            document.getElementById('invoiceNo').textContent = data.invoiceNo || '-';
-            
-            // Format lot number
-            document.getElementById('lotNo').textContent = data.lotNo || '-';
-            
-            // Format receive date (Excel numeric date to DD-MMM-YYYY)
-            const receiveDate = data.receiveDate ? formatExcelDate(data.receiveDate) : '-';
-            document.getElementById('receiveDate').textContent = receiveDate;
-            
-            // Format quantity with thousand separator
-            const quantity = data.quantity ? formatNumber(data.quantity) : '0';
-            document.getElementById('quantity').textContent = quantity;
-            
-            // Format customer code
-            document.getElementById('customerCode').textContent = data.customerCode || '-';
-            
-            // Format UID count with thousand separator if needed
-            const uidCount = data.uidCount ? formatNumber(data.uidCount) : '0';
-            document.getElementById('uidCount').textContent = uidCount;
-            
-            // Style the status based on its value
-            const statusElement = document.getElementById('locationStatus');
-            statusElement.className = 'detail-value';
-            
-            if (data.status === 'putaway') {
-                statusElement.classList.add('text-primary');
-            } else if (data.status === 'allocated') {
-                statusElement.classList.add('text-warning');
-            } else if (data.status === 'hold') {
-                statusElement.classList.add('text-danger');
-            } else {
-                statusElement.classList.add('text-secondary');
-            }
-        } else {
-            // If no detailed data exists, show basic info
-            document.getElementById('locationStatus').textContent = 'Available';
-            document.getElementById('locationStatus').className = 'detail-value text-success';
-            
-            // Reset other fields
-            ['partNo', 'productDescription', 'invoiceNo', 'lotNo', 'receiveDate', 'quantity', 
-             'customerCode', 'uidCount'].forEach(id => {
-                document.getElementById(id).textContent = '-';
-            });
-        }
-        
-        // Show the modal
-        const locationModal = new bootstrap.Modal(document.getElementById('locationModal'));
-        locationModal.show();
-    }).catch(error => {
-        console.error("Error getting location details: ", error);
-        alert("Failed to load location details. Please try again.");
-    });
-}
-
-// Format Excel Date Number to DD-MMM-YYYY
-function formatExcelDate(excelDate) {
-    // Check if the date is already in a formatted string
-    if (typeof excelDate === 'string' && excelDate.includes('/')) {
-        // Parse date in MM/DD/YYYY format
-        const parts = excelDate.split('/');
-        if (parts.length === 3) {
-            const month = parseInt(parts[0]) - 1; // JavaScript months are 0-based
-            const day = parseInt(parts[1]);
-            const year = parseInt(parts[2]);
-            
-            const date = new Date(year, month, day);
-            
-            // Format to DD-MMM-YYYY
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            const formattedDay = day.toString().padStart(2, '0');
-            const formattedMonth = months[month];
-            
-            return `${formattedDay}-${formattedMonth}-${year}`;
-        }
-        return excelDate;
-    }
-    
-    // Excel's epoch starts on 1899-12-30
-    const excelEpoch = new Date(1899, 11, 30);
-    const days = parseInt(excelDate, 10);
-    
-    // Check if it's a valid number
-    if (isNaN(days)) {
-        return excelDate; // Return the original value if not a number
-    }
-    
-    // Convert Excel date to JavaScript Date
-    const milliseconds = days * 24 * 60 * 60 * 1000;
-    const date = new Date(excelEpoch.getTime() + milliseconds);
-    
-    // Format to DD-MMM-YYYY
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = months[date.getMonth()];
-    const year = date.getFullYear();
-    
-    return `${day}-${month}-${year}`;
-}
-
-// Format Number with Thousand Separator
-function formatNumber(number) {
-    return new Intl.NumberFormat('en-US').format(number);
-}
-
 // Toggle Area View
 function toggleAreaView(areaToShow, buttons) {
-    // Update active button
     buttons.forEach(btn => {
         if (btn.getAttribute('data-area') === areaToShow) {
             btn.classList.add('active');
@@ -716,8 +674,7 @@ function toggleAreaView(areaToShow, buttons) {
             btn.classList.remove('active');
         }
     });
-    
-    // Show selected area, hide others
+
     const areas = ['highRackArea', 'floorArea'];
     areas.forEach(area => {
         const element = document.getElementById(area);
@@ -727,8 +684,7 @@ function toggleAreaView(areaToShow, buttons) {
             element.style.display = 'none';
         }
     });
-    
-    // Re-display current rack/floor based on the active rack-area-btn
+
     const activeAreaBtn = document.querySelector('.rack-area-btn.active');
     if (activeAreaBtn) {
         const prefix = activeAreaBtn.textContent;
@@ -737,24 +693,15 @@ function toggleAreaView(areaToShow, buttons) {
         } else if (areaToShow === 'floorArea' && window.rackPrefixes.floor.includes(prefix)) {
             displayFloorArea(prefix);
         } else {
-            // Default to first available prefix if current is not valid for this area
             if (areaToShow === 'highRackArea' && window.rackPrefixes.highRack.length > 0) {
                 displayRackArea(window.rackPrefixes.highRack[0]);
                 document.querySelectorAll('.rack-area-btn').forEach(btn => {
-                    if (btn.textContent === window.rackPrefixes.highRack[0]) {
-                        btn.classList.add('active');
-                    } else {
-                        btn.classList.remove('active');
-                    }
+                    btn.classList.toggle('active', btn.textContent === window.rackPrefixes.highRack[0]);
                 });
             } else if (areaToShow === 'floorArea' && window.rackPrefixes.floor.length > 0) {
                 displayFloorArea(window.rackPrefixes.floor[0]);
                 document.querySelectorAll('.rack-area-btn').forEach(btn => {
-                    if (btn.textContent === window.rackPrefixes.floor[0]) {
-                        btn.classList.add('active');
-                    } else {
-                        btn.classList.remove('active');
-                    }
+                    btn.classList.toggle('active', btn.textContent === window.rackPrefixes.floor[0]);
                 });
             }
         }
@@ -764,13 +711,12 @@ function toggleAreaView(areaToShow, buttons) {
 // Handle Search
 function handleSearch() {
     const searchTerm = document.getElementById('searchInput').value.trim().toUpperCase();
-    
+
     if (searchTerm === '') {
-        // If search is cleared, revert to normal view
         const activeAreaBtn = document.querySelector('.rack-area-btn.active');
         if (activeAreaBtn) {
             const prefix = activeAreaBtn.textContent;
-            if (document.getElementById('highRackArea').style.display !== 'none' && 
+            if (document.getElementById('highRackArea').style.display !== 'none' &&
                 window.rackPrefixes.highRack.includes(prefix)) {
                 displayRackArea(prefix);
             } else if (window.rackPrefixes.floor.includes(prefix)) {
@@ -779,342 +725,126 @@ function handleSearch() {
         }
         return;
     }
-    
-    // Find matching locations
-    const results = allLocations.filter(loc => 
+
+    const results = allLocations.filter(loc =>
         loc.locationCode.toUpperCase().includes(searchTerm) ||
         (loc.partNo && loc.partNo.toUpperCase().includes(searchTerm)) ||
         (loc.productDescription && loc.productDescription.toUpperCase().includes(searchTerm)) ||
         (loc.invoiceNo && loc.invoiceNo.toUpperCase().includes(searchTerm)) ||
         (loc.customerCode && loc.customerCode.toUpperCase().includes(searchTerm))
     );
-    
-    // Display results
+
     displaySearchResults(results);
 }
 
 // Display Search Results
 function displaySearchResults(results) {
-    // Determine which container to use based on current view
     const isHighRackVisible = document.getElementById('highRackArea').style.display !== 'none';
-    const container = isHighRackVisible ? 
-        document.getElementById('rackDisplayContainer') : 
+    const container = isHighRackVisible ?
+        document.getElementById('rackDisplayContainer') :
         document.getElementById('floorDisplayContainer');
-    
-    // Clear container
+
     container.innerHTML = '';
-    
-    // Create results header
+
     const header = document.createElement('h5');
     header.className = 'mb-3';
     header.textContent = `Search Results (${results.length} found)`;
     container.appendChild(header);
-    
-    // If no results
+
     if (results.length === 0) {
         const noResults = document.createElement('div');
         noResults.className = 'alert alert-info';
         noResults.textContent = 'No locations found matching your search.';
         container.appendChild(noResults);
-        
-        // Hide pagination for search results
         document.getElementById('paginationControls').style.display = 'none';
         return;
     }
-    
-    // Create results grid
+
     const resultsGrid = document.createElement('div');
     resultsGrid.className = 'search-results-grid';
     container.appendChild(resultsGrid);
-    
-    // Calculate pagination for results
+
     const totalPages = Math.ceil(results.length / 30);
     const startIndex = (currentPage - 1) * 30;
     const endIndex = Math.min(startIndex + 30, results.length);
     const currentResults = results.slice(startIndex, endIndex);
-    
-    // Create results list
+
     currentResults.forEach(location => {
         const resultItem = document.createElement('div');
         resultItem.className = 'search-result-item';
         resultItem.classList.add(location.isOccupied ? 'occupied' : 'available');
         resultItem.addEventListener('click', () => showLocationDetails(location.locationCode));
-        
-        // Apply customer code styling if available
         if (location.customerCode && customerColors[location.customerCode]) {
             resultItem.style.borderLeftColor = customerColors[location.customerCode];
         }
-        
+
         const locationCode = document.createElement('div');
         locationCode.className = 'result-location-code';
         locationCode.textContent = location.locationCode;
         resultItem.appendChild(locationCode);
-        
+
         const locationStatus = document.createElement('div');
         locationStatus.className = 'result-status';
-        locationStatus.textContent = location.isOccupied ? 
-            (location.status ? location.status.charAt(0).toUpperCase() + location.status.slice(1) : 'Occupied') : 
+        locationStatus.textContent = location.isOccupied ?
+            (location.status ? location.status.charAt(0).toUpperCase() + location.status.slice(1) : 'Occupied') :
             'Available';
         resultItem.appendChild(locationStatus);
-        
-        // Add customer code if available
+
         if (location.customerCode) {
             const customerInfo = document.createElement('div');
             customerInfo.className = 'result-customer-info';
             customerInfo.textContent = location.customerCode;
             resultItem.appendChild(customerInfo);
         }
-        
+
         if (location.isOccupied && location.partNo) {
             const partInfo = document.createElement('div');
             partInfo.className = 'result-part-info';
             partInfo.textContent = location.partNo;
             resultItem.appendChild(partInfo);
         }
-        
+
         resultsGrid.appendChild(resultItem);
     });
-    
-    // Update pagination for search results
+
     updatePaginationInfo(currentPage, totalPages);
     document.getElementById('paginationControls').style.display = 'flex';
 }
 
-// Handle File Upload
-function handleFileUpload() {
-    const fileInput = document.getElementById('fileUpload');
-    const file = fileInput.files[0];
-
-    if (!file) {
-        alert('Please select an occupancy file first.');
-        return;
+// Format Excel Date Number to DD-MMM-YYYY
+function formatExcelDate(excelDate) {
+    if (typeof excelDate === 'string' && excelDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = excelDate.split('-').map(num => parseInt(num, 10));
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${day.toString().padStart(2, '0')}-${months[month-1]}-${year}`;
     }
-
-    const uploadBtn = document.getElementById('uploadOccupancyBtn');
-    const originalText = uploadBtn.innerHTML;
-    uploadBtn.disabled = true;
-    uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...';
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, {type: 'array'});
-        const worksheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[worksheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-        processUploadedData(jsonData)
-            .then(() => {
-                bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
-                fileInput.value = '';
-                alert('Occupancy data successfully uploaded and processed!');
-                loadMasterLocations().then(() => {
-                    // Re-render current view
-                    const activeAreaBtn = document.querySelector('.rack-area-btn.active');
-                    if (activeAreaBtn) {
-                        const prefix = activeAreaBtn.textContent;
-                        if (document.getElementById('highRackArea').style.display !== 'none' && 
-                            window.rackPrefixes.highRack.includes(prefix)) {
-                            displayRackArea(prefix);
-                        } else if (window.rackPrefixes.floor.includes(prefix)) {
-                            displayFloorArea(prefix);
-                        }
-                    }
-                    updateStatistics();
-                });
-            })
-            .catch(error => {
-                console.error("Error processing uploaded data:", error);
-                alert('Error processing occupancy data. Please try again.');
-            })
-            .finally(() => {
-                uploadBtn.disabled = false;
-                uploadBtn.innerHTML = originalText;
-            });
-    };
-    reader.readAsArrayBuffer(file);
-}
-
-// Upload Master Location CSV
-function handleMasterLocationUpload() {
-    const fileInput = document.getElementById('fileUpload');
-    const file = fileInput.files[0];
-    if (!file) {
-        alert('Please select a master location CSV file first.');
-        return;
+    if (typeof excelDate === 'string' && excelDate.includes('/')) {
+        const parts = excelDate.split('/');
+        if (parts.length === 3) {
+            const month = parseInt(parts[0]) - 1;
+            const day = parseInt(parts[1]);
+            const year = parseInt(parts[2]);
+            const date = new Date(year, month, day);
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const formattedDay = day.toString().padStart(2, '0');
+            const formattedMonth = months[month];
+            return `${formattedDay}-${formattedMonth}-${year}`;
+        }
+        return excelDate;
     }
-
-    const uploadBtn = document.getElementById('uploadMasterBtn');
-    const originalText = uploadBtn.innerHTML;
-    uploadBtn.disabled = true;
-    uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...';
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        let csv = e.target.result;
-        // Normalize line endings
-        csv = csv.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-        const lines = csv.split('\n').map(l => l.trim()).filter(Boolean);
-
-        // Get "Location" column index from header
-        const header = lines[0].split(',');
-        const locationIdx = header.findIndex(h => h.trim().toLowerCase() === 'location');
-        if (locationIdx === -1) {
-            alert('Invalid CSV file! Make sure it has a "Location" header');
-            uploadBtn.disabled = false;
-            uploadBtn.innerHTML = originalText;
-            return;
-        }
-
-        // Batch Firestore for efficiency
-        const batch = db.batch();
-        let count = 0;
-        for (let i = 1; i < lines.length; i++) {
-            const cols = lines[i].split(',');
-            const locationCode = cols[locationIdx]?.replace(/['"]+/g, '').trim();
-            if (locationCode) {
-                const docRef = db.collection('locations').doc(locationCode);
-                batch.set(docRef, {
-                    locationCode,
-                    isOccupied: false,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
-                count++;
-            }
-        }
-
-        batch.commit().then(() => {
-            alert(`Master location uploaded successfully! Total locations: ${count}`);
-            fileInput.value = '';
-            uploadBtn.disabled = false;
-            uploadBtn.innerHTML = originalText;
-            bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
-            
-            // Reload application to incorporate new master data
-            initializeApp();
-        }).catch(err => {
-            alert('Upload failed: ' + err.message);
-            uploadBtn.disabled = false;
-            uploadBtn.innerHTML = originalText;
-        });
-    };
-    reader.readAsText(file);
+    const excelEpoch = new Date(1899, 11, 30);
+    const days = parseInt(excelDate, 10);
+    if (isNaN(days)) return excelDate;
+    const milliseconds = days * 24 * 60 * 60 * 1000;
+    const date = new Date(excelEpoch.getTime() + milliseconds);
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
 }
 
-// Process Uploaded Data
-async function processUploadedData(data) {
-    // Get all master locations first to check against
-    const locationsSnapshot = await db.collection('locations').get();
-    const masterLocations = {};
-    
-    locationsSnapshot.forEach(doc => {
-        masterLocations[doc.id] = true;
-    });
-    
-    // Batch write to Firestore
-    const batch = db.batch();
-    
-    // Process each row
-    data.forEach(row => {
-        // Check if location exists in the master data
-        const locationCode = row.Location || row.location || row.LOCATION;
-        
-        if (locationCode && masterLocations[locationCode]) {
-            const locationRef = db.collection('locations').doc(locationCode);
-            
-            // Prepare location data
-            const locationData = {
-                locationCode: locationCode,
-                isOccupied: true,
-                lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-                partNo: row.PartNo || row.partNo || row['Part No'] || '',
-                productDescription: row.ProductDescription || row['Product Description'] || row.Description || '',
-                invoiceNo: row.InvoiceNo || row.invoiceNo || row['Invoice No'] || '',
-                lotNo: row.LotNo || row.lotNo || row['Lot No'] || row['Lot No.'] || '',
-                receiveDate: row.ReceiveDate || row.receiveDate || row['Receive Date'] || row['Received Date'] || '',
-                status: row.Status || row.status || 'putaway',
-                quantity: parseInt(row.Quantity || row.quantity || row.QTY || row.Qty || '0', 10),
-                customerCode: row.CustomerCode || row.customerCode || row['Customer Code'] || '',
-                uidCount: parseInt(row.UIDCount || row.uidCount || row.UID || '0', 10)
-            };
-            
-            batch.set(locationRef, locationData, { merge: true });
-            
-            // Update cache
-            locationCache[locationCode] = locationData;
-        }
-    });
-    
-    // Commit the batch
-    return batch.commit();
-}
-
-// Refresh Data
-function refreshData() {
-    // Show loading state
-    const refreshBtn = document.getElementById('refreshBtn');
-    const originalHtml = refreshBtn.innerHTML;
-    refreshBtn.disabled = true;
-    refreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
-    
-    // Clear search
-    document.getElementById('searchInput').value = '';
-    
-    // Reload locations data
-    loadMasterLocations()
-        .then(() => {
-            // Re-render current view
-            const activeAreaBtn = document.querySelector('.rack-area-btn.active');
-            if (activeAreaBtn) {
-                const prefix = activeAreaBtn.textContent;
-                if (document.getElementById('highRackArea').style.display !== 'none' && 
-                    window.rackPrefixes.highRack.includes(prefix)) {
-                    displayRackArea(prefix);
-                } else if (window.rackPrefixes.floor.includes(prefix)) {
-                    displayFloorArea(prefix);
-                }
-            }
-            updateStatistics();
-        })
-        .catch(error => {
-            console.error("Error refreshing data:", error);
-            alert('Error refreshing data. Please try again.');
-        })
-        .finally(() => {
-            // Reset button state
-            refreshBtn.disabled = false;
-            refreshBtn.innerHTML = originalHtml;
-        });
-}
-
-// Update Statistics
-async function updateStatistics() {
-    try {
-        // Ensure we're authenticated
-        if (!auth.currentUser) {
-            await authenticateAnonymously();
-            if (!auth.currentUser) return;
-        }
-        
-        const querySnapshot = await db.collection('locations').get();
-        const total = querySnapshot.size;
-        let occupied = 0;
-        
-        querySnapshot.forEach((doc) => {
-            if (doc.data().isOccupied) {
-                occupied++;
-            }
-        });
-        
-        const available = total - occupied;
-        const percentage = total > 0 ? Math.round((occupied / total) * 100) : 0;
-        
-        // Update UI
-        document.getElementById('totalLocations').textContent = formatNumber(total);
-        document.getElementById('occupiedLocations').textContent = formatNumber(occupied);
-        document.getElementById('availableLocations').textContent = formatNumber(available);
-        document.getElementById('occupancyPercentage').textContent = `${percentage}%`;
-    } catch (error) {
-        console.error("Error calculating statistics: ", error);
-    }
+// Format Number with Thousand Separator
+function formatNumber(number) {
+    return new Intl.NumberFormat('en-US').format(number);
 }
