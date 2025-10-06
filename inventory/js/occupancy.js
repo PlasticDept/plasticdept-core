@@ -1,5 +1,5 @@
 // Configuration and Global Variables
-const API_URL = 'http://127.0.0.1:8000'; // Base URL to your FastAPI backend
+const API_URL = 'http://192.168.100.61:8000'; // Base URL to your FastAPI backend
 const GITHUB_REPO = 'PlasticDept/plasticdept-core';
 const GITHUB_BRANCH = 'main';
 const GITHUB_FILE_PATH = 'occupancy.json';
@@ -184,7 +184,8 @@ async function loadOccupancyData() {
 function mergeOccupancyWithMaster() {
     const occupancyLookup = {};
     occupancyData.forEach(occ => {
-        const code = occ.Location || occ.locationCode || occ.location;
+        // Coba semua kemungkinan nama properti untuk lokasi
+        const code = occ.Location || occ.locationCode || occ.location || occ["Location Code"];
         if (code) occupancyLookup[code] = occ;
     });
 
@@ -228,6 +229,9 @@ function mergeOccupancyWithMaster() {
     allLocations.forEach(loc => {
         locationCache[loc.locationCode] = loc;
     });
+    
+    // Panggil inspeksi data setelah merging
+    inspectLoadedData();
 }
 
 // Analyze Location Structure to Identify Rack Types
@@ -241,9 +245,14 @@ function analyzeLocationStructure() {
             const prefix = locationCode.substring(0, 2);
             highRackPrefixes.add(prefix);
         }
+        // Format standar A-01-01, B-01-01, dll
         else if (/^[A-Z]-\d{2}-\d{2}$/.test(locationCode)) {
             const prefix = locationCode.substring(0, 1);
             floorPrefixes.add(prefix);
+        }
+        // Format khusus untuk area Y (Y06-01, Y07-01, dll)
+        else if (/^Y\d{2}-\d{2}$/.test(locationCode)) {
+            floorPrefixes.add('Y');
         }
     });
 
@@ -496,67 +505,109 @@ function updateCellAppearance(cell, locationCode) {
     }
 }
 
-// Display Floor Area
+// Display Floor Area   
 function displayFloorArea(floorPrefix) {
     currentRackPrefix = floorPrefix;
     currentPage = 1;
-
-    const blocks = getBlocksForFloorPrefix(floorPrefix);
-
+    
     document.getElementById('floorAreaTitle').textContent = `Floor Area ${floorPrefix}`;
     const floorContainer = document.getElementById('floorDisplayContainer');
     floorContainer.innerHTML = '';
-
-    const startIndex = (currentPage - 1) * 10;
-    const endIndex = Math.min(startIndex + 10, blocks.length);
-    const currentBlocks = blocks.slice(startIndex, endIndex);
-
+    
     const table = document.createElement('table');
     table.className = 'floor-table';
 
+    // Create header row
     const headerRow = document.createElement('tr');
     const floorHeaderCell = document.createElement('th');
     floorHeaderCell.textContent = floorPrefix;
     headerRow.appendChild(floorHeaderCell);
-    for (let i = 1; i <= 21; i++) {
-        const posHeaderCell = document.createElement('th');
-        posHeaderCell.textContent = i.toString().padStart(2, '0');
-        headerRow.appendChild(posHeaderCell);
+    
+    // Determine the number of columns based on prefix
+    let maxPos;
+    
+    if (floorPrefix === 'A') {
+        maxPos = 27; // Area A has 27 columns
+    } else if (floorPrefix === 'Y') {
+        maxPos = 14; // Area Y has 14 columns
+    } else {
+        maxPos = 21; // Default
+    }
+    
+    // Add column headers (01-27 or 01-14)
+    for (let col = 1; col <= maxPos; col++) {
+        const colHeaderCell = document.createElement('th');
+        colHeaderCell.textContent = col.toString().padStart(2, '0');
+        headerRow.appendChild(colHeaderCell);
     }
 
     const thead = document.createElement('thead');
     thead.appendChild(headerRow);
     table.appendChild(thead);
 
+    // Create rows (01-14)
     const tbody = document.createElement('tbody');
-    currentBlocks.forEach(block => {
-        const row = document.createElement('tr');
-        const blockCell = document.createElement('td');
-        blockCell.className = 'block-cell';
-        blockCell.textContent = block;
-        row.appendChild(blockCell);
+    for (let row = 1; row <= 14; row++) {
+        const rowFormatted = row.toString().padStart(2, '0');
+        const tableRow = document.createElement('tr');
+        const rowCell = document.createElement('td');
+        rowCell.className = 'block-cell';
+        rowCell.textContent = rowFormatted;
+        tableRow.appendChild(rowCell);
 
-        for (let pos = 1; pos <= 21; pos++) {
-            const posFormatted = pos.toString().padStart(2, '0');
-            const locationCode = `${floorPrefix}-${block}-${posFormatted}`;
+        // Add cells for each column
+        for (let col = 1; col <= maxPos; col++) {
+            const colFormatted = col.toString().padStart(2, '0');
+            
+            // Construct location code based on the format in your data
+            let locationCode;
+            if (floorPrefix === 'Y') {
+                // For Area Y, format is Y06-01, Y07-02, etc.
+                locationCode = `Y${rowFormatted}-${colFormatted}`;
+            } else {
+                // For Area A, format is A-22-01, A-23-02, etc. (column-row)
+                locationCode = `${floorPrefix}-${colFormatted}-${rowFormatted}`;
+            }
+            
             const locationCell = document.createElement('td');
             locationCell.className = 'location-cell';
             locationCell.setAttribute('data-location', locationCode);
             locationCell.addEventListener('click', () => showLocationDetails(locationCode));
             updateCellAppearance(locationCell, locationCode);
-            row.appendChild(locationCell);
+            tableRow.appendChild(locationCell);
         }
-        tbody.appendChild(row);
-    });
+        
+        tbody.appendChild(tableRow);
+    }
+    
     table.appendChild(tbody);
     floorContainer.appendChild(table);
 
-    const totalPages = Math.ceil(blocks.length / 10);
-    updatePaginationInfo(currentPage, totalPages);
+    // Single page pagination since we're showing all at once
+    updatePaginationInfo(1, 1);
 
     document.getElementById('highRackArea').style.display = 'none';
     document.getElementById('floorArea').style.display = 'block';
 }
+
+
+function inspectLoadedData() {
+    // Periksa lokasi area A
+    const aLocations = allLocations.filter(loc => loc.locationCode.startsWith('A-'));
+    
+    // Periksa khusus kolom A-22 sampai A-27 dengan format yang benar (A-column-row)
+    for (let col = 22; col <= 27; col++) {
+        for (let row = 1; row <= 14; row++) {
+            const loc = `A-${col.toString().padStart(2, '0')}-${row.toString().padStart(2, '0')}`;
+            const found = locationCache[loc] !== undefined;
+        }
+    }
+    
+    // Periksa lokasi area Y
+    const yLocations = allLocations.filter(loc => loc.locationCode.startsWith('Y'));
+    if (yLocations.length > 0) {
+    }
+}   
 
 // Get Blocks for Rack Prefix
 function getBlocksForRackPrefix(rackPrefix) {
@@ -574,13 +625,26 @@ function getBlocksForRackPrefix(rackPrefix) {
 // Get Blocks for Floor Prefix
 function getBlocksForFloorPrefix(floorPrefix) {
     const blockSet = new Set();
+    
     allLocations.forEach(location => {
         const locationCode = location.locationCode;
-        if (locationCode.startsWith(`${floorPrefix}-`)) {
+        
+        // Format khusus untuk area Y
+        if (floorPrefix === 'Y' && locationCode.startsWith('Y')) {
+            const match = locationCode.match(/^Y(\d{2})-\d{2}$/);
+            if (match) {
+                blockSet.add(match[1]);
+            }
+        } 
+        // Format untuk area A dan lainnya: A-blok-posisi
+        else if (locationCode.startsWith(`${floorPrefix}-`)) {
             const match = locationCode.match(/^[A-Z]-(\d{2})-\d{2}$/);
-            if (match) blockSet.add(match[1]);
+            if (match) {
+                blockSet.add(match[1]);
+            }
         }
     });
+    
     return Array.from(blockSet).sort((a, b) => parseInt(a) - parseInt(b));
 }
 
