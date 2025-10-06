@@ -1,5 +1,5 @@
 // Configuration and Global Variables
-const API_URL = 'https://192.168.100.61:8000'; // Base URL to your FastAPI backend
+const API_URL = 'http://157.66.55.46:8000'; // Base URL to your FastAPI backend
 const GITHUB_REPO = 'PlasticDept/plasticdept-core';
 const GITHUB_BRANCH = 'main';
 const GITHUB_FILE_PATH = 'occupancy.json';
