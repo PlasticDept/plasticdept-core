@@ -565,6 +565,7 @@ function renderBarChart(actualArr, planArr) {
             },
             color: '#64748b'
           }
+          
         },
         x: {
           grid: {
@@ -1037,6 +1038,18 @@ function renderLineChartOutbound(jobs, shiftType, manPowerTotal) {
       scales: {
         y: {
           beginAtZero: true,
+          // TAMBAHKAN KODE INI:
+          suggestedMax: function(context) {
+            // Mencari nilai tertinggi dari kedua dataset
+            const datasets = context.chart.data.datasets;
+            let maxValue = 0;
+            datasets.forEach(dataset => {
+              const dataMax = Math.max(...dataset.data.filter(v => v !== null));
+              if (dataMax > maxValue) maxValue = dataMax;
+            });
+            // Tambahkan margin sekitar 15-20% di atas nilai tertinggi
+            return maxValue * 1.2;
+          },
           grid: {
             color: '#f1f5f9',
             drawBorder: false
