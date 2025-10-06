@@ -254,12 +254,7 @@ authPromise.then(async () => {
         // 2. Total Capacity = Capacity day shift + Capacity night shift
         const totalCap = (capDayShift || 0) + (capNightShift || 0);
 
-        // 4. Cap 1 MP per hour
-        let cap1MPHour = 0;
-        if ((mpDayShift + mpNightShift) > 0) {
-            cap1MPHour = (capDayShift + capNightShift) / (mpDayShift + mpNightShift) / (450 / 60);
-        }
-
+        
         // Tampilkan ke tabel (non-shifted)
         const remOrderDayHCell = document.getElementById('remOrderDayH-actual');
         if (remOrderDayHCell) remOrderDayHCell.textContent = totalRemaining > 0 ? formatNumber(totalRemaining) : "-";
@@ -275,23 +270,19 @@ authPromise.then(async () => {
         const totalCapCell = document.getElementById('totalCap-actual');
         if (totalCapCell) totalCapCell.textContent = totalCap > 0 ? formatNumber(totalCap) : "-";
 
-        // Tampilkan cap1MPHour ke tabel
-        const cap1MPHourCell = document.getElementById('cap1MPHour-actual');
-        if (cap1MPHourCell) {
-            cap1MPHourCell.textContent = cap1MPHour > 0 ? formatNumber(Math.round(cap1MPHour)) : "-";
-        }
 
         // DATA SUDAH SIAP: enable toggle & hide spinner
         if (dayToggle) dayToggle.disabled = false;
         if (nightToggle) nightToggle.disabled = false;
         if (spinner) spinner.style.display = 'none';
 
-        // Fungsi update tampilan shift (hanya MP & Capacity yang dinamis)
+        // PATCHED: Full block untuk fungsi async function updateShiftView()
+        // Ganti seluruh isi fungsi updateShiftView di file report-data.js dengan kode ini.
+
         async function updateShiftView() {
             const shiftMode = (dayToggle && dayToggle.checked) ? "day" : "night";
 
             // --- Perhitungan capDayShiftActual dan capNightShiftActual ---
-            // Jumlahkan qty semua job dengan shift 'Day Shift' (tanpa filter team)
             let capDayShiftActual = 0;
             if (jobs) {
                 Object.values(jobs).forEach(job => {
@@ -306,11 +297,58 @@ authPromise.then(async () => {
                 capDayShiftActual = capDayShiftActual - capDayShiftOt;
             }
 
+            let capNightShiftActual = 0;
+            if (jobs) {
+                Object.values(jobs).forEach(job => {
+                    if (job.shift === "Night Shift") {
+                        capNightShiftActual += parseInt(job.qty, 10) || 0;
+                    }
+                });
+            }
             const capNightShiftOt = calculateCapShiftOT(jobs, "Night Shift");
             const hasManPowerOvertimeNight = await fetchMpOvertimeQty("Night Shift");
-            let capNightShiftActual = capNightShift;
             if (hasManPowerOvertimeNight) {
-                capNightShiftActual = capNightShift - capNightShiftOt;
+                capNightShiftActual = capNightShiftActual - capNightShiftOt;
+            }
+
+            // --- Cap 1 MP/hour: gunakan kapasitas aktual tanpa OT ---
+            let cap1MPHour = 0;
+            if ((mpDayShift + mpNightShift) > 0) {
+                cap1MPHour = (capDayShiftActual + capNightShiftActual) / (mpDayShift + mpNightShift) / (450 / 60);
+            }
+            const cap1MPHourCell = document.getElementById('cap1MPHour-actual');
+            if (cap1MPHourCell) {
+                cap1MPHourCell.textContent = cap1MPHour > 0 ? formatNumber(Math.round(cap1MPHour)) : "-";
+            }
+
+            // --- Render data utama ke table ---
+            renderShiftData(
+                shiftMode === "day",
+                mpDayShift,
+                capDayShiftActual,
+                mpNightShift,
+                capNightShiftActual,
+                cap1MPHour
+            );
+
+            // --- Update nilai capDayShift-actual dan capNightShift-actual pada tabel sesuai id ---
+            const capDayShiftActualCell = document.getElementById('capDayShift-actual');
+            if (capDayShiftActualCell) {
+                capDayShiftActualCell.textContent = capDayShiftActual > 0 ? formatNumber(capDayShiftActual) : "-";
+            }
+            const capNightShiftActualCell = document.getElementById('capNightShift-actual');
+            if (capNightShiftActualCell) {
+                capNightShiftActualCell.textContent = capNightShiftActual > 0 ? formatNumber(capNightShiftActual) : "-";
+            }
+
+            // --- Update nilai OT pada tabel sesuai id ---
+            const capDayShiftOtCell = document.getElementById('capDayShift-ot');
+            if (capDayShiftOtCell) {
+                capDayShiftOtCell.textContent = capDayShiftOt > 0 ? formatNumber(capDayShiftOt) : "-";
+            }
+            const capNightShiftOtCell = document.getElementById('capNightShift-ot');
+            if (capNightShiftOtCell) {
+                capNightShiftOtCell.textContent = capNightShiftOt > 0 ? formatNumber(capNightShiftOt) : "-";
             }
 
             // --- Perhitungan orderH1-actual & remOrder-actual sesuai logika baru ---
@@ -335,37 +373,28 @@ authPromise.then(async () => {
                     const deliveryDate = job.deliveryDate || "";
                     const status = (job.status || "").toLowerCase();
                     const remark = (job.remark || "").toUpperCase();
-                    
-                    return (deliveryDate !== todayStr && 
-                            deliveryDate !== yesterdayStr && 
+                    return (deliveryDate !== todayStr &&
+                            deliveryDate !== yesterdayStr &&
                             (status === "pending pick" || status === "packed") &&
                             remark !== "CANCEL")
                         ? sum + (parseInt(job.qty, 10) || 0)
                         : sum;
                 }, 0);
 
-                // remOrder-actual: hitung dengan logika yang sama seperti outstandingJobValue di dashboard
-                // jumlah qty semua status "pending pick" dan tidak memiliki shift yang ditetapkan
+                // remOrder-actual: qty semua status "pending pick" dan tidak memiliki shift yang ditetapkan
                 remOrderVal = Object.values(jobs || {}).reduce((sum, job) => {
                     const status = (job.status || "").toLowerCase();
-                    // Periksa apakah shift kosong (undefined, null, atau string kosong setelah trim)
                     const hasShift = typeof job.shift !== 'undefined' && job.shift !== null && String(job.shift).trim() !== '';
-                    
-                    // Jumlahkan qty jika status 'pending pick' dan shift benar-benar tidak ada atau kosong
                     return (status === "pending pick" && !hasShift)
                         ? sum + (parseInt(job.qty, 10) || 0)
                         : sum;
                 }, 0);
 
             } else {
-                // remOrder-actual: jumlah qty semua status pending pick (tanpa filter tanggal) 
-                // dan tidak memiliki shift yang ditetapkan (sama dengan logika outstandingJobValue)
+                // remOrder-actual: qty semua status pending pick (tanpa filter tanggal) dan tidak memiliki shift
                 remOrderVal = Object.values(jobs || {}).reduce((sum, job) => {
                     const status = (job.status || "").toLowerCase();
-                    // Periksa apakah shift kosong (undefined, null, atau string kosong setelah trim)
                     const hasShift = typeof job.shift !== 'undefined' && job.shift !== null && String(job.shift).trim() !== '';
-                    
-                    // Jumlahkan qty jika status 'pending pick' dan shift benar-benar tidak ada atau kosong
                     return (status === "pending pick" && !hasShift)
                         ? sum + (parseInt(job.qty, 10) || 0)
                         : sum;
@@ -376,11 +405,9 @@ authPromise.then(async () => {
             }
 
             // --- Tampilkan ke tabel ---
-            // orderH1-actual
             const orderH1Cell = document.getElementById('orderH1-actual');
             if (orderH1Cell) orderH1Cell.textContent = orderH1Val > 0 ? formatNumber(orderH1Val) : "-";
 
-            // remOrder-actual
             const remainingOrderCell = document.getElementById('remOrder-actual');
             if (remainingOrderCell) {
                 remainingOrderCell.textContent = remOrderVal > 0 ? formatNumber(remOrderVal) : "-";
@@ -396,25 +423,13 @@ authPromise.then(async () => {
                 totalOrderCell.textContent = totalOrderVal > 0 ? formatNumber(totalOrderVal) : "-";
             }
 
-            // --- Render data utama ke table ---
-            renderShiftData(
-                shiftMode === "day",
-                mpDayShift,
-                capDayShiftActual,
-                mpNightShift,
-                capNightShiftActual,
-                cap1MPHour
-            );
-
             // --- Update tampilan nilai MP Overtime pada tabel ---
             await updateMpOvertimeView(shiftMode);
 
             // --- Update tampilan mpDayShift-ot & mpNightShift-ot sesuai shift aktif ---
             await updateMpDayNightOtView(shiftMode);
 
-            // --- Update nilai capNightShift-ot dan capDayShift-ot pada tabel ---
-            const capNightShiftOtCell = document.getElementById('capNightShift-ot');
-            const capDayShiftOtCell = document.getElementById('capDayShift-ot');
+            // --- Update nilai capNightShift-ot dan capDayShift-ot pada tabel sesuai id ---
             if (shiftMode === "night") {
                 if (capNightShiftOtCell) capNightShiftOtCell.textContent = capNightShiftOt > 0 ? formatNumber(capNightShiftOt) : "-";
                 if (capDayShiftOtCell) capDayShiftOtCell.textContent = "";
