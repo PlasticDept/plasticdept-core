@@ -14547,9 +14547,6 @@
     "locationCode": "EI-14-2-4"
   },
   {
-    "locationCode": "GA-01-1-1"
-  },
-  {
     "locationCode": "GA-01-1-2"
   },
   {
@@ -14557,9 +14554,6 @@
   },
   {
     "locationCode": "GA-01-1-4"
-  },
-  {
-    "locationCode": "GA-01-2-1"
   },
   {
     "locationCode": "GA-01-2-2"
@@ -14571,9 +14565,6 @@
     "locationCode": "GA-01-2-4"
   },
   {
-    "locationCode": "GA-02-1-1"
-  },
-  {
     "locationCode": "GA-02-1-2"
   },
   {
@@ -14581,9 +14572,6 @@
   },
   {
     "locationCode": "GA-02-1-4"
-  },
-  {
-    "locationCode": "GA-02-2-1"
   },
   {
     "locationCode": "GA-02-2-2"
@@ -14595,9 +14583,6 @@
     "locationCode": "GA-02-2-4"
   },
   {
-    "locationCode": "GA-03-1-1"
-  },
-  {
     "locationCode": "GA-03-1-2"
   },
   {
@@ -14605,9 +14590,6 @@
   },
   {
     "locationCode": "GA-03-1-4"
-  },
-  {
-    "locationCode": "GA-03-2-1"
   },
   {
     "locationCode": "GA-03-2-2"
@@ -14619,9 +14601,6 @@
     "locationCode": "GA-03-2-4"
   },
   {
-    "locationCode": "GA-04-1-1"
-  },
-  {
     "locationCode": "GA-04-1-2"
   },
   {
@@ -14629,9 +14608,6 @@
   },
   {
     "locationCode": "GA-04-1-4"
-  },
-  {
-    "locationCode": "GA-04-2-1"
   },
   {
     "locationCode": "GA-04-2-2"
@@ -14643,9 +14619,6 @@
     "locationCode": "GA-04-2-4"
   },
   {
-    "locationCode": "GA-05-1-1"
-  },
-  {
     "locationCode": "GA-05-1-2"
   },
   {
@@ -14653,9 +14626,6 @@
   },
   {
     "locationCode": "GA-05-1-4"
-  },
-  {
-    "locationCode": "GA-05-2-1"
   },
   {
     "locationCode": "GA-05-2-2"
@@ -14667,9 +14637,6 @@
     "locationCode": "GA-05-2-4"
   },
   {
-    "locationCode": "GA-06-1-1"
-  },
-  {
     "locationCode": "GA-06-1-2"
   },
   {
@@ -14677,9 +14644,6 @@
   },
   {
     "locationCode": "GA-06-1-4"
-  },
-  {
-    "locationCode": "GA-06-2-1"
   },
   {
     "locationCode": "GA-06-2-2"
@@ -14691,9 +14655,6 @@
     "locationCode": "GA-06-2-4"
   },
   {
-    "locationCode": "GA-07-1-1"
-  },
-  {
     "locationCode": "GA-07-1-2"
   },
   {
@@ -14701,9 +14662,6 @@
   },
   {
     "locationCode": "GA-07-1-4"
-  },
-  {
-    "locationCode": "GA-07-2-1"
   },
   {
     "locationCode": "GA-07-2-2"
@@ -14715,9 +14673,6 @@
     "locationCode": "GA-07-2-4"
   },
   {
-    "locationCode": "GA-08-1-1"
-  },
-  {
     "locationCode": "GA-08-1-2"
   },
   {
@@ -14725,9 +14680,6 @@
   },
   {
     "locationCode": "GA-08-1-4"
-  },
-  {
-    "locationCode": "GA-08-2-1"
   },
   {
     "locationCode": "GA-08-2-2"
@@ -14739,9 +14691,6 @@
     "locationCode": "GA-08-2-4"
   },
   {
-    "locationCode": "GA-09-1-1"
-  },
-  {
     "locationCode": "GA-09-1-2"
   },
   {
@@ -14749,9 +14698,6 @@
   },
   {
     "locationCode": "GA-09-1-4"
-  },
-  {
-    "locationCode": "GA-09-2-1"
   },
   {
     "locationCode": "GA-09-2-2"
@@ -14763,9 +14709,6 @@
     "locationCode": "GA-09-2-4"
   },
   {
-    "locationCode": "GA-10-1-1"
-  },
-  {
     "locationCode": "GA-10-1-2"
   },
   {
@@ -14773,9 +14716,6 @@
   },
   {
     "locationCode": "GA-10-1-4"
-  },
-  {
-    "locationCode": "GA-10-2-1"
   },
   {
     "locationCode": "GA-10-2-2"
@@ -14787,9 +14727,6 @@
     "locationCode": "GA-10-2-4"
   },
   {
-    "locationCode": "GA-11-1-1"
-  },
-  {
     "locationCode": "GA-11-1-2"
   },
   {
@@ -14797,9 +14734,6 @@
   },
   {
     "locationCode": "GA-11-1-4"
-  },
-  {
-    "locationCode": "GA-11-2-1"
   },
   {
     "locationCode": "GA-11-2-2"
@@ -14811,9 +14745,6 @@
     "locationCode": "GA-11-2-4"
   },
   {
-    "locationCode": "GA-12-1-1"
-  },
-  {
     "locationCode": "GA-12-1-2"
   },
   {
@@ -14821,9 +14752,6 @@
   },
   {
     "locationCode": "GA-12-1-4"
-  },
-  {
-    "locationCode": "GA-12-2-1"
   },
   {
     "locationCode": "GA-12-2-2"
@@ -14835,9 +14763,6 @@
     "locationCode": "GA-12-2-4"
   },
   {
-    "locationCode": "GA-13-1-1"
-  },
-  {
     "locationCode": "GA-13-1-2"
   },
   {
@@ -14847,9 +14772,6 @@
     "locationCode": "GA-13-1-4"
   },
   {
-    "locationCode": "GA-13-2-1"
-  },
-  {
     "locationCode": "GA-13-2-2"
   },
   {
@@ -14857,6 +14779,84 @@
   },
   {
     "locationCode": "GA-13-2-4"
+  },
+  {
+    "locationCode": "GA-NG-01-1-1"
+  },
+  {
+    "locationCode": "GA-NG-01-2-1"
+  },
+  {
+    "locationCode": "GA-NG-02-1-1"
+  },
+  {
+    "locationCode": "GA-NG-02-2-1"
+  },
+  {
+    "locationCode": "GA-NG-03-1-1"
+  },
+  {
+    "locationCode": "GA-NG-03-2-1"
+  },
+  {
+    "locationCode": "GA-NG-04-1-1"
+  },
+  {
+    "locationCode": "GA-NG-04-2-1"
+  },
+  {
+    "locationCode": "GA-NG-05-1-1"
+  },
+  {
+    "locationCode": "GA-NG-05-2-1"
+  },
+  {
+    "locationCode": "GA-NG-06-1-1"
+  },
+  {
+    "locationCode": "GA-NG-06-2-1"
+  },
+  {
+    "locationCode": "GA-NG-07-1-1"
+  },
+  {
+    "locationCode": "GA-NG-07-2-1"
+  },
+  {
+    "locationCode": "GA-NG-08-1-1"
+  },
+  {
+    "locationCode": "GA-NG-08-2-1"
+  },
+  {
+    "locationCode": "GA-NG-09-1-1"
+  },
+  {
+    "locationCode": "GA-NG-09-2-1"
+  },
+  {
+    "locationCode": "GA-NG-10-1-1"
+  },
+  {
+    "locationCode": "GA-NG-10-2-1"
+  },
+  {
+    "locationCode": "GA-NG-11-1-1"
+  },
+  {
+    "locationCode": "GA-NG-11-2-1"
+  },
+  {
+    "locationCode": "GA-NG-12-1-1"
+  },
+  {
+    "locationCode": "GA-NG-12-2-1"
+  },
+  {
+    "locationCode": "GA-NG-13-1-1"
+  },
+  {
+    "locationCode": "GA-NG-13-2-1"
   },
   {
     "locationCode": "Y06-01"
