@@ -444,3 +444,67 @@ body {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* Stats Styles - Enhanced for Colorful Cards */
+.stat-card {
+    background: linear-gradient(135deg, #f7fafc 0%, #e3e9f7 100%);
+    border-radius: 10px;
+    padding: 18px 15px;
+    border: none;
+    box-shadow: 0 2px 10px 0 rgba(1, 44, 236, 0.07), 0 1.5px 6px 0 rgba(90,115,232,0.03);
+    height: 100%;
+    transition: box-shadow 0.2s;
+    margin-bottom: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card:nth-child(1) {
+    background: linear-gradient(135deg, #e0ecff 0%, #f7fafc 100%);
+    border-top: 5px solid hsl(253, 100%, 49%);
+}
+.stat-card:nth-child(2) {
+    background: linear-gradient(135deg, #ffe3e3 0%, #fff0f6 100%);
+    border-left: 5px solid #ff1900;
+}
+.stat-card:nth-child(3) {
+    background: linear-gradient(135deg, #e8ffe8 0%, #f6fff7 100%);
+    border-left: 5px solid #27ae60;
+}
+.stat-card:nth-child(4) {
+    background: linear-gradient(135deg, #e3f0ff 0%, #f7fcff 100%);
+    border-left: 5px solid #2980ef;
+}
+
+.stat-card:hover {
+    box-shadow: 0 4px 20px 0 rgba(90,115,232,0.12), 0 3px 14px 0 rgba(90,115,232,0.08);
+}
+
+.stat-title {
+    font-size: 1rem;
+    color: #6c757d;
+    margin-bottom: 8px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-top: 5px;
+    margin-bottom: 0;
+    letter-spacing: 1px;
+}
+
+.stat-value#totalLocations {
+    color: #2c3e50;
+}
+.stat-value#occupiedLocations {
+    color: #e74c3c;
+}
+.stat-value#availableLocations {
+    color: #27ae60;
+}
+.stat-value#occupancyPercentage {
+    color: #2980ef;
+}
