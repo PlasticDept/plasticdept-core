@@ -16,6 +16,7 @@ let allRackPrefixes = []; // All available rack prefixes (DA, DB, DC, etc.)
 let currentRackPrefix = ""; // Current selected rack prefix for high rack areas
 let locationCache = {}; // Cache for location data
 const BLOCKS_PER_PAGE = 15; // Number of rack columns to display per page
+const RACKS_PER_PAGE = 5; // Number of racks to display per page (NEW)
 
 // Customer code colors
 const customerColors = {
@@ -117,7 +118,7 @@ async function initializeApp() {
         generateRackAreaButtons();
 
         if (allRackPrefixes.length > 0) {
-            displayRackArea(allRackPrefixes[0]);
+            displayMultipleRacks(1); // Mulai dari halaman 1 (DIUBAH)
         }
 
         updateStatistics();
@@ -395,7 +396,10 @@ function generateRackAreaButtons() {
         button.addEventListener('click', () => {
             document.querySelectorAll('.rack-area-btn').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-            displayRackArea(prefix);
+            // Tampilkan halaman yang berisi rack yang dipilih (DIUBAH)
+            const rackIndex = allRackPrefixes.indexOf(prefix);
+            const pageNum = Math.floor(rackIndex / RACKS_PER_PAGE) + 1;
+            displayMultipleRacks(pageNum);
         });
         rackAreaButtonsContainer.appendChild(button);
     });
@@ -540,104 +544,151 @@ function refreshData() {
             });
     }, 100);
 }
-// Display Rack Area
-function displayRackArea(rackPrefix) {
-    currentRackPrefix = rackPrefix;
-    currentPage = 1;
 
-    const blocks = getBlocksForRackPrefix(rackPrefix);
-    const startIndex = (currentPage - 1) * BLOCKS_PER_PAGE;
-    const endIndex = Math.min(startIndex + BLOCKS_PER_PAGE, blocks.length);
-    const currentBlocks = blocks.slice(startIndex, endIndex);
-
-    document.getElementById('rackAreaTitle').textContent = `Rack Area ${rackPrefix}`;
+// FUNGSI BARU: Menampilkan multiple racks pada satu halaman
+function displayMultipleRacks(pageNum) {
+    currentPage = pageNum;
+    
+    // Hitung rack mana saja yang akan ditampilkan pada halaman ini
+    const startRackIndex = (pageNum - 1) * RACKS_PER_PAGE;
+    const endRackIndex = Math.min(startRackIndex + RACKS_PER_PAGE, allRackPrefixes.length);
+    const currentRacks = allRackPrefixes.slice(startRackIndex, endRackIndex);
+    
+    // Update title untuk menunjukkan rentang rack yang ditampilkan
+    const startRack = currentRacks[0];
+    const endRack = currentRacks[currentRacks.length - 1];
+    document.getElementById('rackAreaTitle').textContent = `Rack Area ${startRack}-${endRack}`;
+    
     const rackContainer = document.getElementById('rackDisplayContainer');
     rackContainer.innerHTML = '';
-
-    const table = document.createElement('table');
-    table.className = 'rack-table';
-
-    const headerRow1 = document.createElement('tr');
-    const rackHeaderCell = document.createElement('th');
-    rackHeaderCell.textContent = 'RACK';
-    rackHeaderCell.rowSpan = 1;
-    headerRow1.appendChild(rackHeaderCell);
-
-    currentBlocks.forEach(block => {
-        const blockHeaderCell = document.createElement('th');
-        blockHeaderCell.colSpan = 2;
-        blockHeaderCell.textContent = block;
-        headerRow1.appendChild(blockHeaderCell);
-    });
-
-    const headerRow2 = document.createElement('tr');
-    const rackLabel = document.createElement('th');
-    rackLabel.textContent = rackPrefix;
-    headerRow2.appendChild(rackLabel);
-    currentBlocks.forEach(() => {
-        const col1 = document.createElement('th');
-        col1.textContent = '1';
-        headerRow2.appendChild(col1);
-        const col2 = document.createElement('th');
-        col2.textContent = '2';
-        headerRow2.appendChild(col2);
-    });
-
-    const thead = document.createElement('thead');
-    thead.appendChild(headerRow1);
-    thead.appendChild(headerRow2);
-    table.appendChild(thead);
-
-    const tbody = document.createElement('tbody');
-    for (let level = 4; level >= 1; level--) {
-        const row = document.createElement('tr');
-        const levelCell = document.createElement('td');
-        levelCell.className = 'level-cell';
-        levelCell.textContent = level;
-        row.appendChild(levelCell);
+    
+    // Buat div container untuk semua racks
+    const allRacksContainer = document.createElement('div');
+    allRacksContainer.className = 'all-racks-container';
+    
+    // Loop melalui setiap rack untuk ditampilkan
+    currentRacks.forEach(rackPrefix => {
+        // Buat container untuk rack ini
+        const rackDiv = document.createElement('div');
+        rackDiv.className = 'rack-container mb-4';
+        
+        // Tambah header untuk rack ini
+        const rackHeader = document.createElement('h5');
+        rackHeader.className = 'rack-title';
+        rackHeader.textContent = `Rack ${rackPrefix}`;
+        rackDiv.appendChild(rackHeader);
+        
+        // Dapatkan blok untuk rack ini
+        const blocks = getBlocksForRackPrefix(rackPrefix);
+        
+        // Kita tetap menampilkan hingga 15 blok per rack
+        const startBlockIndex = 0;
+        const endBlockIndex = Math.min(startBlockIndex + BLOCKS_PER_PAGE, blocks.length);
+        const currentBlocks = blocks.slice(startBlockIndex, endBlockIndex);
+        
+        // Buat tabel untuk rack ini
+        const table = document.createElement('table');
+        table.className = 'rack-table';
+        
+        // Buat header tabel
+        const headerRow1 = document.createElement('tr');
+        const rackHeaderCell = document.createElement('th');
+        rackHeaderCell.textContent = 'RACK';
+        rackHeaderCell.rowSpan = 1;
+        headerRow1.appendChild(rackHeaderCell);
 
         currentBlocks.forEach(block => {
-            const pos1Code = `${rackPrefix}-${block}-1-${level}`;
-            const pos1Cell = document.createElement('td');
-            pos1Cell.className = 'location-cell';
-            pos1Cell.setAttribute('data-location', pos1Code);
-
-            // Hanya tambahkan event listener jika lokasi tidak diblokir
-            if (!blockedLocations.includes(pos1Code)) {
-                pos1Cell.addEventListener('click', () => showLocationDetails(pos1Code));
-            } else {
-                pos1Cell.classList.add('blocked'); // Tambahkan class blocked langsung
-            }
-
-            updateCellAppearance(pos1Cell, pos1Code);
-            row.appendChild(pos1Cell);
-
-            // Untuk pos2Cell:
-            const pos2Code = `${rackPrefix}-${block}-2-${level}`;
-            const pos2Cell = document.createElement('td');
-            pos2Cell.className = 'location-cell';
-            pos2Cell.setAttribute('data-location', pos2Code);
-
-            // Hanya tambahkan event listener jika lokasi tidak diblokir
-            if (!blockedLocations.includes(pos2Code)) {
-                pos2Cell.addEventListener('click', () => showLocationDetails(pos2Code));
-            } else {
-                pos2Cell.classList.add('blocked'); // Tambahkan class blocked langsung
-            }
-
-            updateCellAppearance(pos2Cell, pos2Code);
-            row.appendChild(pos2Cell);
+            const blockHeaderCell = document.createElement('th');
+            blockHeaderCell.colSpan = 2;
+            blockHeaderCell.textContent = block;
+            headerRow1.appendChild(blockHeaderCell);
         });
-        tbody.appendChild(row);
-    }
-    table.appendChild(tbody);
-    rackContainer.appendChild(table);
 
-    const totalPages = Math.ceil(blocks.length / BLOCKS_PER_PAGE);
+        const headerRow2 = document.createElement('tr');
+        const rackLabel = document.createElement('th');
+        rackLabel.textContent = rackPrefix;
+        headerRow2.appendChild(rackLabel);
+        
+        currentBlocks.forEach(() => {
+            const col1 = document.createElement('th');
+            col1.textContent = '1';
+            headerRow2.appendChild(col1);
+            const col2 = document.createElement('th');
+            col2.textContent = '2';
+            headerRow2.appendChild(col2);
+        });
+
+        const thead = document.createElement('thead');
+        thead.appendChild(headerRow1);
+        thead.appendChild(headerRow2);
+        table.appendChild(thead);
+        
+        // Buat body tabel
+        const tbody = document.createElement('tbody');
+        
+        for (let level = 4; level >= 1; level--) {
+            const row = document.createElement('tr');
+            const levelCell = document.createElement('td');
+            levelCell.className = 'level-cell';
+            levelCell.textContent = level;
+            row.appendChild(levelCell);
+
+            currentBlocks.forEach(block => {
+                // Posisi 1
+                const pos1Code = `${rackPrefix}-${block}-1-${level}`;
+                const pos1Cell = document.createElement('td');
+                pos1Cell.className = 'location-cell';
+                pos1Cell.setAttribute('data-location', pos1Code);
+
+                // Hanya tambahkan event listener jika lokasi tidak diblokir
+                if (!blockedLocations.includes(pos1Code)) {
+                    pos1Cell.addEventListener('click', () => showLocationDetails(pos1Code));
+                } else {
+                    pos1Cell.classList.add('blocked');
+                }
+
+                updateCellAppearance(pos1Cell, pos1Code);
+                row.appendChild(pos1Cell);
+
+                // Posisi 2
+                const pos2Code = `${rackPrefix}-${block}-2-${level}`;
+                const pos2Cell = document.createElement('td');
+                pos2Cell.className = 'location-cell';
+                pos2Cell.setAttribute('data-location', pos2Code);
+
+                // Hanya tambahkan event listener jika lokasi tidak diblokir
+                if (!blockedLocations.includes(pos2Code)) {
+                    pos2Cell.addEventListener('click', () => showLocationDetails(pos2Code));
+                } else {
+                    pos2Cell.classList.add('blocked');
+                }
+
+                updateCellAppearance(pos2Cell, pos2Code);
+                row.appendChild(pos2Cell);
+            });
+            
+            tbody.appendChild(row);
+        }
+        
+        table.appendChild(tbody);
+        rackDiv.appendChild(table);
+        allRacksContainer.appendChild(rackDiv);
+    });
+    
+    rackContainer.appendChild(allRacksContainer);
+    
+    // Update paginasi
+    const totalPages = Math.ceil(allRackPrefixes.length / RACKS_PER_PAGE);
     updatePaginationInfo(currentPage, totalPages);
-
+    
     document.getElementById('highRackArea').style.display = 'block';
     document.getElementById('floorArea').style.display = 'none';
+    
+    // Highlight tombol rack yang sedang aktif
+    document.querySelectorAll('.rack-area-btn').forEach(btn => {
+        const btnRack = btn.textContent;
+        btn.classList.toggle('active', currentRacks.includes(btnRack));
+    });
 }
 
 // Update cell appearance based on occupancy and customer code
@@ -920,16 +971,25 @@ function updatePaginationInfo(current, total) {
     document.getElementById('nextPage').disabled = current >= total;
 }
 
-// Change Page
+// Change Page (DIMODIFIKASI)
 function changePage(direction) {
     const newPage = currentPage + direction;
     if (newPage < 1) return;
-    currentPage = newPage;
-
+    
+    // Jika di area high rack, gunakan displayMultipleRacks
     if (document.getElementById('highRackArea').style.display !== 'none') {
-        displayRackArea(currentRackPrefix);
-    } else {
-        displayFloorArea(currentRackPrefix);
+        const totalPages = Math.ceil(allRackPrefixes.length / RACKS_PER_PAGE);
+        if (newPage > totalPages) return;
+        currentPage = newPage;
+        displayMultipleRacks(currentPage);
+    } 
+    // Jika di area floor, gunakan displayFloorArea
+    else {
+        currentPage = newPage;
+        const activeFloorPrefix = document.querySelector('.rack-area-btn.active')?.textContent;
+        if (activeFloorPrefix && window.rackPrefixes.floor.includes(activeFloorPrefix)) {
+            displayFloorArea(activeFloorPrefix);
+        }
     }
 }
 
@@ -957,14 +1017,20 @@ function toggleAreaView(areaToShow, buttons) {
     if (activeAreaBtn) {
         const prefix = activeAreaBtn.textContent;
         if (areaToShow === 'highRackArea' && window.rackPrefixes.highRack.includes(prefix)) {
-            displayRackArea(prefix);
+            // Tampilkan halaman yang berisi rack yang dipilih (DIUBAH)
+            const rackIndex = allRackPrefixes.indexOf(prefix);
+            const pageNum = Math.floor(rackIndex / RACKS_PER_PAGE) + 1;
+            displayMultipleRacks(pageNum);
         } else if (areaToShow === 'floorArea' && window.rackPrefixes.floor.includes(prefix)) {
             displayFloorArea(prefix);
         } else {
             if (areaToShow === 'highRackArea' && window.rackPrefixes.highRack.length > 0) {
-                displayRackArea(window.rackPrefixes.highRack[0]);
+                displayMultipleRacks(1); // Mulai dari halaman 1 (DIUBAH)
                 document.querySelectorAll('.rack-area-btn').forEach(btn => {
-                    btn.classList.toggle('active', btn.textContent === window.rackPrefixes.highRack[0]);
+                    // Highlight tombol yang aktif di halaman 1
+                    const rackPrefix = btn.textContent;
+                    const rackIndex = allRackPrefixes.indexOf(rackPrefix);
+                    btn.classList.toggle('active', rackIndex >= 0 && rackIndex < RACKS_PER_PAGE);
                 });
             } else if (areaToShow === 'floorArea' && window.rackPrefixes.floor.length > 0) {
                 displayFloorArea(window.rackPrefixes.floor[0]);
@@ -981,14 +1047,13 @@ function handleSearch() {
     const searchTerm = document.getElementById('searchInput').value.trim().toUpperCase();
 
     if (searchTerm === '') {
-        const activeAreaBtn = document.querySelector('.rack-area-btn.active');
-        if (activeAreaBtn) {
-            const prefix = activeAreaBtn.textContent;
-            if (document.getElementById('highRackArea').style.display !== 'none' &&
-                window.rackPrefixes.highRack.includes(prefix)) {
-                displayRackArea(prefix);
-            } else if (window.rackPrefixes.floor.includes(prefix)) {
-                displayFloorArea(prefix);
+        // Reset ke tampilan normal jika search field kosong
+        if (document.getElementById('highRackArea').style.display !== 'none') {
+            displayMultipleRacks(currentPage); // Kembali ke halaman rack saat ini (DIUBAH)
+        } else {
+            const activeFloorPrefix = document.querySelector('.rack-area-btn.active')?.textContent;
+            if (activeFloorPrefix && window.rackPrefixes.floor.includes(activeFloorPrefix)) {
+                displayFloorArea(activeFloorPrefix);
             }
         }
         return;
