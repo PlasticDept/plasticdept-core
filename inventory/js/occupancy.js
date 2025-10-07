@@ -1,5 +1,5 @@
 // Configuration and Global Variables
-const API_URL = 'https://157.66.55.46:8000'; // Base URL to your FastAPI backend
+const API_URL = 'http://127.0.0.1:8000'; // Base URL to your FastAPI backend
 const GITHUB_REPO = 'PlasticDept/plasticdept-core';
 const GITHUB_BRANCH = 'main';
 const GITHUB_FILE_PATH = 'occupancy.json';
@@ -26,6 +26,40 @@ const customerColors = {
   'TTI-PP': '#E6E6FA', // Lavender
   'TTI-MACHINERY': '#FFC0CB' // Pink
 };
+
+// Lokasi yang diblokir/tidak digunakan
+const blockedLocations = [
+    'DF-03-2-1', 'DF-03-2-2', 'DF-03-2-3', 'DF-03-2-4',
+    'DF-07-1-1', 'DF-07-1-2', 'DF-07-1-3', 'DF-07-1-4',
+    'DF-14-1-1', 'DF-14-1-2', 'DF-14-1-3', 'DF-14-1-4',
+    'DU-07-1-1', 'DU-07-1-2', 'DU-07-1-3', 'DU-07-1-4',
+    'DU-14-1-1', 'DU-14-1-2', 'DU-14-1-3', 'DU-14-1-4'
+];
+
+// Daftar kode lokasi GA stack 1 dengan format NG
+const gaStackNgLocations = [
+    'GA-NG-01-1-1', 'GA-NG-01-2-1', 'GA-NG-02-1-1', 'GA-NG-02-2-1', 
+    'GA-NG-03-1-1', 'GA-NG-03-2-1', 'GA-NG-04-1-1', 'GA-NG-04-2-1',
+    'GA-NG-05-1-1', 'GA-NG-05-2-1', 'GA-NG-06-1-1', 'GA-NG-06-2-1',
+    'GA-NG-07-1-1', 'GA-NG-07-2-1', 'GA-NG-08-1-1', 'GA-NG-08-2-1',
+    'GA-NG-09-1-1', 'GA-NG-09-2-1', 'GA-NG-10-1-1', 'GA-NG-10-2-1',
+    'GA-NG-11-1-1', 'GA-NG-11-2-1', 'GA-NG-12-1-1', 'GA-NG-12-2-1',
+    'GA-NG-13-1-1', 'GA-NG-13-2-1'
+];
+
+// Mapping dari lokasi normal ke lokasi NG
+const locationMapping = {};
+
+// Buat mapping dari GA-XX-Y-Z ke GA-NG-XX-Y-Z
+gaStackNgLocations.forEach(ngLoc => {
+    // Ambil bagian XX-Y-Z dari GA-NG-XX-Y-Z
+    const parts = ngLoc.match(/^GA-NG-(\d{2}-\d-\d)$/);
+    if (parts) {
+        const suffix = parts[1]; // XX-Y-Z
+        const normalLoc = `GA-${suffix}`; // GA-XX-Y-Z
+        locationMapping[normalLoc] = ngLoc;
+    }
+});
 
 document.addEventListener('DOMContentLoaded', function() {
     updateCustomerLegend();
@@ -181,19 +215,56 @@ async function loadOccupancyData() {
     }
 }
 
+// Fungsi untuk mendapatkan data lokasi berdasarkan kode lokasi
+function getLocationData(locationCode) {
+    // Cek apakah lokasi merupakan kode GA stack 1 yang perlu dimapping
+    if (locationCode.startsWith('GA-') && locationMapping[locationCode]) {
+        // Jika ya, gunakan kode lokasi dengan format NG
+        const ngLocationCode = locationMapping[locationCode];
+        
+        // Cari di occupancyData
+        for (const occ of occupancyData) {
+            const code = occ.Location || occ.locationCode || occ.location || occ["Location Code"];
+            if (code === ngLocationCode) {
+                return occ;
+            }
+        }
+    }
+    
+    // Jika bukan lokasi yang dimapping atau tidak ditemukan di format NG,
+    // cari dengan cara normal
+    for (const occ of occupancyData) {
+        const code = occ.Location || occ.locationCode || occ.location || occ["Location Code"];
+        if (code === locationCode) {
+            return occ;
+        }
+    }
+    
+    return null;
+}
+
 function mergeOccupancyWithMaster() {
     const occupancyLookup = {};
+    
+    // Pre-populate the lookup with standard location codes
     occupancyData.forEach(occ => {
-        // Coba semua kemungkinan nama properti untuk lokasi
         const code = occ.Location || occ.locationCode || occ.location || occ["Location Code"];
         if (code) occupancyLookup[code] = occ;
     });
 
     allLocations = masterLocations.map(loc => {
         const code = loc.locationCode;
-        if (occupancyLookup[code]) {
+        let occ = occupancyLookup[code];
+        
+        // Jika lokasi adalah GA rack dan tidak ada data di lokasi normal,
+        // cek apakah ada data di lokasi dengan format NG
+        if (!occ && code.startsWith('GA-') && locationMapping[code]) {
+            const ngCode = locationMapping[code];
+            occ = occupancyLookup[ngCode];
+        }
+        
+        if (occ) {
             // Mapping field dari occupancy.json ke JS
-            const occ = occupancyLookup[code];
             return {
                 ...loc,
                 isOccupied: true,
@@ -463,15 +534,30 @@ function displayRackArea(rackPrefix) {
             const pos1Cell = document.createElement('td');
             pos1Cell.className = 'location-cell';
             pos1Cell.setAttribute('data-location', pos1Code);
-            pos1Cell.addEventListener('click', () => showLocationDetails(pos1Code));
+
+            // Hanya tambahkan event listener jika lokasi tidak diblokir
+            if (!blockedLocations.includes(pos1Code)) {
+                pos1Cell.addEventListener('click', () => showLocationDetails(pos1Code));
+            } else {
+                pos1Cell.classList.add('blocked'); // Tambahkan class blocked langsung
+            }
+
             updateCellAppearance(pos1Cell, pos1Code);
             row.appendChild(pos1Cell);
 
+            // Untuk pos2Cell:
             const pos2Code = `${rackPrefix}-${block}-2-${level}`;
             const pos2Cell = document.createElement('td');
             pos2Cell.className = 'location-cell';
             pos2Cell.setAttribute('data-location', pos2Code);
-            pos2Cell.addEventListener('click', () => showLocationDetails(pos2Code));
+
+            // Hanya tambahkan event listener jika lokasi tidak diblokir
+            if (!blockedLocations.includes(pos2Code)) {
+                pos2Cell.addEventListener('click', () => showLocationDetails(pos2Code));
+            } else {
+                pos2Cell.classList.add('blocked'); // Tambahkan class blocked langsung
+            }
+
             updateCellAppearance(pos2Cell, pos2Code);
             row.appendChild(pos2Cell);
         });
@@ -489,7 +575,26 @@ function displayRackArea(rackPrefix) {
 
 // Update cell appearance based on occupancy and customer code
 function updateCellAppearance(cell, locationCode) {
-    const locationData = locationCache[locationCode];
+    // Check if location is in blocked list
+    if (blockedLocations.includes(locationCode)) {
+        cell.classList.add('blocked');
+        return;
+    }
+    
+    // Get location data - check for mapped GA location first
+    let locationData = locationCache[locationCode];
+    
+    // Jika ini adalah lokasi GA dan tidak ada data, coba cek format dengan NG
+    if (!locationData && locationCode.startsWith('GA-') && locationMapping[locationCode]) {
+        const ngLocationCode = locationMapping[locationCode];
+        // Cek apakah ada data untuk format NG
+        for (const loc of allLocations) {
+            if (loc.locationCode === ngLocationCode) {
+                locationData = loc;
+                break;
+            }
+        }
+    }
 
     if (locationData && locationData.isOccupied) {
         cell.classList.add('occupied');
@@ -505,7 +610,7 @@ function updateCellAppearance(cell, locationCode) {
     }
 }
 
-// Display Floor Area   
+// Display Floor Area 
 function displayFloorArea(floorPrefix) {
     currentRackPrefix = floorPrefix;
     currentPage = 1;
@@ -534,7 +639,7 @@ function displayFloorArea(floorPrefix) {
         maxPos = 21; // Default
     }
     
-    // Add column headers (01-27 or 01-14)
+    // Add column headers (01-14 untuk area Y)
     for (let col = 1; col <= maxPos; col++) {
         const colHeaderCell = document.createElement('th');
         colHeaderCell.textContent = col.toString().padStart(2, '0');
@@ -545,9 +650,20 @@ function displayFloorArea(floorPrefix) {
     thead.appendChild(headerRow);
     table.appendChild(thead);
 
-    // Create rows (01-14)
+    // Create rows
     const tbody = document.createElement('tbody');
-    for (let row = 1; row <= 14; row++) {
+    
+    // Tentukan baris awal dan akhir berdasarkan area
+    let startRow = 1;
+    let endRow = 14;
+    
+    // Khusus untuk area Y, mulai dari baris 6 sampai 14 sesuai permintaan
+    if (floorPrefix === 'Y') {
+        startRow = 6;
+        endRow = 14;
+    }
+    
+    for (let row = startRow; row <= endRow; row++) {
         const rowFormatted = row.toString().padStart(2, '0');
         const tableRow = document.createElement('tr');
         const rowCell = document.createElement('td');
@@ -589,7 +705,6 @@ function displayFloorArea(floorPrefix) {
     document.getElementById('highRackArea').style.display = 'none';
     document.getElementById('floorArea').style.display = 'block';
 }
-
 
 function inspectLoadedData() {
     // Periksa lokasi area A
@@ -650,7 +765,29 @@ function getBlocksForFloorPrefix(floorPrefix) {
 
 // Show Location Details in Modal
 function showLocationDetails(locationCode) {
-    const locationData = locationCache[locationCode];
+    // Periksa apakah lokasi diblokir
+    if (blockedLocations.includes(locationCode)) {
+        // Jika diblokir, jangan tampilkan modal
+        return;
+    }
+    
+    // Cek untuk lokasi GA, jika tidak ada data normal, coba format NG
+    let locationData = locationCache[locationCode];
+    
+    // Jika ini adalah lokasi GA dan tidak ada data, coba cek format dengan NG
+    if ((!locationData || !locationData.isOccupied) && locationCode.startsWith('GA-') && locationMapping[locationCode]) {
+        // Ambil kode NG sesuai mapping
+        const ngLocationCode = locationMapping[locationCode];
+        
+        // Cari data dengan kode NG
+        for (const loc of allLocations) {
+            if (loc.locationCode === ngLocationCode && loc.isOccupied) {
+                locationData = loc;
+                break;
+            }
+        }
+    }
+    
     document.getElementById('locationCode').textContent = locationCode;
 
     if (locationData && locationData.isOccupied) {
