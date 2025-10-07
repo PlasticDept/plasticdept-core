@@ -1,33 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Occupancy</title>
-    <link rel="icon" type="image/png" href="outbound/monitoring-control/img/reverse-logistic.png"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="css/occupancy.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Occupancy</title>
+  <link rel="icon" type="image/png" href="../../outbound/monitoring-control/img/reverse-logistic.png">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="../../outbound/monitoring-control/css/enterprise-style.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,700&display=swap" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="css/occupancy.css">
+  <script type="module" src="../../inbound/user-profile.js"></script>
+  <style>
+  .nav-dropdown-content {
+    position: absolute !important;
+    display: none;
+    z-index: 99999 !important;
+    background-color: white;
+    border: 1px solid #e0e6ed;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+    min-width: 200px;
+    border-radius: 4px;
+    padding: 5px 0;
+    margin-top: 0;
+  }
+  .main-nav, .nav-dropdown {
+    position: relative !important;
+    z-index: 9999 !important;
+    overflow: visible !important;
+  }
+  </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="#">
-                    <i class="bi bi-box-seam me-2"></i>
-                    Warehouse Management System
-                </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
+  <div class="enterprise-container">
+    <!-- HEADER SECTION -->
+    <header class="main-header">
+      <div class="logo-container">
+        <img src="../../outbound/monitoring-control/img/reverse-logistic.png" alt="Plastic Dept Logo" class="logo">
+        <span class="logo-divider"></span>
+        <h1>PLASTIC<span>DEPT.</span></h1>
+      </div>
+
+      <nav class="main-nav">
+        <ul>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link active"><i class="fas fa-box"></i> Outbound <i class="fas fa-chevron-down"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="../../outbound/monitoring-control/dashboard-outbound.html" class="dropdown-item"><i class="fas fa-chart-line"></i> Outbound Dashboard</a>
+              <a href="../../outbound/monitoring-control/loading-input.html" class="dropdown-item"><i class="fas fa-truck"></i> Input Loading Delivery</a>
+              <a href="../../outbound/monitoring-control/plastic.html" class="dropdown-item"><i class="fas fa-tasks"></i> Assignment Job</a>
             </div>
-        </nav>
+          </li>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link"><i class="fas fa-users"></i> Team Monitoring <i class="fas fa-chevron-down"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="../../outbound/monitoring-control/team-sugity.html" class="dropdown-item"><i class="fas fa-user-friends"></i> Team Sugity</a>
+              <a href="../../outbound/monitoring-control/team-reguler.html" class="dropdown-item"><i class="fas fa-user-friends"></i> Team Reguler</a>
+            </div>
+          </li>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link"><i class="fas fa-truck-loading"></i> Inbound <i class="fas fa-chevron-down"></i> <i class="fa-container-storage"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="./input.html" class="dropdown-item"><i class="fas fa-file-import"></i> Input Data Incoming</a>
+              <a href="./display.html" class="dropdown-item"><i class="fas fa-calendar-alt"></i> Schedule Incoming Container</a>
+              <a href="../container-dashboard.html" class="dropdown-item"><i class="fas fa-cubes"></i> Incoming Container Dashboard</a>
+            </div>
+          </li>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link"><i class="fas fa-warehouse"></i> Inventory <i class="fas fa-chevron-down"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="../../inventory/occupancy.html" class="dropdown-item"><i class="fas fa-chart-pie"></i> Occupancy</a>
+              <a href="../../inventory/part-master.html" class="dropdown-item"><i class="fas fa-cogs"></i> Part Master</a>
+            </div>
+          </li>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link"><i class="fas fa-chart-bar"></i> Reports <i class="fas fa-chevron-down"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="../../outbound/monitoring-control/achievement.html" class="dropdown-item"><i class="fas fa-chart-line"></i> Achievement Report</a>
+              <a href="../../outbound/monitoring-control/report.html" class="dropdown-item"><i class="fas fa-calendar-day"></i>Daily Outbound Report</a>
+              <a href="./dailyreport.html" class="dropdown-item"><i class="fas fa-clipboard-check"></i> Daily Inbound Report</a>
+            </div>
+          </li>
+          <li class="nav-dropdown">
+            <a href="#" class="nav-link"><i class="fas fa-cogs"></i> Master <i class="fas fa-chevron-down"></i></a>
+            <div class="nav-dropdown-content">
+              <a href="../../outbound/monitoring-control/user.html" class="dropdown-item"><i class="fas fa-user"></i> User</a>
+            </div>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="user-section">
+        <div class="user-info">
+          <span class="username" id="userFullName">Administrator</span>
+          <span class="user-role" id="userShift">-</span>
+        </div>
+        <div class="avatar" id="userAvatar">A</div>
+        <button id="headerLogoutBtn"><i class="fas fa-sign-out-alt"></i></button>
+      </div>
+    </header>
 
         <div class="content-container my-3">
             <div class="row mb-4">
                 <div class="col-md-6">
-                    <h2 class="page-title">Rack Occupancy Monitoring</h2>
-                    <p class="text-muted">Visualization of rack area and floor area occupancy status</p>
+                    <h2 class="page-title">Plastic Occupancy Monitoring</h2>
                 </div>
                 <div class="col-md-6">
                     <div class="d-flex justify-content-end">
@@ -70,7 +149,7 @@
                         </div>
                         <div class="col-md-3">
                             <div class="stat-card">
-                                <div class="stat-title">Occupancy Percentage</div>
+                                <div class="stat-title">Occupied Percentage</div>
                                 <div class="stat-value text-primary" id="occupancyPercentage">-</div>
                             </div>
                         </div>
