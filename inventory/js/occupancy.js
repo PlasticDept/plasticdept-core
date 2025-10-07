@@ -84,6 +84,29 @@ document.addEventListener('DOMContentLoaded', function() {
 // Initialize Application
 async function initializeApp() {
     try {
+        // Tambahkan loading spinner fullscreen
+        const loadingScreen = document.createElement('div');
+        loadingScreen.className = 'fullscreen-loading';
+        loadingScreen.innerHTML = `
+            <div class="loading-content">
+                <div class="loading-logo">
+                    <img src="/plasticdept-core/outbound/monitoring-control/img/reverse-logistic.png" alt="PlasticDept Logo">
+                </div>
+                <h2>Occupancy Dashboard</h2>
+                <div class="loading-spinner-large"></div>
+                <p>Memuat data halaman occupancy...</p>
+            </div>
+        `;
+        document.body.appendChild(loadingScreen);
+        
+        // Setel timeout untuk menghapus loading screen jika terlalu lama
+        const loadingTimeout = setTimeout(() => {
+            if (document.body.contains(loadingScreen)) {
+                loadingScreen.classList.add('fade-out');
+                setTimeout(() => loadingScreen.remove(), 500);
+            }
+        }, 15000); // 15 detik timeout
+        
         showLoading(true);
 
         await loadMasterLocations();      // 1. Load master locations
@@ -99,16 +122,40 @@ async function initializeApp() {
 
         updateStatistics();
         showLoading(false);
+        
+        // Hapus loading screen dengan efek fade out
+        clearTimeout(loadingTimeout);
+        loadingScreen.classList.add('fade-out');
+        setTimeout(() => loadingScreen.remove(), 500);
     } catch (error) {
         console.error("Error initializing app:", error);
         alert("Failed to initialize application. Please try again.");
         showLoading(false);
+        
+        // Hapus loading screen jika terjadi error
+        const loadingScreen = document.querySelector('.fullscreen-loading');
+        if (loadingScreen) {
+            loadingScreen.classList.add('fade-out');
+            setTimeout(() => loadingScreen.remove(), 500);
+        }
     }
 }
 
 // Show/hide loading indicator
 function showLoading(show) {
     document.body.style.cursor = show ? 'wait' : 'default';
+    
+    // Tampilkan loading spinner kecil saat refresh data (bukan fullscreen)
+    const refreshBtn = document.getElementById('refreshBtn');
+    if (refreshBtn) {
+        if (show) {
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        } else {
+            refreshBtn.disabled = false;
+            refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+        }
+    }
 }
 
 // Update the legend container with customer codes
@@ -466,13 +513,33 @@ function refreshData() {
     refreshBtn.disabled = true;
     refreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
 
+    // Tambahkan loading spinner kecil saat refresh
+    const loadingSpinner = document.createElement('div');
+    loadingSpinner.className = 'loading-overlay';
+    loadingSpinner.innerHTML = `
+        <div class="spinner-container">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Menyegarkan data...</p>
+        </div>
+    `;
+    document.body.appendChild(loadingSpinner);
+
     document.getElementById('searchInput').value = '';
-    initializeApp();
-
-    refreshBtn.disabled = false;
-    refreshBtn.innerHTML = originalHtml;
+    
+    // Beri waktu untuk DOM update
+    setTimeout(() => {
+        initializeApp()
+            .finally(() => {
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = originalHtml;
+                
+                // Hapus loading spinner
+                if (document.body.contains(loadingSpinner)) {
+                    loadingSpinner.remove();
+                }
+            });
+    }, 100);
 }
-
 // Display Rack Area
 function displayRackArea(rackPrefix) {
     currentRackPrefix = rackPrefix;
