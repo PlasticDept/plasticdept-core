@@ -1,5 +1,5 @@
 // Configuration and Global Variables
-const API_URL = 'https://win-operates-occupied-fixes.trycloudflare.com'; // Base URL to FastAPI backend via ngrok
+const API_URL = 'https://chain-measures-teachers-pockets.trycloudflare.com'; // Base URL to FastAPI backend via ngrok
 const GITHUB_REPO = 'PlasticDept/plasticdept-core';
 const GITHUB_BRANCH = 'main';
 const GITHUB_FILE_PATH = 'occupancy.json';
@@ -1182,3 +1182,4 @@ function formatNumber(number) {
     return new Intl.NumberFormat('en-US').format(number);
 
 }
+
