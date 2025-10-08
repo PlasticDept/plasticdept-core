@@ -609,6 +609,405 @@ function exportToExcel() {
   XLSX.writeFile(wb, filename);
 }
 
+// ==================== FUNGSI UNTUK DOWNLOAD DATABASE ====================
+/**
+ * Fungsi untuk mengunduh data dari database Firebase sesuai dengan struktur node
+ * @param {string} year - Tahun (contoh: '2025')
+ * @param {string} month - Bulan dalam format "MM_YY" (contoh: '08_25')
+ * @param {boolean} includeAllData - Jika true, akan mengunduh semua data termasuk sub-node
+ */
+async function downloadDatabaseData(year = null, month = null, includeAllData = false) {
+  try {
+    showNotif('info', 'Memulai proses pengunduhan data...');
+    
+    // Tentukan path yang akan diunduh
+    let path = 'outJobAchievment'; // Perhatikan ejaan yang benar (tanpa 'e' sebelum 'm')
+    
+    if (year) {
+      path += `/year${year}`;
+      
+      if (month) {
+        path += `/${month}`;
+      }
+    }
+    
+    console.log(`Mengunduh data dari path: ${path}`);
+    
+    // Reference ke database
+    const dataRef = ref(db, path);
+    const snapshot = await get(dataRef);
+    
+    if (!snapshot.exists()) {
+      showNotif('error', `Tidak ada data yang ditemukan pada path ${path}`);
+      return false;
+    }
+    
+    // Ambil data dari snapshot
+    const data = snapshot.val();
+    console.log("Data berhasil diambil:", data);
+    
+    // Function untuk meratakan struktur data bersarang
+    function flattenData(obj, prefix = '', result = []) {
+      // Jika nilai adalah object non-null dan bukan array
+      if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+        const keys = Object.keys(obj);
+        
+        // Jika terlihat seperti job record (memiliki properti jobNo, qty, dll.)
+        if (keys.some(k => ['jobNo', 'qty', 'deliveryDate', 'finishAt'].includes(k))) {
+          const jobData = {
+            path: prefix,
+            ...obj
+          };
+          result.push(jobData);
+        } else {
+          // Jika ini adalah node perantara, lanjutkan traversal
+          for (const key of keys) {
+            flattenData(obj[key], prefix ? `${prefix}/${key}` : key, result);
+          }
+        }
+      }
+      return result;
+    }
+    
+    // Siapkan data untuk export
+    let exportData;
+    let worksheets = [];
+    
+    if (includeAllData) {
+      // Jika ingin mengunduh data lengkap, ratakan data
+      exportData = flattenData(data);
+      console.log(`Ditemukan ${exportData.length} job records`);
+      
+      // Jika ditemukan job records, buat worksheet utama
+      if (exportData.length > 0) {
+        // Tentukan semua kolom yang mungkin ada
+        const allColumns = new Set();
+        exportData.forEach(job => {
+          Object.keys(job).forEach(key => allColumns.add(key));
+        });
+        
+        // Susun header berdasarkan kolom yang diinginkan
+        const priorityColumns = ['path', 'jobNo', 'deliveryDate', 'deliveryNote', 
+          'businessDate', 'qty', 'jobType', 'shift', 'team', 'teamName', 'remark',
+          'finishAt', 'createdBy', 'status'];
+        
+        const allColumnsArray = [...allColumns];
+        const orderedColumns = [
+          ...priorityColumns.filter(col => allColumnsArray.includes(col)),
+          ...allColumnsArray.filter(col => !priorityColumns.includes(col))
+        ];
+        
+        // Buat worksheet dari data job
+        const jobWorksheet = XLSX.utils.json_to_sheet(
+          exportData.map(job => {
+            const row = {};
+            orderedColumns.forEach(col => {
+              row[col] = job[col] !== undefined ? job[col] : '';
+            });
+            return row;
+          })
+        );
+        
+        worksheets.push({
+          name: 'Jobs Data',
+          sheet: jobWorksheet
+        });
+      }
+      
+      // Tambahkan worksheet untuk struktur database
+      const structureData = [];
+      
+      // Fungsi rekursif untuk membangun struktur database
+      function buildStructure(obj, path = '', level = 0) {
+        if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+          const keys = Object.keys(obj);
+          
+          // Jika ini adalah node daun (job record)
+          if (keys.some(k => ['jobNo', 'qty', 'deliveryDate'].includes(k))) {
+            structureData.push({
+              level,
+              path,
+              type: 'job',
+              keys: keys.join(', ')
+            });
+          } else {
+            // Node perantara
+            structureData.push({
+              level,
+              path,
+              type: 'node',
+              children: keys.length
+            });
+            
+            // Lanjutkan traversal
+            for (const key of keys) {
+              buildStructure(obj[key], path ? `${path}/${key}` : key, level + 1);
+            }
+          }
+        }
+      }
+      
+      buildStructure(data, path);
+      
+      // Buat worksheet struktur
+      const structureWorksheet = XLSX.utils.json_to_sheet(structureData);
+      worksheets.push({
+        name: 'Database Structure',
+        sheet: structureWorksheet
+      });
+      
+    } else {
+      // Jika hanya ingin melihat struktur database
+      // Tentukan kedalaman maksimum untuk penelusuran
+      const maxDepth = month ? 3 : (year ? 2 : 1);
+      
+      // Fungsi rekursif untuk menelusuri struktur database
+      function exploreStructure(obj, currentPath = '', depth = 0) {
+        const result = [];
+        
+        if (depth >= maxDepth) {
+          // Jika sudah mencapai kedalaman maksimum, hanya ambil kunci
+          result.push({
+            path: currentPath,
+            keys: Object.keys(obj).length,
+            keyNames: Object.keys(obj).join(', ')
+          });
+          return result;
+        }
+        
+        if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+          for (const key of Object.keys(obj)) {
+            const newPath = currentPath ? `${currentPath}/${key}` : key;
+            const childData = obj[key];
+            
+            if (childData && typeof childData === 'object' && !Array.isArray(childData)) {
+              // Jika terlihat seperti job record
+              if (Object.keys(childData).some(k => ['jobNo', 'qty', 'deliveryDate'].includes(k))) {
+                result.push({
+                  path: newPath,
+                  type: 'job',
+                  props: Object.keys(childData).join(', ')
+                });
+              } else {
+                // Node perantara
+                result.push({
+                  path: newPath,
+                  type: 'node',
+                  children: Object.keys(childData).length
+                });
+                
+                // Lanjutkan penelusuran rekursif jika belum mencapai kedalaman maksimum
+                if (depth < maxDepth - 1) {
+                  result.push(...exploreStructure(childData, newPath, depth + 1));
+                }
+              }
+            }
+          }
+        }
+        
+        return result;
+      }
+      
+      exportData = exploreStructure(data);
+      
+      // Buat worksheet struktur
+      const structureWorksheet = XLSX.utils.json_to_sheet(exportData);
+      worksheets.push({
+        name: 'Database Structure',
+        sheet: structureWorksheet
+      });
+    }
+    
+    // Generate nama file untuk export
+    let filename = 'OutJobAchievment';
+    if (year) filename += `_year${year}`;
+    if (month) filename += `_${month}`;
+    filename += '_' + new Date().toISOString().split('T')[0] + '.xlsx';
+    
+    // Buat workbook dan tambahkan semua worksheet
+    const wb = XLSX.utils.book_new();
+    worksheets.forEach(ws => {
+      XLSX.utils.book_append_sheet(wb, ws.sheet, ws.name);
+    });
+    
+    // Juga tambahkan info worksheet
+    const infoData = [
+      { key: 'Path', value: path },
+      { key: 'Timestamp', value: new Date().toISOString() },
+      { key: 'Include All Data', value: includeAllData ? 'Yes' : 'No' },
+      { key: 'Data Size', value: JSON.stringify(data).length + ' bytes' }
+    ];
+    
+    const infoWorksheet = XLSX.utils.json_to_sheet(infoData);
+    XLSX.utils.book_append_sheet(wb, infoWorksheet, 'Info');
+    
+    // Unduh file
+    XLSX.writeFile(wb, filename);
+    
+    showNotif('success', `Data berhasil diunduh dengan nama ${filename}`);
+    return true;
+  } catch (error) {
+    console.error('Error downloading database data:', error);
+    showNotif('error', `Gagal mengunduh data: ${error.message}`);
+    return false;
+  }
+}
+
+// Tambahkan fungsi untuk UI yang memungkinkan pengguna memilih tahun dan bulan
+function showDownloadDataModal() {
+  // Buat modal untuk memilih parameter
+  const modalHTML = `
+    <div id="downloadDataModal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:99999;">
+      <div style="background:white;padding:20px;border-radius:8px;width:400px;max-width:90%;">
+        <h3 style="margin-top:0;">Unduh Data Database</h3>
+        
+        <div style="margin-bottom:15px;">
+          <label for="downloadYear">Pilih Tahun:</label>
+          <select id="downloadYear" style="width:100%;padding:8px;border-radius:4px;border:1px solid #ccc;">
+            <option value="">-- Pilih Tahun --</option>
+            <option value="2025">2025</option>
+            <option value="2024">2024</option>
+          </select>
+        </div>
+        
+        <div style="margin-bottom:15px;">
+          <label for="downloadMonth">Pilih Bulan (opsional):</label>
+          <select id="downloadMonth" style="width:100%;padding:8px;border-radius:4px;border:1px solid #ccc;" disabled>
+            <option value="">-- Pilih Bulan --</option>
+          </select>
+        </div>
+        
+        <div style="margin-bottom:15px;">
+          <label>
+            <input type="checkbox" id="downloadAllData"> Download semua data
+          </label>
+        </div>
+        
+        <div id="downloadDataStatus" style="margin:10px 0;color:#e74c3c;"></div>
+        
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+          <button id="cancelDownloadBtn" style="padding:8px 15px;border:none;background:#ccc;border-radius:4px;cursor:pointer;">Batal</button>
+          <button id="confirmDownloadBtn" style="padding:8px 15px;border:none;background:#2196f3;color:white;border-radius:4px;cursor:pointer;">Unduh</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Tambahkan modal ke body
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  const statusElement = document.getElementById('downloadDataStatus');
+  
+  // Event listener untuk tahun yang dipilih
+  document.getElementById('downloadYear').addEventListener('change', async function() {
+    const yearSelect = this;
+    const monthSelect = document.getElementById('downloadMonth');
+    statusElement.textContent = '';
+    
+    if (yearSelect.value) {
+      monthSelect.disabled = false;
+      monthSelect.innerHTML = '<option value="">-- Pilih Bulan --</option>';
+      
+      try {
+        // Ambil daftar bulan yang tersedia untuk tahun tersebut
+        const yearPath = `outJobAchievment/year${yearSelect.value}`; // Perhatikan ejaan yang benar
+        const yearRef = ref(db, yearPath);
+        const yearSnapshot = await get(yearRef);
+        
+        if (yearSnapshot.exists()) {
+          const months = Object.keys(yearSnapshot.val());
+          
+          if (months.length === 0) {
+            statusElement.textContent = 'Tidak ada data bulan untuk tahun ini';
+          } else {
+            for (const month of months) {
+              monthSelect.innerHTML += `<option value="${month}">${month}</option>`;
+            }
+          }
+        } else {
+          monthSelect.innerHTML += '<option value="" disabled>Tidak ada data untuk tahun ini</option>';
+          statusElement.textContent = `Tidak ada data untuk tahun ${yearSelect.value}`;
+        }
+      } catch (error) {
+        console.error('Error loading months:', error);
+        statusElement.textContent = `Error: ${error.message}`;
+      }
+    } else {
+      monthSelect.disabled = true;
+      monthSelect.innerHTML = '<option value="">-- Pilih Bulan --</option>';
+    }
+  });
+  
+  // Event listener untuk tombol batal
+  document.getElementById('cancelDownloadBtn').addEventListener('click', function() {
+    document.getElementById('downloadDataModal').remove();
+  });
+  
+  // Event listener untuk tombol konfirmasi
+  document.getElementById('confirmDownloadBtn').addEventListener('click', async function() {
+    const year = document.getElementById('downloadYear').value;
+    const month = document.getElementById('downloadMonth').value;
+    const includeAllData = document.getElementById('downloadAllData').checked;
+    
+    if (!year) {
+      statusElement.textContent = 'Silakan pilih tahun terlebih dahulu.';
+      return;
+    }
+    
+    // Cek terlebih dahulu apakah data tersedia
+    try {
+      const checkPath = `outJobAchievment/year${year}${month ? '/' + month : ''}`;
+      const checkRef = ref(db, checkPath);
+      const checkSnapshot = await get(checkRef);
+      
+      if (!checkSnapshot.exists()) {
+        statusElement.textContent = `Tidak ada data di path ${checkPath}`;
+        return;
+      }
+      
+      // Tutup modal jika data tersedia
+      document.getElementById('downloadDataModal').remove();
+      
+      // Jalankan fungsi unduh
+      await downloadDatabaseData(year, month, includeAllData);
+    } catch (error) {
+      statusElement.textContent = `Error: ${error.message}`;
+    }
+  });
+}
+
+// Tambahkan tombol untuk memunculkan modal unduh data
+function addDownloadDatabaseButton() {
+  const toolbar = document.querySelector('.toolbar');
+  if (toolbar) {
+    const downloadBtn = document.createElement('button');
+    downloadBtn.id = 'downloadDatabaseBtn';
+    downloadBtn.className = 'btn';
+    downloadBtn.innerHTML = '📥 Download Data';
+    downloadBtn.style.marginLeft = '10px';
+    downloadBtn.addEventListener('click', showDownloadDataModal);
+    toolbar.appendChild(downloadBtn);
+  }
+}
+
+// Fungsi untuk memeriksa dan melaporkan status database
+async function inspectDatabasePath(path) {
+  try {
+    const dataRef = ref(db, path);
+    const snapshot = await get(dataRef);
+    
+    if (snapshot.exists()) {
+      return snapshot.val();
+    } else {
+      console.log(`Tidak ada data di path: ${path}`);
+      return null;
+    }
+  } catch (error) {
+    console.error(`Error memeriksa path ${path}:`, error);
+    return null;
+  }
+}
+
 // ==================== INISIALISASI & EVENT HANDLERS ====================
 function initializeDatePicker() {
   flatpickrInstance = flatpickr("#dateInput", {
@@ -761,12 +1160,6 @@ window.inspectDate = async function(dateStr) {
   console.groupEnd(); // Tanggal
 };
 
-// Fungsi khusus untuk cek data 19 Agustus 2025
-window.checkAug19 = async function() {
-  const path = 'outJobAchievment/year2025/08_25/19';
-  return await inspectDatabasePath(path);
-};
-
 // ==================== INISIALISASI APLIKASI ====================
 // Fungsi utama yang dijalankan saat aplikasi dimulai
 async function initApp() {
@@ -778,6 +1171,9 @@ async function initApp() {
     // Inisialisasi komponen UI
     initializeDatePicker();
     initializeEventListeners();
+    
+    // Tambahkan tombol unduh database
+    addDownloadDatabaseButton();
     
     // Load data profile user
     updateUserProfile();
