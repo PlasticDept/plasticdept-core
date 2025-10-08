@@ -1,0 +1,4 @@
+untuk menjalankan kode backend occupancy harus menjalankan cloudflare tunel terlebih dahulu:
+1. download file cloudflared https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/
+2. jalankan perintah dengan cmd difolder tempat file cloudflare disimpan
+    cloudflared.exe tunnel --url http://localhost:8000
