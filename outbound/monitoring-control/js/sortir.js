@@ -2665,12 +2665,24 @@ document.getElementById("setMpPicBtn")?.addEventListener("click", async function
       showNotification(`Maksimal MP PIC untuk Team ${team} sudah 2 orang!`, true);
       return;
     }
+    
+    // Ambil data user lengkap untuk mendapatkan photoURL
+    const userSnapshot = await get(ref(db, `users/${userID}`));
+    let photoURL = "";
+    
+    if (userSnapshot.exists()) {
+      const userData = userSnapshot.val();
+      // Ambil photoURL dari data user jika ada
+      photoURL = userData.photoURL || "";
+    }
+    
     const waktu_set = new Date().toISOString();
     await set(ref(db, `MPPIC/${userID}`), {
       name,
       userID,
       waktu_set,
-      team
+      team,
+      photoURL // Tambahkan photoURL ke data yang akan disimpan
     });
     showNotification(`PIC ${name} (${userID}) berhasil diset!`);
     renderMpPicListTable(); // Refresh tabel setelah tambah
