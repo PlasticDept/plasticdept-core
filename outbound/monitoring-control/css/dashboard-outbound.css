@@ -980,3 +980,255 @@ a:hover {
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   background: linear-gradient(90deg, #6366f1 0%, #a5b4fc 100%);
 }
+
+/* New styles for PIC display and layout */
+.team-content-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+/* Team PIC profiles area */
+.team-pics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.team-pics h4 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.pic-profiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.pic-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.pic-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--primary-light);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition);
+}
+
+.pic-avatar:hover {
+  transform: scale(1.1);
+  box-shadow: var(--shadow);
+}
+
+.pic-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: center;
+  max-width: 80px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pic-id {
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+}
+
+/* Team data area (middle column) */
+.team-data {
+  width: 100%;
+}
+
+/* Team chart area (right column) */
+.team-chart {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mini-donut-wrap {
+  margin: 0 auto;
+  width: 100px;
+  height: 100px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .team-content-wrapper {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .team-pics {
+    grid-column: 1 / -1;
+    margin-bottom: var(--space-4);
+  }
+  
+  .pic-profiles {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .team-content-wrapper {
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
+  
+  .team-data {
+    order: 1;
+  }
+  
+  .team-chart {
+    order: 2;
+  }
+  
+  .team-pics {
+    order: 3;
+  }
+}
+
+/* Team-specific color for avatar borders */
+.team-matrix-card.accent-blue .pic-avatar {
+  border-color: var(--primary);
+}
+
+.team-matrix-card.accent-orange .pic-avatar {
+  border-color: var(--secondary);
+}
+
+/* Placeholder avatar style */
+.pic-avatar-placeholder {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: var(--gray-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: var(--gray);
+}
+
+/* Styles baru untuk footer team card dengan foto & chart */
+.team-data-section {
+  margin-bottom: var(--space-4);
+}
+
+.team-footer-section {
+  display: flex;
+  align-items: center;
+  padding-top: var(--space-4);
+  margin-top: var(--space-2);
+}
+
+.team-footer-pics {
+  flex: 2; /* Memberi ruang lebih untuk foto */
+  display: flex;
+  align-items: center;
+}
+
+.team-footer-chart {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end; /* Donut chart rata kanan */
+}
+
+/* Style untuk gambar PIC */
+.pic-profiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.pic-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.pic-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.team-matrix-card.accent-blue .pic-avatar {
+  border-color: var(--primary);
+}
+
+.team-matrix-card.accent-orange .pic-avatar {
+  border-color: var(--secondary);
+}
+
+.pic-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: center;
+  max-width: 80px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pic-id {
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+}
+
+/* Mini donut lebih kecil */
+.mini-donut-wrap {
+  position: relative;
+  width: 90px;
+  height: 90px;
+}
+
+.mini-donut-center-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--success);
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .team-footer-section {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  
+  .team-footer-chart {
+    margin-top: var(--space-2);
+    justify-content: center;
+  }
+  
+  .team-footer-pics {
+    justify-content: center;
+  }
+  
+  .pic-profiles {
+    justify-content: center;
+  }
+}

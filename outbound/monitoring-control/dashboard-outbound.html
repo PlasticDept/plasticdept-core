@@ -108,32 +108,46 @@
                 <span class="team-title">Sugity</span>
               </div>
               <div class="team-divider"></div>
-              <table class="team-matrix-table">
-                <tr>
-                  <td><span class="material-symbols-outlined">person</span> Man Power</td>
-                  <td id="mpSugity" class="team-matrix-value"></td>
-                </tr>
-                <tr>
-                  <td><span class="material-symbols-outlined">assignment</span> Plan Target</td>
-                  <td><span id="planSugity" class="team-matrix-value"></span> kg</td>
-                </tr>
-                <tr>
-                  <td><span class="material-symbols-outlined">track_changes</span> Target</td>
-                  <td><span id="actualSugity" class="team-matrix-value"></span> kg</td>
-                </tr>
-                <tr>
-                  <td><span class="material-symbols-outlined">trending_up</span> Achieved</td>
-                  <td><span id="achievedSugity" class="team-matrix-value"></span> kg</td>
-                </tr>
-                <tr>
-                  <td><span class="material-symbols-outlined">hourglass_empty</span> Remaining</td>
-                  <td><span id="remainingSugity" class="team-matrix-value"></span> kg</td>
-                </tr>
-              </table>
-              <div class="team-divider"></div>
-              <div class="mini-donut-wrap">
-                <div id="miniDonutSugityCenter" class="mini-donut-center-text"></div>
-                <canvas id="miniDonutSugity"></canvas>
+              
+              <!-- STRUKTUR BARU: Data di atas, PIC dan chart di bawah -->
+              <div class="team-data-section">
+                <table class="team-matrix-table">
+                  <tr>
+                    <td><span class="material-symbols-outlined">person</span> Man Power</td>
+                    <td id="mpSugity" class="team-matrix-value"></td>
+                  </tr>
+                  <tr>
+                    <td><span class="material-symbols-outlined">assignment</span> Plan Target</td>
+                    <td><span id="planSugity" class="team-matrix-value"></span> kg</td>
+                  </tr>
+                  <tr>
+                    <td><span class="material-symbols-outlined">track_changes</span> Target</td>
+                    <td><span id="actualSugity" class="team-matrix-value"></span> kg</td>
+                  </tr>
+                  <tr>
+                    <td><span class="material-symbols-outlined">trending_up</span> Achieved</td>
+                    <td><span id="achievedSugity" class="team-matrix-value"></span> kg</td>
+                  </tr>
+                  <tr>
+                    <td><span class="material-symbols-outlined">hourglass_empty</span> Remaining</td>
+                    <td><span id="remainingSugity" class="team-matrix-value"></span> kg</td>
+                  </tr>
+                </table>
+              </div>
+              
+              <div class="team-divider team-footer-divider"></div>
+
+              <!-- Area bawah untuk PIC dan chart -->
+              <div class="team-footer-section">
+                <div class="team-footer-pics">
+                  <div id="sugityPics" class="pic-profiles"></div>
+                </div>
+                <div class="team-footer-chart">
+                  <div class="mini-donut-wrap">
+                    <div id="miniDonutSugityCenter" class="mini-donut-center-text"></div>
+                    <canvas id="miniDonutSugity"></canvas>
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -143,32 +157,44 @@
                 <span class="team-title">Reguler</span>
               </div>
               <div class="team-divider"></div>
-              <table class="team-matrix-table">
-                <tr>
-                  <td><span class="material-symbols-outlined">person</span> Man Power</td>
-                  <td id="mpReguler" class="team-matrix-value"></td>
-                </tr>
-                <tr>
-                  <td><span class="material-symbols-outlined">assignment</span> Plan Target</td>
-                  <td><span id="planReguler" class="team-matrix-value"></span> kg</td>
-                </tr>
-                <tr>
-                  <td><span class="material-symbols-outlined">track_changes</span> Target</td>
-                  <td><span id="actualReguler" class="team-matrix-value"></span> kg</td>
-                </tr>
-                <tr>
-                  <td><span class="material-symbols-outlined">trending_up</span> Achieved</td>
-                  <td><span id="achievedReguler" class="team-matrix-value"></span> kg</td>
-                </tr>
-                <tr>
-                  <td><span class="material-symbols-outlined">hourglass_empty</span> Remaining</td>
-                  <td><span id="remainingReguler" class="team-matrix-value"></span> kg</td>
-                </tr>
-              </table>
-              <div class="team-divider"></div>
-              <div class="mini-donut-wrap">
-                <div id="miniDonutRegulerCenter" class="mini-donut-center-text"></div>
-                <canvas id="miniDonutReguler"></canvas>
+              
+              <!-- STRUKTUR BARU: Data di atas, PIC dan chart di bawah -->
+              <div class="team-data-section">
+                <table class="team-matrix-table">
+                  <tr>
+                    <td><span class="material-symbols-outlined">person</span> Man Power</td>
+                    <td id="mpReguler" class="team-matrix-value"></td>
+                  </tr>
+                  <tr>
+                    <td><span class="material-symbols-outlined">assignment</span> Plan Target</td>
+                    <td><span id="planReguler" class="team-matrix-value"></span> kg</td>
+                  </tr>
+                  <tr>
+                    <td><span class="material-symbols-outlined">track_changes</span> Target</td>
+                    <td><span id="actualReguler" class="team-matrix-value"></span> kg</td>
+                  </tr>
+                  <tr>
+                    <td><span class="material-symbols-outlined">trending_up</span> Achieved</td>
+                    <td><span id="achievedReguler" class="team-matrix-value"></span> kg</td>
+                  </tr>
+                  <tr>
+                    <td><span class="material-symbols-outlined">hourglass_empty</span> Remaining</td>
+                    <td><span id="remainingReguler" class="team-matrix-value"></span> kg</td>
+                  </tr>
+                </table>
+              </div>
+              <div class="team-divider team-footer-divider"></div>
+              <!-- Area bawah untuk PIC dan chart -->
+              <div class="team-footer-section">
+                <div class="team-footer-pics">
+                  <div id="regulerPics" class="pic-profiles"></div>
+                </div>
+                <div class="team-footer-chart">
+                  <div class="mini-donut-wrap">
+                    <div id="miniDonutRegulerCenter" class="mini-donut-center-text"></div>
+                    <canvas id="miniDonutReguler"></canvas>
+                  </div>
+                </div>
               </div>
             </div>
             

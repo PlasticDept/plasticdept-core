@@ -127,6 +127,129 @@ function getStatusSortOrder(status) {
   return idx === -1 ? 999 : idx;
 }
 
+/**
+ * Memperbaiki pengambilan data PIC dari node MPPIC alih-alih users
+ * @param {string} teamName - "Sugity" or "Reguler"
+ */
+async function loadTeamPICs(teamName) {
+  try {
+    // Get PICs from MPPIC node instead of users
+    const mppicRef = ref(db, "MPPIC");
+    const mppicSnapshot = await get(mppicRef);
+    
+    if (!mppicSnapshot.exists()) {
+      console.log("Data MPPIC tidak ditemukan!");
+      return;
+    }
+    
+    const mpPics = mppicSnapshot.val();
+    const teamUsers = [];
+    
+    // Filter PICs by team
+    Object.keys(mpPics).forEach(picId => {
+      const pic = mpPics[picId];
+      // Struktur node MPPIC berbeda dari users, sesuaikan field-nya
+      if (pic && 
+          pic.team?.toLowerCase() === teamName.toLowerCase()) {
+        teamUsers.push({
+          id: pic.userID || picId,
+          name: pic.name || "Unknown",
+          photoURL: pic.photoURL || "",
+          team: pic.team || ""
+        });
+      }
+    });
+    
+    console.log(`Found ${teamUsers.length} PICs for team ${teamName}`);
+    
+    // Limit to max 3 users per team
+    const limitedUsers = teamUsers.slice(0, 3);
+    
+    // Display users in the appropriate container
+    const containerID = teamName.toLowerCase() === "sugity" ? "sugityPics" : "regulerPics";
+    const container = document.getElementById(containerID);
+    
+    if (!container) return;
+    
+    container.innerHTML = "";
+    
+    if (limitedUsers.length === 0) {
+      container.innerHTML = `<p class="text-muted">No PIC assigned</p>`;
+      return;
+    }
+    
+    // Create profile elements
+    limitedUsers.forEach(user => {
+      const profileElement = document.createElement("div");
+      profileElement.className = "pic-profile";
+      
+      if (user.photoURL) {
+        // PERBAIKAN UNTUK URL GOOGLE DRIVE
+        let imageUrl = user.photoURL;
+        
+        // Jika URL dari Google Drive, ubah format untuk bisa diakses langsung
+        if (imageUrl.includes('drive.google.com')) {
+          // Ekstrak ID file dari URL Google Drive
+          let fileId = '';
+          
+          // Format 1: drive.google.com/file/d/ID/view
+          const fileMatch = imageUrl.match(/\/file\/d\/([^\/]+)/);
+          if (fileMatch && fileMatch[1]) {
+            fileId = fileMatch[1];
+          }
+          
+          // Format 2: drive.google.com/open?id=ID
+          const openMatch = imageUrl.match(/id=([^&]+)/);
+          if (openMatch && openMatch[1]) {
+            fileId = openMatch[1];
+          }
+          
+          // Format 3: drive.google.com/uc?export=view&id=ID atau
+          // Format 4: drive.google.com/uc?export=view&id=ID
+          if (imageUrl.includes('export=view')) {
+            // URL sudah dalam format yang benar, gunakan langsung
+          } else if (fileId) {
+            // Gunakan format URL yang langsung menampilkan gambar
+            imageUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
+          }
+        }
+        
+        profileElement.innerHTML = `
+          <img src="${imageUrl}" alt="${user.name}" class="pic-avatar" title="${user.name}" 
+               onerror="this.onerror=null; this.src='img/default-user.png'; this.classList.add('pic-avatar-placeholder');">
+          <span class="pic-name">${user.name}</span>
+          <span class="pic-id">ID: ${user.id}</span>
+        `;
+        
+        // Tambahkan log untuk debugging
+        console.log(`Loading PIC image: ${user.name}, URL: ${imageUrl}`);
+      } else {
+        // Use first initial if no photo
+        const initial = user.name.charAt(0).toUpperCase();
+        profileElement.innerHTML = `
+          <div class="pic-avatar-placeholder" title="${user.name}">${initial}</div>
+          <span class="pic-name">${user.name}</span>
+          <span class="pic-id">ID: ${user.id}</span>
+        `;
+      }
+      
+      container.appendChild(profileElement);
+    });
+    
+  } catch (error) {
+    console.error("Error loading PICs:", error);
+  }
+}
+
+// Ubah juga fungsi setupPICListeners untuk node MPPIC
+function setupPICListeners() {
+  const mppicRef = ref(db, "MPPIC");
+  onValue(mppicRef, (snapshot) => {
+    loadTeamPICs("Sugity");
+    loadTeamPICs("Reguler");
+  });
+}
+
 // --- Main Data Loader ---
 /**
  * Muat data utama dashboard, isi matrix dan render semua chart
@@ -292,6 +415,10 @@ async function loadDashboardData() {
     });
     dashboardDate.textContent = dateString;
   }
+  await Promise.all([
+    loadTeamPICs("Sugity"),
+    loadTeamPICs("Reguler")
+  ]);
 }
 
 // --- Shift Logic Title ---
@@ -1185,6 +1312,7 @@ authPromise.then(() => {
     .then(() => {
       setupRealtimeListeners();
       scheduleHourlyUpdate();
+      setupPICListeners();
       
       // Remove loading screen with animation
       setTimeout(() => {
