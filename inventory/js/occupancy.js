@@ -233,6 +233,9 @@ async function loadMasterLocations() {
 
 // Load Occupancy Data from GitHub
 async function loadOccupancyData() {
+    // Di awal fungsi loadOccupancyData()
+    console.log("Format data lokasi Y pertama:", 
+    occupancyData.filter(loc => (loc.Location || loc.locationCode || "").startsWith("Y")).slice(0, 5));
     try {
         const timestamp = new Date().getTime();
         const response = await fetch(`${RAW_GITHUB_URL}?t=${timestamp}`);
@@ -746,19 +749,21 @@ function displayFloorArea(floorPrefix) {
     floorHeaderCell.textContent = floorPrefix;
     headerRow.appendChild(floorHeaderCell);
     
-    // Determine the number of columns based on prefix
-    let maxPos;
-    
-    if (floorPrefix === 'A') {
-        maxPos = 27; // Area A has 27 columns
-    } else if (floorPrefix === 'Y') {
-        maxPos = 14; // Area Y has 14 columns
+    // Determine columns for area Y
+    let colStart = 1, colEnd = 1;
+    if (floorPrefix === 'Y') {
+        colStart = 6; // Start at 06
+        colEnd = 14;  // End at 14
+    } else if (floorPrefix === 'A') {
+        colStart = 1;
+        colEnd = 27;
     } else {
-        maxPos = 21; // Default
+        colStart = 1;
+        colEnd = 21;
     }
-    
-    // Add column headers (01-14 untuk area Y)
-    for (let col = 1; col <= maxPos; col++) {
+
+    // Add column headers
+    for (let col = colStart; col <= colEnd; col++) {
         const colHeaderCell = document.createElement('th');
         colHeaderCell.textContent = col.toString().padStart(2, '0');
         headerRow.appendChild(colHeaderCell);
@@ -771,17 +776,17 @@ function displayFloorArea(floorPrefix) {
     // Create rows
     const tbody = document.createElement('tbody');
     
-    // Tentukan baris awal dan akhir berdasarkan area
-    let startRow = 1;
-    let endRow = 14;
-    
-    // Khusus untuk area Y, mulai dari baris 6 sampai 14 sesuai permintaan
+    let rowStart = 1, rowEnd = 15;
+    // For area Y, rows 1-15
     if (floorPrefix === 'Y') {
-        startRow = 6;
-        endRow = 14;
+        rowStart = 1;
+        rowEnd = 15;
+    } else if (floorPrefix === 'A') {
+        rowStart = 1;
+        rowEnd = 14;
     }
-    
-    for (let row = startRow; row <= endRow; row++) {
+
+    for (let row = rowStart; row <= rowEnd; row++) {
         const rowFormatted = row.toString().padStart(2, '0');
         const tableRow = document.createElement('tr');
         const rowCell = document.createElement('td');
@@ -790,14 +795,19 @@ function displayFloorArea(floorPrefix) {
         tableRow.appendChild(rowCell);
 
         // Add cells for each column
-        for (let col = 1; col <= maxPos; col++) {
+        for (let col = colStart; col <= colEnd; col++) {
             const colFormatted = col.toString().padStart(2, '0');
             
             // Construct location code based on the format in your data
             let locationCode;
             if (floorPrefix === 'Y') {
                 // For Area Y, format is Y06-01, Y07-02, etc.
-                locationCode = `Y${rowFormatted}-${colFormatted}`;
+                locationCode = `Y${colFormatted}-${rowFormatted}`;
+                // Tambahkan log untuk debugging
+                if (col === colStart && row === rowStart) {
+                    console.log(`Contoh kode lokasi Y: ${locationCode}`);
+                    console.log(`Data untuk lokasi ini:`, locationCache[locationCode]);
+                }
             } else {
                 // For Area A, format is A-22-01, A-23-02, etc. (column-row)
                 locationCode = `${floorPrefix}-${colFormatted}-${rowFormatted}`;
@@ -1182,5 +1192,4 @@ function formatNumber(number) {
     return new Intl.NumberFormat('en-US').format(number);
 
 }
-
 
