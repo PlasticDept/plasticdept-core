@@ -25,6 +25,7 @@ const customerColors = {
   'SC-2': '#90EE90', // Light Green
   'T-TEC': '#87CEEB', // Sky Blue
   'TTI-PP': '#E6E6FA', // Lavender
+  'TTI-AIM': '#ce102cff', // Light Pink
   'TTI-MACHINERY': '#FFC0CB' // Pink
 };
 
@@ -72,6 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('searchInput').addEventListener('input', handleSearch);
     document.getElementById('prevPage').addEventListener('click', () => changePage(-1));
     document.getElementById('nextPage').addEventListener('click', () => changePage(1));
+    document.getElementById('downloadBtn').addEventListener('click', showDownloadOptions);
 
     const areaButtons = document.querySelectorAll('.rack-selector .btn');
     areaButtons.forEach(button => {
@@ -110,30 +112,33 @@ async function initializeApp() {
         
         showLoading(true);
 
-        await loadMasterLocations();      // 1. Load master locations
-        await loadOccupancyData();        // 2. Load occupancy data
-        mergeOccupancyWithMaster();       // 3. Merge occupancy with master for UI
+        await loadMasterLocations();
+        await loadOccupancyData();
+        mergeOccupancyWithMaster();
 
         analyzeLocationStructure();
         generateRackAreaButtons();
 
         if (allRackPrefixes.length > 0) {
-            displayMultipleRacks(1); // Mulai dari halaman 1 (DIUBAH)
+            displayMultipleRacks(1);
         }
 
+        // Panggil fungsi untuk update statistik
         updateStatistics();
+        updateCustomerStatistics();
+
         showLoading(false);
         
-        // Hapus loading screen dengan efek fade out
+        // Hapus loading screen
         clearTimeout(loadingTimeout);
         loadingScreen.classList.add('fade-out');
         setTimeout(() => loadingScreen.remove(), 500);
     } catch (error) {
+        // Error handling yang sudah ada
         console.error("Error initializing app:", error);
         alert("Failed to initialize application. Please try again.");
         showLoading(false);
         
-        // Hapus loading screen jika terjadi error
         const loadingScreen = document.querySelector('.fullscreen-loading');
         if (loadingScreen) {
             loadingScreen.classList.add('fade-out');
@@ -233,9 +238,6 @@ async function loadMasterLocations() {
 
 // Load Occupancy Data from GitHub
 async function loadOccupancyData() {
-    // Di awal fungsi loadOccupancyData()
-    console.log("Format data lokasi Y pertama:", 
-    occupancyData.filter(loc => (loc.Location || loc.locationCode || "").startsWith("Y")).slice(0, 5));
     try {
         const timestamp = new Date().getTime();
         const response = await fetch(`${RAW_GITHUB_URL}?t=${timestamp}`);
@@ -466,6 +468,254 @@ function handleFileUpload() {
         uploadBtn.disabled = false;
         uploadBtn.innerHTML = originalText;
     });
+}
+
+function showDownloadOptions() {
+    // Buat modal untuk pilihan download
+    const modalHTML = `
+    <div class="modal fade" id="downloadModal" tabindex="-1" aria-labelledby="downloadModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="downloadModalLabel">Download Occupancy Data</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="list-group">
+                        <button type="button" class="list-group-item list-group-item-action" id="downloadFullData">
+                            <i class="bi bi-file-earmark-spreadsheet me-2"></i>
+                            <strong>Full Occupancy Data</strong>
+                            <p class="mb-0 text-muted small">Download semua data lokasi dan status penggunaannya</p>
+                        </button>
+                        <button type="button" class="list-group-item list-group-item-action" id="downloadMasterData">
+                            <i class="bi bi-grid-1x2 me-2"></i>
+                            <strong>Master Location Data</strong>
+                            <p class="mb-0 text-muted small">Download hanya data lokasi</p>
+                        </button>
+                        <button type="button" class="list-group-item list-group-item-action" id="downloadCustomerData">
+                            <i class="bi bi-pie-chart me-2"></i>
+                            <strong>Customer Statistics</strong>
+                            <p class="mb-0 text-muted small">Download data statistik customer</p>
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>`;
+
+    // Tambahkan modal ke dokumen
+    const modalContainer = document.createElement('div');
+    modalContainer.innerHTML = modalHTML;
+    document.body.appendChild(modalContainer);
+    
+    // Tampilkan modal
+    const downloadModal = new bootstrap.Modal(document.getElementById('downloadModal'));
+    downloadModal.show();
+    
+    // Tambahkan event listener untuk setiap opsi download
+    document.getElementById('downloadFullData').addEventListener('click', () => {
+        downloadOccupancyData();
+        downloadModal.hide();
+    });
+    
+    document.getElementById('downloadMasterData').addEventListener('click', () => {
+        downloadMasterLocations();
+        downloadModal.hide();
+    });
+    
+    document.getElementById('downloadCustomerData').addEventListener('click', () => {
+        downloadCustomerStats();
+        downloadModal.hide();
+    });
+    
+    // Hapus modal ketika disembunyikan
+    document.getElementById('downloadModal').addEventListener('hidden.bs.modal', function() {
+        document.body.removeChild(modalContainer);
+    });
+}
+
+// Fungsi untuk download data occupancy lengkap dalam format Excel
+function downloadOccupancyData() {
+    // Periksa apakah data tersedia
+    if (!allLocations || allLocations.length === 0) {
+        alert('Tidak ada data occupancy yang tersedia untuk didownload.');
+        return;
+    }
+    
+    try {
+        // Tampilkan loading indicator
+        const downloadBtn = document.getElementById('downloadBtn');
+        downloadBtn.disabled = true;
+        downloadBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Downloading...';
+        
+        // Persiapkan data untuk Excel
+        const excelData = [];
+        
+        // Tambahkan header row
+        const headers = ["Location Code", "Status", "Part No", "Product Description", "Invoice No", 
+                        "Lot No", "Receive Date", "Quantity", "Customer Code", "UID Count"];
+        excelData.push(headers);
+        
+        // Tambahkan data rows
+        allLocations.forEach(loc => {
+            const status = loc.isOccupied ? (loc.status || "Occupied") : "Available";
+            
+            const row = [
+                loc.locationCode,
+                status,
+                loc.partNo || "",
+                loc.productDescription || "",
+                loc.invoiceNo || "",
+                loc.lotNo || "",
+                loc.receiveDate || "",
+                loc.quantity || 0,
+                loc.customerCode || "",
+                loc.uidCount || 0
+            ];
+            
+            excelData.push(row);
+        });
+        
+        // Buat workbook baru
+        const wb = XLSX.utils.book_new();
+        
+        // Buat worksheet dari data
+        const ws = XLSX.utils.aoa_to_sheet(excelData);
+        
+        // Tambahkan worksheet ke workbook
+        XLSX.utils.book_append_sheet(wb, ws, "Occupancy Data");
+        
+        // Unduh file Excel
+        XLSX.writeFile(wb, `occupancy_data_${getCurrentDate()}.xlsx`);
+        
+        // Kembalikan tombol ke state normal
+        downloadBtn.disabled = false;
+        downloadBtn.innerHTML = '<i class="bi bi-download me-2"></i> Download';
+    } catch (error) {
+        console.error("Error generating Excel file:", error);
+        alert("Terjadi kesalahan saat mengunduh data. Silakan coba lagi.");
+        
+        // Kembalikan tombol ke state normal jika terjadi error
+        const downloadBtn = document.getElementById('downloadBtn');
+        downloadBtn.disabled = false;
+        downloadBtn.innerHTML = '<i class="bi bi-download me-2"></i> Download';
+    }
+}
+
+// Fungsi untuk download master locations dalam format Excel
+function downloadMasterLocations() {
+    if (!masterLocations || masterLocations.length === 0) {
+        alert('Tidak ada data master locations yang tersedia untuk didownload.');
+        return;
+    }
+    
+    try {
+        // Persiapkan data untuk Excel
+        const excelData = [];
+        
+        // Tambahkan header row
+        excelData.push(["Location Code"]);
+        
+        // Tambahkan data rows
+        masterLocations.forEach(loc => {
+            excelData.push([loc.locationCode]);
+        });
+        
+        // Buat workbook baru
+        const wb = XLSX.utils.book_new();
+        
+        // Buat worksheet dari data
+        const ws = XLSX.utils.aoa_to_sheet(excelData);
+        
+        // Tambahkan worksheet ke workbook
+        XLSX.utils.book_append_sheet(wb, ws, "Master Locations");
+        
+        // Unduh file Excel
+        XLSX.writeFile(wb, `master_locations_${getCurrentDate()}.xlsx`);
+    } catch (error) {
+        console.error("Error generating Excel file:", error);
+        alert("Terjadi kesalahan saat mengunduh data. Silakan coba lagi.");
+    }
+}
+
+// Fungsi untuk download statistik customer dalam format Excel
+function downloadCustomerStats() {
+    if (!allLocations || allLocations.length === 0) {
+        alert('Tidak ada data untuk membuat statistik customer.');
+        return;
+    }
+    
+    try {
+        // Hitung statistik customer
+        const customerCounts = {};
+        
+        // Inisialisasi counter untuk setiap customer
+        Object.keys(customerColors).forEach(customer => {
+            customerCounts[customer] = 0;
+        });
+        
+        // Hitung jumlah lokasi per customer
+        allLocations.forEach(location => {
+            if (location.isOccupied && location.customerCode) {
+                if (customerCounts.hasOwnProperty(location.customerCode)) {
+                    customerCounts[location.customerCode]++;
+                }
+            }
+        });
+        
+        // Persiapkan data untuk Excel
+        const excelData = [];
+        
+        // Tambahkan header row untuk data customer
+        excelData.push(["Customer Code", "Occupied Locations"]);
+        
+        // Tambahkan data customer
+        Object.entries(customerCounts).forEach(([customer, count]) => {
+            excelData.push([customer, count]);
+        });
+        
+        // Tambahkan statistik ringkasan
+        const total = allLocations.length;
+        const occupied = allLocations.filter(loc => loc.isOccupied).length;
+        const available = total - occupied;
+        const percentage = total > 0 ? Math.round((occupied / total) * 100) : 0;
+        
+        // Tambahkan baris kosong sebagai pemisah
+        excelData.push([]);
+        excelData.push(["Summary Statistics"]);
+        excelData.push(["Total Locations", total]);
+        excelData.push(["Occupied Locations", occupied]);
+        excelData.push(["Available Locations", available]);
+        excelData.push(["Occupancy Percentage", `${percentage}%`]);
+        
+        // Buat workbook baru
+        const wb = XLSX.utils.book_new();
+        
+        // Buat worksheet dari data
+        const ws = XLSX.utils.aoa_to_sheet(excelData);
+        
+        // Tambahkan worksheet ke workbook
+        XLSX.utils.book_append_sheet(wb, ws, "Customer Statistics");
+        
+        // Unduh file Excel
+        XLSX.writeFile(wb, `customer_statistics_${getCurrentDate()}.xlsx`);
+    } catch (error) {
+        console.error("Error generating Excel file:", error);
+        alert("Terjadi kesalahan saat mengunduh data. Silakan coba lagi.");
+    }
+}
+
+
+// Fungsi untuk mendapatkan tanggal saat ini dalam format YYYY-MM-DD
+function getCurrentDate() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 // Handle Master Location Upload (NEW)
@@ -803,11 +1053,6 @@ function displayFloorArea(floorPrefix) {
             if (floorPrefix === 'Y') {
                 // For Area Y, format is Y06-01, Y07-02, etc.
                 locationCode = `Y${colFormatted}-${rowFormatted}`;
-                // Tambahkan log untuk debugging
-                if (col === colStart && row === rowStart) {
-                    console.log(`Contoh kode lokasi Y: ${locationCode}`);
-                    console.log(`Data untuk lokasi ini:`, locationCache[locationCode]);
-                }
             } else {
                 // For Area A, format is A-22-01, A-23-02, etc. (column-row)
                 locationCode = `${floorPrefix}-${colFormatted}-${rowFormatted}`;
@@ -971,6 +1216,43 @@ function updateStatistics() {
     document.getElementById('occupiedLocations').textContent = formatNumber(occupied);
     document.getElementById('availableLocations').textContent = formatNumber(available);
     document.getElementById('occupancyPercentage').textContent = `${percentage}%`;
+}
+
+// Fungsi untuk menghitung dan menampilkan statistik customer
+// Fungsi untuk menghitung dan menampilkan statistik customer
+function updateCustomerStatistics() {
+    // Object untuk menyimpan jumlah lokasi per customer
+    const customerCounts = {
+        'PL AUTO': 0,
+        'PL AUTO 2': 0,
+        'SC-2': 0,
+        'T-TEC': 0,
+        'TTI-PP': 0,
+        'TTI-AIM': 0,
+        'TTI-MACHINERY': 0
+    };
+    
+    // Hitung jumlah lokasi yang digunakan oleh setiap customer
+    allLocations.forEach(location => {
+        if (location.isOccupied && location.customerCode) {
+            if (customerCounts.hasOwnProperty(location.customerCode)) {
+                customerCounts[location.customerCode]++;
+            }
+        }
+    });
+    
+    // Update nilai pada tampilan
+    document.getElementById('plAutoCount').textContent = formatNumber(customerCounts['PL AUTO']);
+    document.getElementById('plAuto2Count').textContent = formatNumber(customerCounts['PL AUTO 2']);
+    document.getElementById('sc2Count').textContent = formatNumber(customerCounts['SC-2']);
+    document.getElementById('tTecCount').textContent = formatNumber(customerCounts['T-TEC']);
+    document.getElementById('ttiPpCount').textContent = formatNumber(customerCounts['TTI-PP']);
+    document.getElementById('ttiMachineryCount').textContent = formatNumber(customerCounts['TTI-MACHINERY']);
+    // Pastikan elemen dengan ID ini ada di HTML sebelum mengakses
+    const ttiAimCountElement = document.getElementById('ttiAimCount');
+    if (ttiAimCountElement) {
+        ttiAimCountElement.textContent = formatNumber(customerCounts['TTI-AIM']);
+    }
 }
 
 // Update Pagination Information
@@ -1190,6 +1472,4 @@ function formatExcelDate(excelDate) {
 // Format Number with Thousand Separator
 function formatNumber(number) {
     return new Intl.NumberFormat('en-US').format(number);
-
 }
-
