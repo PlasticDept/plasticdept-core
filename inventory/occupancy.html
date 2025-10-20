@@ -103,7 +103,7 @@
       </div>
     </header>
         
-        <div class="content-container my-3">
+       <div class="content-container my-3">
             <div class="row mb-4">
                 <div class="col-md-6">
                     <h2 class="page-title">
@@ -287,53 +287,18 @@
             
         </div>
     </div>
-
+    
     <!-- Location Detail Modal -->
     <div class="modal fade" id="locationModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Location Detail: <span id="locationCode"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="location-details">
-                        <div class="detail-item">
-                            <div class="detail-label">Status:</div>
-                            <div class="detail-value" id="locationStatus">-</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Part No:</div>
-                            <div class="detail-value" id="partNo">-</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Product Description:</div>
-                            <div class="detail-value" id="productDescription">-</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Invoice No:</div>
-                            <div class="detail-value" id="invoiceNo">-</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Lot No:</div>
-                            <div class="detail-value" id="lotNo">-</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Receive Date:</div>
-                            <div class="detail-value" id="receiveDate">-</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Quantity:</div>
-                            <div class="detail-value" id="quantity">-</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Customer Code:</div>
-                            <div class="detail-value" id="customerCode">-</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">UID Count:</div>
-                            <div class="detail-value" id="uidCount">-</div>
-                        </div>
+                    <div class="location-details" id="modalContent">
+                        <!-- Konten akan diisi secara dinamis -->
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -342,7 +307,6 @@
             </div>
         </div>
     </div>
-
     <!-- Upload Modal -->
     <div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">

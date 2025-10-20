@@ -20,6 +20,7 @@ const RACKS_PER_PAGE = 5; // Number of racks to display per page (NEW)
 
 // Customer code colors
 const customerColors = {
+  'MIXED PARTS': '#8B5CF6', // Purple untuk mixed parts
   'PL AUTO': '#FFD580', // Light Orange
   'PL AUTO 2': '#FFA500', // Orange
   'SC-2': '#90EE90', // Light Green
@@ -66,6 +67,7 @@ gaStackNgLocations.forEach(ngLoc => {
 document.addEventListener('DOMContentLoaded', function() {
     updateCustomerLegend();
     initializeApp();
+    setupModalEventHandlers(); // Tambahkan setup event handler untuk modal
 
     document.getElementById('uploadMasterBtn').addEventListener('click', handleMasterLocationUpload);
     document.getElementById('uploadOccupancyBtn').addEventListener('click', handleFileUpload);
@@ -83,6 +85,34 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Fungsi untuk mengatur event handler modal
+function setupModalEventHandlers() {
+    const locationModal = document.getElementById('locationModal');
+    if (!locationModal) return;
+    
+    locationModal.addEventListener('hidden.bs.modal', function() {
+        console.log('Modal hidden event triggered');
+        
+        // Hapus semua backdrop modal yang mungkin tersisa
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(backdrop => {
+            document.body.removeChild(backdrop);
+        });
+        
+        // Reset body style dan class
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+        
+        // Pastikan pointer-events semua cell berfungsi
+        document.querySelectorAll('.location-cell').forEach(cell => {
+            cell.style.pointerEvents = 'auto';
+        });
+        
+        console.log('Modal cleanup complete');
+    });
+}
 
 // Initialize Application
 async function initializeApp() {
@@ -164,7 +194,6 @@ function showLoading(show) {
     }
 }
 
-// Update the legend container with customer codes
 function updateCustomerLegend() {
     const legendContainer = document.querySelector('.legend-container');
     if (!legendContainer) return;
@@ -175,12 +204,21 @@ function updateCustomerLegend() {
     availableSpan.className = 'legend-item';
     availableSpan.innerHTML = `<span class="legend-color available"></span> Available`;
     legendContainer.appendChild(availableSpan);
+    
+    // Tambahkan indikator Mixed Parts
+    const mixedPartsSpan = document.createElement('span');
+    mixedPartsSpan.className = 'legend-item ms-3';
+    mixedPartsSpan.innerHTML = `<span class="legend-color mixed-parts" style="background-color: ${customerColors['MIXED PARTS']}"></span> Mixed Parts`;
+    legendContainer.appendChild(mixedPartsSpan);
 
+    // Tambahkan customer codes lainnya
     Object.keys(customerColors).forEach(customer => {
-        const span = document.createElement('span');
-        span.className = 'legend-item ms-3';
-        span.innerHTML = `<span class="legend-color customer-${customer.replace(/\s+/g, '-').toLowerCase()}" style="background-color: ${customerColors[customer]}"></span> ${customer}`;
-        legendContainer.appendChild(span);
+        if (customer !== 'MIXED PARTS') {  // Skip Mixed Parts karena sudah ditambahkan
+            const span = document.createElement('span');
+            span.className = 'legend-item ms-3';
+            span.innerHTML = `<span class="legend-color customer-${customer.replace(/\s+/g, '-').toLowerCase()}" style="background-color: ${customerColors[customer]}"></span> ${customer}`;
+            legendContainer.appendChild(span);
+        }
     });
 
     let styleEl = document.getElementById('customer-styles');
@@ -195,10 +233,26 @@ function updateCustomerLegend() {
         const cssClass = `.customer-${customer.replace(/\s+/g, '-').toLowerCase()}`;
         cssRules += `${cssClass} { background-color: ${customerColors[customer]}; border-color: ${adjustBorderColor(customerColors[customer])}; }\n`;
     });
+    
+    // Tambahkan style untuk mixed-parts
+    cssRules += `.mixed-parts { background-color: ${customerColors['MIXED PARTS']}; border-color: ${adjustBorderColor(customerColors['MIXED PARTS'])}; }\n`;
+    
+    // Style tambahan untuk indikator angka di dalam cell
+    cssRules += `.mix-indicator { 
+        position: absolute; 
+        top: 50%; 
+        left: 50%; 
+        transform: translate(-50%, -50%); 
+        font-size: 10px; 
+        font-weight: bold; 
+        color: white;
+        text-shadow: 0px 0px 2px rgba(0,0,0,0.7);
+    }\n`;
+    
+    cssRules += `.location-cell.mixed-parts { position: relative; }\n`;
 
     styleEl.textContent = cssRules;
 }
-
 // Adjust border color to be slightly darker than background
 function adjustBorderColor(hexColor) {
     const r = parseInt(hexColor.slice(1, 3), 16);
@@ -297,64 +351,78 @@ function getLocationData(locationCode) {
 }
 
 function mergeOccupancyWithMaster() {
-    const occupancyLookup = {};
+    // Buat struktur data baru untuk menyimpan multiple item per lokasi
+    const multiItemLocations = {};
     
-    // Pre-populate the lookup with standard location codes
+    // Kelompokkan semua item berdasarkan lokasi
     occupancyData.forEach(occ => {
         const code = occ.Location || occ.locationCode || occ.location || occ["Location Code"];
-        if (code) occupancyLookup[code] = occ;
-    });
-
-    allLocations = masterLocations.map(loc => {
-        const code = loc.locationCode;
-        let occ = occupancyLookup[code];
+        if (!code) return;
         
-        // Jika lokasi adalah GA rack dan tidak ada data di lokasi normal,
-        // cek apakah ada data di lokasi dengan format NG
-        if (!occ && code.startsWith('GA-') && locationMapping[code]) {
-            const ngCode = locationMapping[code];
-            occ = occupancyLookup[ngCode];
+        // Inisialisasi array jika belum ada
+        if (!multiItemLocations[code]) {
+            multiItemLocations[code] = [];
         }
         
-        if (occ) {
-            // Mapping field dari occupancy.json ke JS
-            return {
-                ...loc,
-                isOccupied: true,
-                partNo: occ["Part No"] || occ.partNo || "",
-                productDescription: occ["Product Description"] || occ["Description"] || "",
-                invoiceNo: occ["Invoice No."] || occ["Invoice No"] || occ.invoiceNo || "",
-                lotNo: occ["Lot No."] || occ.lotNo || "",
-                receiveDate: occ["Received Date"] || occ["Receive Date"] || "",
-                status: occ["Status"] || occ.status || "",
-                quantity: occ["QTY"] || occ["Quantity"] || occ.quantity || 0,
-                customerCode: occ["Customer Code"] || occ.customerCode || "",
-                uidCount: occ["UID"] || occ["UID Count"] || occ.uidCount || 0
-            };
-        } else {
-            // Kosong
+        // Tambahkan item ke array
+        multiItemLocations[code].push({
+            isOccupied: true,
+            partNo: occ["Part No"] || occ.partNo || "",
+            productDescription: occ["Product Description"] || occ["Description"] || "",
+            invoiceNo: occ["Invoice No."] || occ["Invoice No"] || occ.invoiceNo || "",
+            lotNo: occ["Lot No."] || occ.lotNo || "",
+            receiveDate: occ["Received Date"] || occ["Receive Date"] || "",
+            status: occ["Status"] || occ.status || "",
+            quantity: occ["QTY"] || occ["Quantity"] || occ.quantity || 0,
+            customerCode: occ["Customer Code"] || occ.customerCode || "",
+            uidCount: occ["UID"] || occ["UID Count"] || occ.uidCount || 0
+        });
+    });
+    
+    // Cek juga untuk lokasi dengan format NG (untuk GA stack)
+    Object.entries(locationMapping).forEach(([normalLoc, ngLoc]) => {
+        if (multiItemLocations[ngLoc] && !multiItemLocations[normalLoc]) {
+            multiItemLocations[normalLoc] = multiItemLocations[ngLoc];
+        }
+    });
+    
+    allLocations = masterLocations.map(loc => {
+        const code = loc.locationCode;
+        const items = multiItemLocations[code] || [];
+        
+        // Jika tidak ada item, kembalikan lokasi kosong
+        if (items.length === 0) {
             return {
                 ...loc,
                 isOccupied: false,
-                partNo: "",
-                productDescription: "",
-                invoiceNo: "",
-                lotNo: "",
-                receiveDate: "",
-                status: "",
-                quantity: 0,
-                customerCode: "",
-                uidCount: 0
+                items: []
             };
         }
+        
+        // Jika ada item, kembalikan lokasi dengan array items
+        return {
+            ...loc,
+            isOccupied: true,
+            items: items,
+            // Simpan item pertama sebagai default untuk kompatibilitas
+            partNo: items[0].partNo,
+            productDescription: items[0].productDescription,
+            invoiceNo: items[0].invoiceNo,
+            lotNo: items[0].lotNo,
+            receiveDate: items[0].receiveDate,
+            status: items[0].status,
+            quantity: items[0].quantity,
+            customerCode: items[0].customerCode,
+            uidCount: items[0].uidCount
+        };
     });
-
+    
+    // Update location cache
     locationCache = {};
     allLocations.forEach(loc => {
         locationCache[loc.locationCode] = loc;
     });
     
-    // Panggil inspeksi data setelah merging
     inspectLoadedData();
 }
 
@@ -487,6 +555,11 @@ function showDownloadOptions() {
                             <strong>Full Occupancy Data</strong>
                             <p class="mb-0 text-muted small">Download semua data lokasi dan status penggunaannya</p>
                         </button>
+                        <button type="button" class="list-group-item list-group-item-action" id="downloadMixedPartsData">
+                            <i class="bi bi-layers me-2"></i>
+                            <strong>Mixed Parts Data</strong>
+                            <p class="mb-0 text-muted small">Download hanya lokasi dengan multiple part number</p>
+                        </button>
                         <button type="button" class="list-group-item list-group-item-action" id="downloadMasterData">
                             <i class="bi bi-grid-1x2 me-2"></i>
                             <strong>Master Location Data</strong>
@@ -518,6 +591,11 @@ function showDownloadOptions() {
     // Tambahkan event listener untuk setiap opsi download
     document.getElementById('downloadFullData').addEventListener('click', () => {
         downloadOccupancyData();
+        downloadModal.hide();
+    });
+    
+    document.getElementById('downloadMixedPartsData').addEventListener('click', () => {
+        downloadMixedPartsData();
         downloadModal.hide();
     });
     
@@ -590,6 +668,129 @@ function downloadOccupancyData() {
         
         // Unduh file Excel
         XLSX.writeFile(wb, `occupancy_data_${getCurrentDate()}.xlsx`);
+        
+        // Kembalikan tombol ke state normal
+        downloadBtn.disabled = false;
+        downloadBtn.innerHTML = '<i class="bi bi-download me-2"></i> Download';
+    } catch (error) {
+        console.error("Error generating Excel file:", error);
+        alert("Terjadi kesalahan saat mengunduh data. Silakan coba lagi.");
+        
+        // Kembalikan tombol ke state normal jika terjadi error
+        const downloadBtn = document.getElementById('downloadBtn');
+        downloadBtn.disabled = false;
+        downloadBtn.innerHTML = '<i class="bi bi-download me-2"></i> Download';
+    }
+}
+
+// Fungsi untuk download data mixed parts dalam format CSV yang diinginkan (sesuai contoh header kuning)
+function downloadMixedPartsData() {
+    // Periksa apakah data tersedia
+    if (!allLocations || allLocations.length === 0) {
+        alert('Tidak ada data occupancy yang tersedia untuk didownload.');
+        return;
+    }
+    
+    try {
+        // Tampilkan loading indicator
+        const downloadBtn = document.getElementById('downloadBtn');
+        downloadBtn.disabled = true;
+        downloadBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Downloading...';
+        
+        // Identifikasi lokasi dengan multiple parts
+        const mixedPartsLocations = allLocations.filter(loc => 
+            loc.isOccupied && loc.items && loc.items.length > 1
+        );
+        
+        // Jika tidak ada lokasi dengan mixed parts
+        if (mixedPartsLocations.length === 0) {
+            alert('Tidak ditemukan lokasi dengan multiple parts.');
+            downloadBtn.disabled = false;
+            downloadBtn.innerHTML = '<i class="bi bi-download me-2"></i> Download';
+            return;
+        }
+        
+        // Persiapkan data untuk Excel dengan format yang diinginkan (tiap item dalam satu baris terpisah)
+        const excelData = [];
+        
+        // Tambahkan header row sesuai contoh CSV dengan header kuning
+        const headers = [
+            "Location",
+            "Part No", 
+            "Product Description",
+            "Received Date",
+            "Invoice No.",
+            "Lot No.",
+            "Status",
+            "Customer Code",
+            "QTY",
+            "UID"
+        ];
+        excelData.push(headers);
+        
+        // Tambahkan semua item dari setiap lokasi mixed parts
+        mixedPartsLocations.forEach(loc => {
+            // Untuk setiap lokasi, tambahkan semua item sebagai baris terpisah
+            loc.items.forEach(item => {
+                const row = [
+                    loc.locationCode,
+                    item.partNo || "",
+                    item.productDescription || "",
+                    item.receiveDate ? formatExcelDate(item.receiveDate) : "",
+                    item.invoiceNo || "",
+                    item.lotNo || "",
+                    item.status || "Putaway", // Default ke "Putaway" jika tidak ada status
+                    item.customerCode || "",
+                    item.quantity || 0,
+                    item.uidCount || 0
+                ];
+                excelData.push(row);
+            });
+        });
+        
+        // Buat workbook baru
+        const wb = XLSX.utils.book_new();
+        
+        // Buat worksheet dari data detail items
+        const ws = XLSX.utils.aoa_to_sheet(excelData);
+        
+        // Styling untuk header (warna kuning)
+        const headerRange = XLSX.utils.decode_range(ws['!ref']);
+        for (let C = headerRange.s.c; C <= headerRange.e.c; ++C) {
+            const address = XLSX.utils.encode_cell({ r: 0, c: C });
+            if (!ws[address]) continue;
+            
+            ws[address].s = {
+                fill: {
+                    fgColor: { rgb: "FFFF00" } // Yellow background
+                },
+                font: {
+                    bold: true
+                }
+            };
+        }
+        
+        // Setel lebar kolom agar sesuai dengan konten
+        const colWidths = [
+            { wch: 15 },  // Location
+            { wch: 15 },  // Part No
+            { wch: 25 },  // Product Description
+            { wch: 15 },  // Received Date
+            { wch: 15 },  // Invoice No
+            { wch: 15 },  // Lot No
+            { wch: 12 },  // Status
+            { wch: 15 },  // Customer Code
+            { wch: 8 },   // QTY
+            { wch: 8 }    // UID
+        ];
+        
+        ws['!cols'] = colWidths;
+        
+        // Tambahkan worksheet ke workbook
+        XLSX.utils.book_append_sheet(wb, ws, "Mixed Parts");
+        
+        // Unduh file Excel
+        XLSX.writeFile(wb, `mixed_parts_data_${getCurrentDate()}.xlsx`);
         
         // Kembalikan tombol ke state normal
         downloadBtn.disabled = false;
@@ -892,10 +1093,13 @@ function displayMultipleRacks(pageNum) {
                 const pos1Cell = document.createElement('td');
                 pos1Cell.className = 'location-cell';
                 pos1Cell.setAttribute('data-location', pos1Code);
+                pos1Cell.dataset.locationCode = pos1Code; // Store as data attribute
 
                 // Hanya tambahkan event listener jika lokasi tidak diblokir
                 if (!blockedLocations.includes(pos1Code)) {
-                    pos1Cell.addEventListener('click', () => showLocationDetails(pos1Code));
+                    pos1Cell.addEventListener('click', function() {
+                        showLocationDetails(pos1Code);
+                    });
                 } else {
                     pos1Cell.classList.add('blocked');
                 }
@@ -908,10 +1112,13 @@ function displayMultipleRacks(pageNum) {
                 const pos2Cell = document.createElement('td');
                 pos2Cell.className = 'location-cell';
                 pos2Cell.setAttribute('data-location', pos2Code);
-
+                pos2Cell.dataset.locationCode = pos2Code; // Store as data attribute
+                
                 // Hanya tambahkan event listener jika lokasi tidak diblokir
                 if (!blockedLocations.includes(pos2Code)) {
-                    pos2Cell.addEventListener('click', () => showLocationDetails(pos2Code));
+                    pos2Cell.addEventListener('click', function() {
+                        showLocationDetails(pos2Code);
+                    });
                 } else {
                     pos2Cell.classList.add('blocked');
                 }
@@ -944,7 +1151,6 @@ function displayMultipleRacks(pageNum) {
     });
 }
 
-// Update cell appearance based on occupancy and customer code
 function updateCellAppearance(cell, locationCode) {
     // Check if location is in blocked list
     if (blockedLocations.includes(locationCode)) {
@@ -969,7 +1175,32 @@ function updateCellAppearance(cell, locationCode) {
 
     if (locationData && locationData.isOccupied) {
         cell.classList.add('occupied');
-        if (locationData.customerCode && customerColors[locationData.customerCode]) {
+        
+        // Cek jika lokasi memiliki multiple items
+        if (locationData.items && locationData.items.length > 1) {
+            // Terapkan style untuk mixed parts
+            cell.style.backgroundColor = customerColors['MIXED PARTS'];
+            cell.classList.add('mixed-parts');
+            
+            // Tambahkan tooltip untuk menunjukkan jumlah part
+            const partCount = locationData.items.length;
+            cell.setAttribute('title', `${partCount} different parts in this location`);
+            
+            // Buat container untuk indikator tanpa menghapus event listener yang ada
+            const container = document.createElement('div');
+            container.className = 'mix-indicator-container';
+            container.innerHTML = `<span class="mix-indicator">${partCount}</span>`;
+            
+            // Hapus konten yang ada, tapi jaga event listener
+            while (cell.firstChild) {
+                cell.removeChild(cell.firstChild);
+            }
+            
+            // Tambahkan container ke cell
+            cell.appendChild(container);
+            
+        } else if (locationData.customerCode && customerColors[locationData.customerCode]) {
+            // Style regular untuk customer code tunggal
             cell.style.backgroundColor = customerColors[locationData.customerCode];
             cell.classList.add(`customer-${locationData.customerCode.replace(/\s+/g, '-').toLowerCase()}`);
         }
@@ -1061,7 +1292,10 @@ function displayFloorArea(floorPrefix) {
             const locationCell = document.createElement('td');
             locationCell.className = 'location-cell';
             locationCell.setAttribute('data-location', locationCode);
-            locationCell.addEventListener('click', () => showLocationDetails(locationCode));
+            locationCell.dataset.locationCode = locationCode; // Store as data attribute
+            locationCell.addEventListener('click', function() {
+                showLocationDetails(locationCode);
+            });
             updateCellAppearance(locationCell, locationCode);
             tableRow.appendChild(locationCell);
         }
@@ -1136,70 +1370,256 @@ function getBlocksForFloorPrefix(floorPrefix) {
     return Array.from(blockSet).sort((a, b) => parseInt(a) - parseInt(b));
 }
 
-// Show Location Details in Modal
 function showLocationDetails(locationCode) {
+    console.log(`Showing details for location: ${locationCode}`);
+    
     // Periksa apakah lokasi diblokir
     if (blockedLocations.includes(locationCode)) {
-        // Jika diblokir, jangan tampilkan modal
         return;
     }
     
-    // Cek untuk lokasi GA, jika tidak ada data normal, coba format NG
+    // Bersihkan modal sebelum menunjukkannya
+    cleanupModalBeforeShow();
+    
+    // Ambil data lokasi dengan cara yang lebih aman
     let locationData = locationCache[locationCode];
     
-    // Jika ini adalah lokasi GA dan tidak ada data, coba cek format dengan NG
-    if ((!locationData || !locationData.isOccupied) && locationCode.startsWith('GA-') && locationMapping[locationCode]) {
-        // Ambil kode NG sesuai mapping
+    // Jika ini adalah lokasi GA dengan format NG
+    if (!locationData && locationCode.startsWith('GA-') && locationMapping[locationCode]) {
         const ngLocationCode = locationMapping[locationCode];
-        
-        // Cari data dengan kode NG
-        for (const loc of allLocations) {
-            if (loc.locationCode === ngLocationCode && loc.isOccupied) {
-                locationData = loc;
-                break;
-            }
+        locationData = locationCache[ngLocationCode];
+    }
+    
+    // Header modal
+    document.getElementById('locationCode').textContent = locationCode;
+    
+    // Modal body
+    const modalBody = document.getElementById('modalContent');
+    modalBody.innerHTML = '';
+    
+    // Jika lokasi tidak ditemukan atau kosong
+    if (!locationData || !locationData.isOccupied) {
+        // Tampilkan status available
+        const statusDiv = document.createElement('div');
+        statusDiv.className = 'detail-item';
+        statusDiv.innerHTML = `
+            <div class="detail-label">Status:</div>
+            <div class="detail-value text-success">Available</div>
+        `;
+        modalBody.appendChild(statusDiv);
+    } else {
+        // Jika lokasi memiliki multiple item
+        if (locationData.items && locationData.items.length > 0) {
+            const items = locationData.items;
+            
+            // Tampilkan jumlah item di lokasi ini
+            const itemCountDiv = document.createElement('div');
+            itemCountDiv.className = 'alert alert-info mb-3';
+            itemCountDiv.innerHTML = `<strong>${items.length} item${items.length > 1 ? 's' : ''} found</strong> in this location`;
+            modalBody.appendChild(itemCountDiv);
+            
+            // Untuk setiap item, buat accordion
+            const accordionDiv = document.createElement('div');
+            accordionDiv.className = 'accordion';
+            accordionDiv.id = 'itemsAccordion';
+            
+            items.forEach((item, index) => {
+                const accordionItem = document.createElement('div');
+                accordionItem.className = 'accordion-item';
+                
+                // Header accordion
+                const headerId = `heading${index}`;
+                const headerDiv = document.createElement('h2');
+                headerDiv.className = 'accordion-header';
+                headerDiv.id = headerId;
+                
+                const button = document.createElement('button');
+                button.className = 'accordion-button' + (index === 0 ? '' : ' collapsed');
+                button.type = 'button';
+                button.setAttribute('data-bs-toggle', 'collapse');
+                button.setAttribute('data-bs-target', `#collapse${index}`);
+                button.setAttribute('aria-expanded', index === 0 ? 'true' : 'false');
+                button.setAttribute('aria-controls', `collapse${index}`);
+                button.innerHTML = `
+                    <span class="fw-bold">${item.partNo}</span>
+                    <span class="ms-2 text-muted small">${item.productDescription}</span>
+                `;
+                headerDiv.appendChild(button);
+                accordionItem.appendChild(headerDiv);
+                
+                // Content accordion
+                const collapseDiv = document.createElement('div');
+                collapseDiv.id = `collapse${index}`;
+                collapseDiv.className = 'accordion-collapse collapse' + (index === 0 ? ' show' : '');
+                collapseDiv.setAttribute('aria-labelledby', headerId);
+                collapseDiv.setAttribute('data-bs-parent', '#itemsAccordion');
+                
+                const bodyDiv = document.createElement('div');
+                bodyDiv.className = 'accordion-body';
+                bodyDiv.innerHTML = `
+                    <div class="detail-item">
+                        <div class="detail-label">Status:</div>
+                        <div class="detail-value ${getStatusClass(item.status)}">${item.status || 'Occupied'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Part No:</div>
+                        <div class="detail-value">${item.partNo || '-'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Product Description:</div>
+                        <div class="detail-value">${item.productDescription || '-'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Invoice No:</div>
+                        <div class="detail-value">${item.invoiceNo || '-'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Lot No:</div>
+                        <div class="detail-value">${item.lotNo || '-'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Receive Date:</div>
+                        <div class="detail-value">${item.receiveDate ? formatExcelDate(item.receiveDate) : '-'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Quantity:</div>
+                        <div class="detail-value">${item.quantity ? formatNumber(item.quantity) : '0'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Customer Code:</div>
+                        <div class="detail-value">${item.customerCode || '-'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">UID Count:</div>
+                        <div class="detail-value">${item.uidCount ? formatNumber(item.uidCount) : '0'}</div>
+                    </div>
+                `;
+                collapseDiv.appendChild(bodyDiv);
+                accordionItem.appendChild(collapseDiv);
+                
+                accordionDiv.appendChild(accordionItem);
+            });
+            
+            modalBody.appendChild(accordionDiv);
+        } else {
+            // Fallback ke tampilan lama jika tidak ada array items
+            const detailsHTML = `
+                <div class="detail-item">
+                    <div class="detail-label">Status:</div>
+                    <div class="detail-value ${getStatusClass(locationData.status)}">${locationData.status || 'Occupied'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Part No:</div>
+                    <div class="detail-value">${locationData.partNo || '-'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Product Description:</div>
+                    <div class="detail-value">${locationData.productDescription || '-'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Invoice No:</div>
+                    <div class="detail-value">${locationData.invoiceNo || '-'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Lot No:</div>
+                    <div class="detail-value">${locationData.lotNo || '-'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Receive Date:</div>
+                    <div class="detail-value">${locationData.receiveDate ? formatExcelDate(locationData.receiveDate) : '-'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Quantity:</div>
+                    <div class="detail-value">${locationData.quantity ? formatNumber(locationData.quantity) : '0'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Customer Code:</div>
+                    <div class="detail-value">${locationData.customerCode || '-'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">UID Count:</div>
+                    <div class="detail-value">${locationData.uidCount ? formatNumber(locationData.uidCount) : '0'}</div>
+                </div>
+            `;
+            modalBody.innerHTML = detailsHTML;
         }
     }
     
-    document.getElementById('locationCode').textContent = locationCode;
+    // Tampilkan modal
+    const locationModal = document.getElementById('locationModal');
+    const bsModal = new bootstrap.Modal(locationModal);
+    
+    // Tambahkan event handler khusus untuk modal ini
+    locationModal.addEventListener('hidden.bs.modal', handleModalHidden, { once: true });
+    
+    // Tampilkan modal
+    bsModal.show();
+}
 
-    if (locationData && locationData.isOccupied) {
-        document.getElementById('locationStatus').textContent = locationData.status ?
-            locationData.status.charAt(0).toUpperCase() + locationData.status.slice(1) : 'Occupied';
-        document.getElementById('partNo').textContent = locationData.partNo || '-';
-        document.getElementById('productDescription').textContent = locationData.productDescription || '-';
-        document.getElementById('invoiceNo').textContent = locationData.invoiceNo || '-';
-        document.getElementById('lotNo').textContent = locationData.lotNo || '-';
-        const receiveDate = locationData.receiveDate ? formatExcelDate(locationData.receiveDate) : '-';
-        document.getElementById('receiveDate').textContent = receiveDate;
-        const quantity = locationData.quantity ? formatNumber(locationData.quantity) : '0';
-        document.getElementById('quantity').textContent = quantity;
-        document.getElementById('customerCode').textContent = locationData.customerCode || '-';
-        const uidCount = locationData.uidCount ? formatNumber(locationData.uidCount) : '0';
-        document.getElementById('uidCount').textContent = uidCount;
-
-        const statusElement = document.getElementById('locationStatus');
-        statusElement.className = 'detail-value';
-        if (locationData.status === 'putaway') {
-            statusElement.classList.add('text-primary');
-        } else if (locationData.status === 'allocated') {
-            statusElement.classList.add('text-warning');
-        } else if (locationData.status === 'hold') {
-            statusElement.classList.add('text-danger');
-        } else {
-            statusElement.classList.add('text-secondary');
+// Fungsi untuk membersihkan modal sebelum ditampilkan
+function cleanupModalBeforeShow() {
+    // Hapus semua backdrop modal yang mungkin tersisa
+    const existingBackdrops = document.querySelectorAll('.modal-backdrop');
+    existingBackdrops.forEach(backdrop => {
+        try {
+            document.body.removeChild(backdrop);
+        } catch (e) {
+            console.log('Backdrop already removed:', e);
         }
-    } else {
-        document.getElementById('locationStatus').textContent = 'Available';
-        document.getElementById('locationStatus').className = 'detail-value text-success';
-        ['partNo', 'productDescription', 'invoiceNo', 'lotNo', 'receiveDate', 'quantity',
-         'customerCode', 'uidCount'].forEach(id => {
-            document.getElementById(id).textContent = '-';
-        });
-    }
+    });
+    
+    // Reset status body
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+    
+    // Pastikan pointer-events semua cell berfungsi
+    document.querySelectorAll('.location-cell').forEach(cell => {
+        cell.style.pointerEvents = 'auto';
+    });
+}
 
-    const locationModal = new bootstrap.Modal(document.getElementById('locationModal'));
-    locationModal.show();
+// Fungsi untuk menangani modal tertutup
+function handleModalHidden() {
+    console.log('Modal hidden handler triggered');
+    
+    // Hapus semua backdrop modal yang tersisa
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => {
+        try {
+            backdrop.parentNode.removeChild(backdrop);
+        } catch (e) {
+            console.log('Backdrop removal error:', e);
+        }
+    });
+    
+    // Reset body class dan style
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+    
+    // Pastikan semua cell dapat diinteraksi
+    document.querySelectorAll('.location-cell').forEach(cell => {
+        cell.style.pointerEvents = 'auto';
+    });
+    
+    console.log('Modal cleanup complete');
+}
+
+// Fungsi helper untuk menentukan class status
+function getStatusClass(status) {
+    if (!status) return 'text-secondary';
+    
+    switch(status.toLowerCase()) {
+        case 'putaway':
+            return 'text-primary';
+        case 'allocated':
+            return 'text-warning';
+        case 'hold':
+            return 'text-danger';
+        default:
+            return 'text-secondary';
+    }
 }
 
 // Update Statistics
@@ -1218,7 +1638,6 @@ function updateStatistics() {
     document.getElementById('occupancyPercentage').textContent = `${percentage}%`;
 }
 
-// Fungsi untuk menghitung dan menampilkan statistik customer
 // Fungsi untuk menghitung dan menampilkan statistik customer
 function updateCustomerStatistics() {
     // Object untuk menyimpan jumlah lokasi per customer
