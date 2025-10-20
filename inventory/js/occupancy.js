@@ -1,5 +1,5 @@
 // Configuration and Global Variables
-const API_URL = 'http://10.128.45.167:8000'; // Base URL to FastAPI backend via ngrok
+const API_URL = 'http://10.128.45.167:80'; // Base URL to FastAPI backend via ngrok
 const GITHUB_REPO = 'PlasticDept/plasticdept-core';
 const GITHUB_BRANCH = 'main';
 const GITHUB_FILE_PATH = 'occupancy.json';
