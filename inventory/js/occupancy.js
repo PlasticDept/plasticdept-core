@@ -1,5 +1,5 @@
 // Configuration and Global Variables
-const API_URL = 'http://192.168.100.61:8000'; // Base URL to FastAPI backend via ngrok
+const API_URL = 'http://10.128.45.167:8000'; // Base URL to FastAPI backend via ngrok
 const GITHUB_REPO = 'PlasticDept/plasticdept-core';
 const GITHUB_BRANCH = 'main';
 const GITHUB_FILE_PATH = 'occupancy.json';
@@ -25,7 +25,7 @@ const customerColors = {
   'PL AUTO 2': '#FFA500', // Orange
   'SC-2': '#90EE90', // Light Green
   'T-TEC': '#87CEEB', // Sky Blue
-  'TTI-PP': '#E6E6FA', // Lavender
+  'TTI-PP': '#f005e4', // Lavender
   'TTI-AIM': '#ce102cff', // Light Pink
   'TTI-MACHINERY': '#FFC0CB' // Pink
 };
