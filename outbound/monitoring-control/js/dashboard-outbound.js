@@ -657,7 +657,7 @@ function renderBarChart(actualArr, planArr) {
             boxWidth: 6,
             padding: 20,
             font: {
-              size: 12
+              size: 20
             }
           }
         },
@@ -688,7 +688,7 @@ function renderBarChart(actualArr, planArr) {
           },
           ticks: {
             font: {
-              size: 11
+              size: 15
             },
             color: '#64748b'
           }
@@ -701,7 +701,7 @@ function renderBarChart(actualArr, planArr) {
           },
           ticks: {
             font: {
-              size: 11
+              size: 20
             },
             color: '#64748b'
           }
@@ -851,8 +851,6 @@ function showLineChartMessage(msg) {
 }
 
 // --- Fungsi utama render Line Chart Outbound ---
-// ... (kode sebelumnya tetap, sampai sebelum renderLineChartOutbound)
-
 function renderLineChartOutbound(jobs, shiftType, manPowerTotal) {
   // --- Validasi manpower
   if (!manPowerTotal || isNaN(manPowerTotal) || manPowerTotal <= 0) {
@@ -1134,7 +1132,7 @@ function renderLineChartOutbound(jobs, shiftType, manPowerTotal) {
             boxWidth: 6,
             padding: 20,
             font: {
-              size: 12
+              size: 20
             }
           }
         },
@@ -1183,7 +1181,7 @@ function renderLineChartOutbound(jobs, shiftType, manPowerTotal) {
           },
           ticks: {
             font: {
-              size: 11
+              size: 15
             },
             color: '#64748b'
           },
@@ -1191,7 +1189,7 @@ function renderLineChartOutbound(jobs, shiftType, manPowerTotal) {
             display: true, 
             text: "Qty (kg)", 
             font: { 
-              size: 12,
+              size: 20,
               weight: "bold" 
             },
             color: '#64748b'
@@ -1199,20 +1197,23 @@ function renderLineChartOutbound(jobs, shiftType, manPowerTotal) {
         },
         x: {
           grid: {
-            display: false,
+            display: true,  // DIUBAH: aktifkan grid sumbu x
+            color: '#e2e8f0', // Warna grid yang soft/tidak terlalu kontras
+            lineWidth: 3,     // Ketebalan garis
+            drawTicks: true,  // Gambar ticks pada sumbu
             drawBorder: false
           },
           ticks: {
             font: {
-              size: 11
+              size: 20
             },
             color: '#64748b'
           },
           title: { 
             display: true, 
-            text: "Jam", 
+            text: "Time", 
             font: { 
-              size: 12,
+              size: 15,
               weight: "bold" 
             },
             color: '#64748b'
