@@ -216,11 +216,34 @@ async function loadTeamPICs(teamName) {
         
         profileElement.innerHTML = `
           <img src="${imageUrl}" alt="${user.name}" class="pic-avatar" title="${user.name}" 
-               onerror="this.onerror=null; this.src='img/default-user.png'; this.classList.add('pic-avatar-placeholder');">
-          <span class="pic-name">${user.name}</span>
-          <span class="pic-id">ID: ${user.id}</span>
+              onerror="this.onerror=null; this.src='img/default-user.png'; this.classList.add('pic-avatar-placeholder');">
+          <div class="pic-info">
+            <span class="pic-name">${user.name}</span>
+            <span class="pic-id">ID: ${user.id}</span>
+          </div>
         `;
-        
+
+        // Tambahkan data attribute untuk URL gambar
+        profileElement.setAttribute('data-image-url', imageUrl);
+
+        // Tambahkan event listener untuk hover
+        profileElement.addEventListener('mouseenter', function() {
+          const img = new Image();
+          img.src = this.getAttribute('data-image-url');
+          img.classList.add('pic-popup');
+          const popup = this.querySelector('.pic-popup');
+          if (!popup) {
+            this.appendChild(img);
+          }
+        });
+
+        profileElement.addEventListener('mouseleave', function() {
+          const popup = this.querySelector('.pic-popup');
+          if (popup) {
+            popup.remove();
+          }
+        });
+      
         // Tambahkan log untuk debugging
         console.log(`Loading PIC image: ${user.name}, URL: ${imageUrl}`);
       } else {
@@ -228,8 +251,10 @@ async function loadTeamPICs(teamName) {
         const initial = user.name.charAt(0).toUpperCase();
         profileElement.innerHTML = `
           <div class="pic-avatar-placeholder" title="${user.name}">${initial}</div>
-          <span class="pic-name">${user.name}</span>
-          <span class="pic-id">ID: ${user.id}</span>
+          <div class="pic-info">
+            <span class="pic-name">${user.name}</span>
+            <span class="pic-id">ID: ${user.id}</span>
+          </div>
         `;
       }
       
@@ -622,6 +647,10 @@ function renderBarChart(actualArr, planArr) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
   if (barChart) barChart.destroy();
+  
+  // Cari nilai maksimum untuk menentukan skala yang tepat
+  const maxValue = Math.max(...actualArr, ...planArr);
+  
   barChart = new Chart(ctx, {
     type: "bar",
     data: {
@@ -648,6 +677,11 @@ function renderBarChart(actualArr, planArr) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      layout: {
+        padding: {
+          top: 30  // Tambahkan padding di bagian atas
+        }
+      },
       plugins: {
         legend: { 
           display: true, 
@@ -676,12 +710,14 @@ function renderBarChart(actualArr, planArr) {
           formatter: function(value) {
             return formatNumber(value) + " kg";
           },
-          padding: 6
+          padding: 6,
+          offset: 10  // Geser label ke atas
         }
       },
       scales: {
         y: {
           beginAtZero: true,
+          suggestedMax: maxValue * 1.2,  // Tambahkan 20% ruang di atas bar tertinggi
           grid: {
             color: '#f1f5f9',
             drawBorder: false
@@ -692,7 +728,6 @@ function renderBarChart(actualArr, planArr) {
             },
             color: '#64748b'
           }
-          
         },
         x: {
           grid: {
@@ -851,6 +886,8 @@ function showLineChartMessage(msg) {
 }
 
 // --- Fungsi utama render Line Chart Outbound ---
+// ... (kode sebelumnya tetap, sampai sebelum renderLineChartOutbound)
+
 function renderLineChartOutbound(jobs, shiftType, manPowerTotal) {
   // --- Validasi manpower
   if (!manPowerTotal || isNaN(manPowerTotal) || manPowerTotal <= 0) {
