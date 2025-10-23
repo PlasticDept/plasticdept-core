@@ -230,6 +230,40 @@ function sanitizeValue(value) {
 }
 
 /**
+ * Mengkonversi nama perusahaan lengkap ke alias/singkatan
+ * @param {string} fullName - Nama perusahaan lengkap
+ * @return {string} - Alias/singkatan perusahaan
+ */
+function getCompanyAlias(fullName) {
+  if (!fullName) return "";
+  
+  // Lowercase untuk konsistensi pencocokan
+  const nameLower = fullName.toLowerCase().trim();
+  
+  // Mapping nama perusahaan lengkap ke alias
+  const companyMap = {
+    "pt. toyota tsusho indonesia - plastic-2 div": "PL AUTO 2",
+    "pt. toyota tsusho indonesia - plastic div": "PL AUTO",
+    // Tambahkan mapping lain sesuai kebutuhan
+  };
+  
+  // Coba pencocokan langsung
+  if (companyMap[nameLower]) {
+    return companyMap[nameLower];
+  }
+  
+  // Jika tidak ada pencocokan langsung, coba pencocokan parsial
+  for (const [key, value] of Object.entries(companyMap)) {
+    if (nameLower.includes(key) || key.includes(nameLower)) {
+      return value;
+    }
+  }
+  
+  // Jika tidak ada yang cocok, kembalikan nilai asli
+  return fullName;
+}
+
+/**
  * Format tanggal menjadi dd-MMM-yyyy tanpa komponen waktu.
  */
 function formatToCustomDate(date) {
@@ -1500,7 +1534,7 @@ function parsePhoenixExcel(file) {
 
       owner: (value) => {
         if (!value) return "";
-        return String(value).trim();
+        return getCompanyAlias(String(value).trim());
       }
     }
   });
