@@ -1429,7 +1429,8 @@ function parsePhoenixExcel(file) {
       "deliveryNote": "Delivery Note No.",
       "qty": "BC No.",
       "remark": "Reff. No.",
-      "status": "Status"
+      "status": "Status",
+      "owner": "Owner"
     },
     formatters: {
       // Format deliveryDate to DD-MMM-YYYY
@@ -1493,6 +1494,11 @@ function parsePhoenixExcel(file) {
       
       // Format remark (default jika kosong)
       remark: (value) => {
+        if (!value) return "";
+        return String(value).trim();
+      },
+
+      owner: (value) => {
         if (!value) return "";
         return String(value).trim();
       }
